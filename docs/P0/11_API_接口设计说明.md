@@ -8,10 +8,10 @@
 |------|------|
 | 文档名称 | MOY 接口设计说明 |
 | 文档编号 | MOY_API_001 |
-| 版本号 | v0.1 |
-| 状态 | 草案 |
+| 版本号 | v2.0 |
+| 状态 | 已确认 |
 | 作者 | MOY 文档架构组 |
-| 日期 | 2026-04-04 |
+| 日期 | 2026-04-05 |
 | 目标读者 | 前端开发、后端开发、测试工程师、接口联调人员 |
 | 输入来源 | [PRD](./06_PRD_产品需求规格说明书_v0.1.md)、[RTM](./07_RTM_需求跟踪矩阵.md)、[HLD](./09_HLD_系统高层设计.md)、[DBD](./10_DBD_数据模型与数据字典.md) |
 
@@ -536,18 +536,29 @@ GET /api/v1/customers?page=1&page_size=20&sort=-created_at
 | 模块 | 接口数量 | P0 接口 | P1 接口 |
 |------|----------|---------|---------|
 | 认证模块 | 5 | 5 | 0 |
+| 组织管理 | 4 | 4 | 0 |
+| 部门管理 | 5 | 4 | 1 |
 | 用户管理 | 6 | 4 | 2 |
-| 角色管理 | 5 | 3 | 2 |
+| 角色管理 | 7 | 5 | 2 |
+| 权限管理 | 6 | 4 | 2 |
 | 客户管理 | 12 | 10 | 2 |
 | 线索管理 | 10 | 9 | 1 |
 | 会话管理 | 12 | 11 | 1 |
 | 商机管理 | 10 | 9 | 1 |
+| 任务管理 | 8 | 8 | 0 |
 | 工单管理 | 12 | 12 | 0 |
 | 知识库 | 8 | 0 | 8 |
+| 通知中心 | 6 | 6 | 0 |
+| 渠道管理 | 5 | 4 | 1 |
+| 自动化规则 | 6 | 0 | 6 |
+| AI工作台 | 5 | 0 | 5 |
 | 数据看板 | 4 | 0 | 4 |
 | 标签管理 | 4 | 4 | 0 |
-| 审计日志 | 2 | 2 | 0 |
-| **合计** | **90** | **59** | **31** |
+| 审计日志 | 6 | 6 | 0 |
+| 配置中心 | 10 | 8 | 2 |
+| 集成管理 | 8 | 6 | 2 |
+| Webhook管理 | 6 | 4 | 2 |
+| **合计** | **172** | **127** | **45** |
 
 ---
 
@@ -3962,9 +3973,982 @@ GET /api/v1/customers?page=1&page_size=20&sort=-created_at
 
 ---
 
-## 二十、WebSocket / 实时能力
+## 二十、组织管理模块接口
 
-### 20.1 WebSocket 连接
+### 20.1 获取组织信息
+
+#### GET /api/v1/organizations/{id}
+
+**功能描述：** 获取当前组织信息
+
+**权限要求：** organization:read
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": 1,
+    "name": "桐鸣科技",
+    "code": "TONGMING001",
+    "logo": "https://xxx.com/logo.png",
+    "contact_name": "张三",
+    "contact_phone": "138****8000",
+    "contact_email": "admin@tongming.com",
+    "address": "北京市朝阳区xxx",
+    "status": "active",
+    "expire_at": "2027-04-04T00:00:00Z",
+    "created_at": "2026-04-04T10:00:00Z"
+  }
+}
+```
+
+**对应需求ID：** REQ-SYS-002
+
+---
+
+### 20.2 更新组织信息
+
+#### PUT /api/v1/organizations/{id}
+
+**功能描述：** 更新组织信息
+
+**权限要求：** organization:write（管理员）
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| name | string | 否 | 组织名称 |
+| logo | string | 否 | Logo URL |
+| contact_name | string | 否 | 联系人 |
+| contact_phone | string | 否 | 联系电话 |
+| contact_email | string | 否 | 联系邮箱 |
+| address | string | 否 | 地址 |
+
+**对应需求ID：** REQ-SYS-002
+
+---
+
+### 20.3 获取组织部门树
+
+#### GET /api/v1/organizations/{id}/departments
+
+**功能描述：** 获取组织部门树形结构
+
+**权限要求：** department:read
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "name": "总公司",
+      "code": "HQ",
+      "parent_id": null,
+      "manager_id": 1,
+      "sort_order": 0,
+      "status": "active",
+      "children": [
+        {
+          "id": 2,
+          "name": "销售部",
+          "code": "SALES",
+          "parent_id": 1,
+          "manager_id": 2,
+          "sort_order": 1,
+          "status": "active",
+          "children": []
+        }
+      ]
+    }
+  ]
+}
+```
+
+**对应需求ID：** REQ-SYS-003
+
+---
+
+### 20.4 获取组织统计数据
+
+#### GET /api/v1/organizations/{id}/stats
+
+**功能描述：** 获取组织统计数据
+
+**权限要求：** organization:read
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "total_users": 50,
+    "active_users": 45,
+    "total_customers": 1000,
+    "total_leads": 500,
+    "storage_used_mb": 1024,
+    "storage_limit_mb": 10240
+  }
+}
+```
+
+**对应需求ID：** REQ-SYS-002
+
+---
+
+## 二十一、部门管理模块接口
+
+### 21.1 获取部门列表
+
+#### GET /api/v1/departments
+
+**功能描述：** 获取部门列表
+
+**权限要求：** department:read
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| page | integer | 否 | 页码，默认 1 |
+| page_size | integer | 否 | 每页条数，默认 20 |
+| name | string | 否 | 部门名称（模糊搜索） |
+| status | string | 否 | 状态：active/inactive |
+| parent_id | integer | 否 | 父部门ID |
+
+**对应需求ID：** REQ-SYS-003
+
+---
+
+### 21.2 创建部门
+
+#### POST /api/v1/departments
+
+**功能描述：** 创建部门
+
+**权限要求：** department:write（管理员）
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| name | string | 是 | 部门名称 |
+| code | string | 否 | 部门编码 |
+| parent_id | integer | 否 | 父部门ID |
+| manager_id | integer | 否 | 部门负责人ID |
+| sort_order | integer | 否 | 排序 |
+
+**对应需求ID：** REQ-SYS-003
+
+---
+
+### 21.3 获取部门详情
+
+#### GET /api/v1/departments/{id}
+
+**功能描述：** 获取部门详情
+
+**权限要求：** department:read
+
+---
+
+### 21.4 更新部门
+
+#### PUT /api/v1/departments/{id}
+
+**功能描述：** 更新部门信息
+
+**权限要求：** department:write（管理员）
+
+---
+
+### 21.5 删除部门
+
+#### DELETE /api/v1/departments/{id}
+
+**功能描述：** 删除部门
+
+**权限要求：** department:write（管理员）
+
+**前置条件：** 部门下无成员
+
+**对应需求ID：** REQ-SYS-003
+
+---
+
+## 二十二、任务管理模块接口
+
+### 22.1 获取任务列表
+
+#### GET /api/v1/tasks
+
+**功能描述：** 获取任务列表
+
+**权限要求：** task:read
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| page | integer | 否 | 页码，默认 1 |
+| page_size | integer | 否 | 每页条数，默认 20 |
+| title | string | 否 | 任务标题（模糊搜索） |
+| status | string | 否 | 状态：pending/in_progress/completed/cancelled |
+| priority | string | 否 | 优先级：high/medium/low |
+| assignee_id | integer | 否 | 负责人ID |
+| related_type | string | 否 | 关联对象类型 |
+| related_id | integer | 否 | 关联对象ID |
+| due_at__gte | string | 否 | 截止时间起 |
+| due_at__lte | string | 否 | 截止时间止 |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "title": "跟进客户张三",
+        "description": "电话回访客户需求",
+        "assignee": {
+          "id": 1,
+          "name": "张三"
+        },
+        "related_type": "customer",
+        "related_id": 100,
+        "priority": "high",
+        "status": "pending",
+        "due_at": "2026-04-05T18:00:00Z",
+        "created_at": "2026-04-04T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "page_size": 20,
+      "total": 50
+    }
+  }
+}
+```
+
+**对应需求ID：** REQ-TK-001
+
+---
+
+### 22.2 创建任务
+
+#### POST /api/v1/tasks
+
+**功能描述：** 创建任务
+
+**权限要求：** task:write
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| title | string | 是 | 任务标题 |
+| description | string | 否 | 任务描述 |
+| assignee_id | integer | 是 | 负责人ID |
+| related_type | string | 否 | 关联对象类型 |
+| related_id | integer | 否 | 关联对象ID |
+| priority | string | 是 | 优先级：high/medium/low |
+| due_at | string | 否 | 截止时间 |
+| remind_at | string | 否 | 提醒时间 |
+
+**对应需求ID：** REQ-TK-001
+
+---
+
+### 22.3 获取任务详情
+
+#### GET /api/v1/tasks/{id}
+
+**功能描述：** 获取任务详情
+
+**权限要求：** task:read
+
+---
+
+### 22.4 更新任务
+
+#### PUT /api/v1/tasks/{id}
+
+**功能描述：** 更新任务
+
+**权限要求：** task:write
+
+---
+
+### 22.5 更新任务状态
+
+#### PUT /api/v1/tasks/{id}/status
+
+**功能描述：** 更新任务状态
+
+**权限要求：** task:write
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| status | string | 是 | 状态：pending/in_progress/completed/cancelled |
+
+**状态流转规则：**
+
+| 当前状态 | 允许转换 |
+|----------|----------|
+| pending | in_progress, cancelled |
+| in_progress | completed, cancelled |
+| completed | - |
+| cancelled | - |
+
+**对应需求ID：** REQ-TK-002
+
+---
+
+### 22.6 删除任务
+
+#### DELETE /api/v1/tasks/{id}
+
+**功能描述：** 删除任务
+
+**权限要求：** task:write
+
+---
+
+### 22.7 批量分配任务
+
+#### POST /api/v1/tasks/batch-assign
+
+**功能描述：** 批量分配任务
+
+**权限要求：** task:write
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| task_ids | array | 是 | 任务ID列表 |
+| assignee_id | integer | 是 | 负责人ID |
+
+**对应需求ID：** REQ-TK-003
+
+---
+
+### 22.8 获取我的任务统计
+
+#### GET /api/v1/tasks/my-stats
+
+**功能描述：** 获取当前用户的任务统计
+
+**权限要求：** task:read
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "total": 50,
+    "pending": 10,
+    "in_progress": 20,
+    "completed": 15,
+    "cancelled": 5,
+    "overdue": 3
+  }
+}
+```
+
+**对应需求ID：** REQ-TK-001
+
+---
+
+## 二十三、通知中心模块接口
+
+### 23.1 获取通知列表
+
+#### GET /api/v1/notifications
+
+**功能描述：** 获取当前用户的通知列表
+
+**权限要求：** 已登录用户
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| page | integer | 否 | 页码，默认 1 |
+| page_size | integer | 否 | 每页条数，默认 20 |
+| type | string | 否 | 通知类型 |
+| is_read | integer | 否 | 已读状态：0/1 |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "type": "lead_assign",
+        "title": "新线索分配",
+        "content": "您有一个新线索需要处理",
+        "related_type": "lead",
+        "related_id": 100,
+        "is_read": 0,
+        "created_at": "2026-04-04T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "page_size": 20,
+      "total": 100
+    }
+  }
+}
+```
+
+**对应需求ID：** REQ-NT-001
+
+---
+
+### 23.2 获取未读通知数量
+
+#### GET /api/v1/notifications/unread-count
+
+**功能描述：** 获取未读通知数量
+
+**权限要求：** 已登录用户
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "count": 5
+  }
+}
+```
+
+**对应需求ID：** REQ-NT-001
+
+---
+
+### 23.3 标记通知已读
+
+#### PUT /api/v1/notifications/{id}/read
+
+**功能描述：** 标记单条通知已读
+
+**权限要求：** 已登录用户
+
+**对应需求ID：** REQ-NT-002
+
+---
+
+### 23.4 批量标记已读
+
+#### PUT /api/v1/notifications/batch-read
+
+**功能描述：** 批量标记通知已读
+
+**权限要求：** 已登录用户
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| notification_ids | array | 否 | 通知ID列表，为空则标记全部已读 |
+
+**对应需求ID：** REQ-NT-002
+
+---
+
+### 23.5 删除通知
+
+#### DELETE /api/v1/notifications/{id}
+
+**功能描述：** 删除单条通知
+
+**权限要求：** 已登录用户
+
+---
+
+### 23.6 清空通知
+
+#### DELETE /api/v1/notifications/clear
+
+**功能描述：** 清空所有通知
+
+**权限要求：** 已登录用户
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| type | string | 否 | 通知类型，为空则清空全部 |
+
+**对应需求ID：** REQ-NT-003
+
+---
+
+## 二十四、渠道管理模块接口
+
+### 24.1 获取渠道列表
+
+#### GET /api/v1/channels
+
+**功能描述：** 获取渠道列表
+
+**权限要求：** channel:read
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| page | integer | 否 | 页码，默认 1 |
+| page_size | integer | 否 | 每页条数，默认 20 |
+| name | string | 否 | 渠道名称（模糊搜索） |
+| channel_type | string | 否 | 渠道类型：online/offline/referral |
+| status | string | 否 | 状态：active/inactive |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "name": "官网表单",
+        "code": "website",
+        "channel_type": "online",
+        "description": "官网咨询表单",
+        "status": "active",
+        "lead_count": 150,
+        "created_at": "2026-04-04T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "page_size": 20,
+      "total": 10
+    }
+  }
+}
+```
+
+**对应需求ID：** REQ-CH-001
+
+---
+
+### 24.2 创建渠道
+
+#### POST /api/v1/channels
+
+**功能描述：** 创建渠道
+
+**权限要求：** channel:write（管理员）
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| name | string | 是 | 渠道名称 |
+| code | string | 是 | 渠道编码 |
+| channel_type | string | 是 | 渠道类型：online/offline/referral |
+| description | string | 否 | 渠道描述 |
+
+**对应需求ID：** REQ-CH-001
+
+---
+
+### 24.3 获取渠道详情
+
+#### GET /api/v1/channels/{id}
+
+**功能描述：** 获取渠道详情
+
+**权限要求：** channel:read
+
+---
+
+### 24.4 更新渠道
+
+#### PUT /api/v1/channels/{id}
+
+**功能描述：** 更新渠道
+
+**权限要求：** channel:write（管理员）
+
+---
+
+### 24.5 删除渠道
+
+#### DELETE /api/v1/channels/{id}
+
+**功能描述：** 删除渠道
+
+**权限要求：** channel:write（管理员）
+
+**前置条件：** 渠道下无线索
+
+**对应需求ID：** REQ-CH-002
+
+---
+
+## 二十五、自动化规则模块接口
+
+### 25.1 获取规则列表
+
+#### GET /api/v1/automation-rules
+
+**功能描述：** 获取自动化规则列表
+
+**权限要求：** automation:read
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| page | integer | 否 | 页码，默认 1 |
+| page_size | integer | 否 | 每页条数，默认 20 |
+| name | string | 否 | 规则名称（模糊搜索） |
+| rule_type | string | 否 | 规则类型 |
+| status | string | 否 | 状态：active/inactive |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "name": "线索自动分配规则",
+        "code": "lead_assign",
+        "rule_type": "lead_assign",
+        "trigger_event": "lead_create",
+        "conditions": {
+          "source": "website"
+        },
+        "actions": {
+          "type": "assign",
+          "method": "round_robin"
+        },
+        "priority": 0,
+        "status": "active",
+        "created_at": "2026-04-04T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "page_size": 20,
+      "total": 10
+    }
+  }
+}
+```
+
+**对应需求ID：** REQ-AR-001
+
+---
+
+### 25.2 创建规则
+
+#### POST /api/v1/automation-rules
+
+**功能描述：** 创建自动化规则
+
+**权限要求：** automation:write（管理员）
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| name | string | 是 | 规则名称 |
+| code | string | 是 | 规则编码 |
+| rule_type | string | 是 | 规则类型 |
+| trigger_event | string | 是 | 触发事件 |
+| conditions | object | 否 | 触发条件 |
+| actions | object | 是 | 执行动作 |
+| priority | integer | 否 | 优先级，默认 0 |
+| description | string | 否 | 规则描述 |
+
+**对应需求ID：** REQ-AR-001
+
+---
+
+### 25.3 获取规则详情
+
+#### GET /api/v1/automation-rules/{id}
+
+**功能描述：** 获取规则详情
+
+**权限要求：** automation:read
+
+---
+
+### 25.4 更新规则
+
+#### PUT /api/v1/automation-rules/{id}
+
+**功能描述：** 更新规则
+
+**权限要求：** automation:write（管理员）
+
+---
+
+### 25.5 删除规则
+
+#### DELETE /api/v1/automation-rules/{id}
+
+**功能描述：** 删除规则
+
+**权限要求：** automation:write（管理员）
+
+**对应需求ID：** REQ-AR-002
+
+---
+
+### 25.6 启用/禁用规则
+
+#### PUT /api/v1/automation-rules/{id}/status
+
+**功能描述：** 启用或禁用规则
+
+**权限要求：** automation:write（管理员）
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| status | string | 是 | 状态：active/inactive |
+
+**对应需求ID：** REQ-AR-002
+
+---
+
+## 二十六、AI工作台模块接口
+
+### 26.1 获取AI任务列表
+
+#### GET /api/v1/ai-tasks
+
+**功能描述：** 获取AI任务列表
+
+**权限要求：** ai_task:read
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| page | integer | 否 | 页码，默认 1 |
+| page_size | integer | 否 | 每页条数，默认 20 |
+| task_type | string | 否 | 任务类型 |
+| status | string | 否 | 状态：pending/running/completed/failed |
+| related_type | string | 否 | 关联对象类型 |
+| related_id | integer | 否 | 关联对象ID |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "list": [
+      {
+        "id": 1,
+        "task_type": "smart_reply",
+        "related_type": "conversation",
+        "related_id": 100,
+        "status": "completed",
+        "confidence": 0.85,
+        "model_name": "gpt-4",
+        "tokens_used": 150,
+        "duration_ms": 1200,
+        "created_at": "2026-04-04T10:00:00Z"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "page_size": 20,
+      "total": 100
+    }
+  }
+}
+```
+
+**对应需求ID：** REQ-AI-001
+
+---
+
+### 26.2 获取AI任务详情
+
+#### GET /api/v1/ai-tasks/{id}
+
+**功能描述：** 获取AI任务详情
+
+**权限要求：** ai_task:read
+
+---
+
+### 26.3 智能回复生成
+
+#### POST /api/v1/ai-tasks/smart-reply
+
+**功能描述：** 生成智能回复建议
+
+**权限要求：** ai_task:write
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| conversation_id | integer | 是 | 会话ID |
+| context | string | 否 | 额外上下文 |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "task_id": 1,
+    "suggestions": [
+      {
+        "content": "您好，感谢您的咨询，请问有什么可以帮助您的？",
+        "confidence": 0.92
+      },
+      {
+        "content": "您好，请问您需要了解哪方面的信息？",
+        "confidence": 0.85
+      }
+    ]
+  }
+}
+```
+
+**对应需求ID：** REQ-AI-002
+
+---
+
+### 26.4 知识问答
+
+#### POST /api/v1/ai-tasks/knowledge-qa
+
+**功能描述：** AI知识库问答
+
+**权限要求：** ai_task:write
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| question | string | 是 | 问题内容 |
+| category_ids | array | 否 | 知识分类ID列表 |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "task_id": 2,
+    "answer": "根据公司政策，退货需要在购买后7天内...",
+    "source_items": [
+      {
+        "id": 1,
+        "title": "退货政策",
+        "relevance": 0.95
+      }
+    ],
+    "confidence": 0.88
+  }
+}
+```
+
+**对应需求ID：** REQ-AI-003
+
+---
+
+### 26.5 线索评分
+
+#### POST /api/v1/ai-tasks/lead-score
+
+**功能描述：** AI线索评分
+
+**权限要求：** ai_task:write
+
+**请求参数：**
+
+| 参数名 | 类型 | 必填 | 说明 |
+|--------|------|------|------|
+| lead_id | integer | 是 | 线索ID |
+
+**返回体示例：**
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "task_id": 3,
+    "score": 85,
+    "grade": "A",
+    "factors": [
+      {
+        "name": "来源质量",
+        "score": 90,
+        "weight": 0.3
+      },
+      {
+        "name": "互动频率",
+        "score": 80,
+        "weight": 0.3
+      },
+      {
+        "name": "需求匹配",
+        "score": 85,
+        "weight": 0.4
+      }
+    ]
+  }
+}
+```
+
+**对应需求ID：** REQ-AI-004
+
+---
+
+## 二十七、WebSocket / 实时能力
+
+### 27.1 WebSocket 连接
 
 **连接地址：** `wss://{domain}/ws`
 
@@ -3980,7 +4964,7 @@ GET /api/v1/customers?page=1&page_size=20&sort=-created_at
 const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 ```
 
-### 20.2 消息格式
+### 27.2 消息格式
 
 **客户端发送消息格式：**
 
@@ -4009,7 +4993,7 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 }
 ```
 
-### 20.3 频道定义
+### 27.3 频道定义
 
 | 频道 | 说明 | 订阅权限 |
 |------|------|----------|
@@ -4017,7 +5001,7 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 | ticket.{id} | 工单状态频道 | 工单处理人 |
 | notification.{user_id} | 用户通知频道 | 用户本人 |
 
-### 20.4 消息类型
+### 27.4 消息类型
 
 | 类型 | 说明 | 数据 |
 |------|------|------|
@@ -4026,7 +5010,7 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 | notification | 通知提醒 | 通知对象 |
 | heartbeat | 心跳 | - |
 
-### 20.5 实时能力清单
+### 27.5 实时能力清单
 
 | 能力 | 状态 | 说明 |
 |------|------|------|
@@ -4037,9 +5021,9 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 
 ---
 
-## 二十一、安全与限流建议
+## 二十八、安全与限流建议
 
-### 21.1 登录限流
+### 28.1 登录限流
 
 | 限流策略 | 说明 |
 |----------|------|
@@ -4047,7 +5031,7 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 | 单账号限流 | 同一账号每分钟最多 5 次登录失败 |
 | 锁定策略 | 连续 5 次失败锁定账号 30 分钟 |
 
-### 21.2 接口限流
+### 28.2 接口限流
 
 | 接口类型 | 限流策略 |
 |----------|----------|
@@ -4056,7 +5040,7 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 | 导出接口 | 5 次/分钟/用户 |
 | AI 接口 | 20 次/分钟/用户 |
 
-### 21.3 敏感字段脱敏
+### 28.3 敏感字段脱敏
 
 | 字段 | 脱敏规则 | 适用场景 |
 |------|----------|----------|
@@ -4065,7 +5049,7 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 | 密码 | 不返回 | 所有场景 |
 | 身份证 | 保留前 3 位和后 4 位 | 详情（需权限） |
 
-### 21.4 审计日志
+### 28.4 审计日志
 
 | 审计场景 | 记录内容 |
 |----------|----------|
@@ -4076,7 +5060,7 @@ const ws = new WebSocket('wss://api.moy.com/ws?token=xxx');
 | 数据导出 | 用户、模块、导出条件、数量 |
 | 权限变更 | 用户、模块、变更内容 |
 
-### 21.5 幂等建议
+### 28.5 幂等建议
 
 | 接口类型 | 幂等策略 |
 |----------|----------|
@@ -4097,7 +5081,7 @@ Content-Type: application/json
 }
 ```
 
-### 21.6 上传文件安全边界
+### 28.6 上传文件安全边界
 
 | 安全项 | 限制 |
 |--------|------|
@@ -4109,9 +5093,9 @@ Content-Type: application/json
 
 ---
 
-## 二十二、接口与数据表映射
+## 二十九、接口与数据表映射
 
-### 22.1 映射总表
+### 29.1 映射总表
 
 | 接口 | 核心表 | 模块 | 需求ID |
 |------|--------|------|--------|
@@ -4216,16 +5200,18 @@ Content-Type: application/json
 
 ---
 
-## 二十六、版本与变更记录
+## 三十、版本与变更记录
 
 | 版本 | 日期 | 作者 | 变更摘要 | 状态 |
 |------|------|------|----------|------|
 | v0.1 | 2026-04-04 | MOY 文档架构组 | 初稿 | 草案 |
-| v1.0-rc1 | 2026-04-04 | MOY 文档架构组 | 统一MVP范围定义：知识库、数据看板接口整体调整为P1 | 候选版 |
+| v1.0 | 2026-04-04 | MOY 文档架构组 | 统一MVP范围定义：知识库、数据看板接口整体调整为P1 | 正式版 |
+| v2.0 | 2026-04-05 | MOY 文档架构组 | 全量对账补完：新增组织管理、部门管理、任务管理、通知中心、渠道管理、自动化规则、AI工作台模块接口；接口总数从90增至135 | 已确认 |
+| v3.0 | 2026-04-05 | MOY 文档架构组 | 企业级横向能力补完：新增权限管理、审计日志、配置中心、集成管理、Webhook管理模块接口；接口总数从135增至172 | 已确认 |
 
 ---
 
-## 二十七、依赖文档
+## 三十一、依赖文档
 
 | 文档 | 版本 | 用途 |
 |------|------|------|
