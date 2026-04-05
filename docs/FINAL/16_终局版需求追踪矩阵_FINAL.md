@@ -451,6 +451,94 @@
 
 ---
 
+## 六点五、商业化需求追踪链
+
+### 6.5.1 商业化需求追溯矩阵
+
+| 需求编号 | 需求名称 | 业务域 | 模块 | 对象 | 状态机 | 权限点 | 接口 | 页面 | 测试用例 |
+|----------|----------|--------|------|------|--------|--------|------|------|----------|
+| REQ-COM-001 | 套餐管理 | 商业化域 | 套餐管理 | Plan | - | plan:* | /api/v1/plans/* | 套餐管理页 | TC-COM-001~005 |
+| REQ-COM-002 | 订阅管理 | 商业化域 | 订阅管理 | Subscription | SubscriptionStateMachine | subscription:* | /api/v1/subscriptions/* | 订阅管理页 | TC-COM-006~010 |
+| REQ-COM-003 | 账单管理 | 商业化域 | 账单管理 | Bill, BillItem | BillStateMachine | bill:* | /api/v1/bills/* | 账单管理页 | TC-COM-011~015 |
+| REQ-COM-004 | 支付管理 | 商业化域 | 支付管理 | Payment | PaymentStateMachine | payment:* | /api/v1/payments/* | 支付记录页 | TC-COM-016~020 |
+| REQ-COM-005 | 发票管理 | 商业化域 | 发票管理 | InvoiceRequest | InvoiceRequestStateMachine | invoice:* | /api/v1/invoices/* | 发票管理页 | TC-COM-021~025 |
+| REQ-COM-006 | 配额管理 | 商业化域 | 配额管理 | QuotaAccount, QuotaLedger | - | quota:* | /api/v1/quotas/* | 配额管理页 | TC-COM-026~030 |
+| REQ-COM-007 | 增购管理 | 商业化域 | 增购管理 | AddOnOrder | AddOnOrderStateMachine | addon:* | /api/v1/addons/* | 增购订单页 | TC-COM-031~035 |
+| REQ-COM-008 | 续费管理 | 商业化域 | 续费管理 | RenewalOrder | RenewalOrderStateMachine | renewal:* | /api/v1/renewals/* | 续费订单页 | TC-COM-036~040 |
+| REQ-COM-009 | 欠费管理 | 商业化域 | 欠费管理 | OverdueEvent | OverdueEventStateMachine | overdue:* | /api/v1/overdue/* | 欠费管理页 | TC-COM-041~045 |
+| REQ-COM-010 | 停服管理 | 商业化域 | 停服管理 | SuspensionRecord | - | suspension:* | /api/v1/suspensions/* | 停服管理页 | TC-COM-046~050 |
+
+### 6.5.2 商业化对象追溯
+
+| 对象 | 数据域 | 状态机 | 权限点 | API接口 | 页面 | 测试用例 |
+|------|--------|--------|--------|---------|------|----------|
+| Plan | 商业化域 | - | 4个 | 5个 | 1个 | 5个 |
+| Subscription | 商业化域 | SubscriptionStateMachine | 5个 | 6个 | 1个 | 5个 |
+| Bill | 商业化域 | BillStateMachine | 5个 | 6个 | 1个 | 5个 |
+| BillItem | 商业化域 | - | 1个 | 2个 | 0个 | 3个 |
+| Payment | 商业化域 | PaymentStateMachine | 2个 | 4个 | 1个 | 5个 |
+| InvoiceRequest | 商业化域 | InvoiceRequestStateMachine | 4个 | 5个 | 1个 | 5个 |
+| QuotaAccount | 商业化域 | - | 2个 | 4个 | 1个 | 5个 |
+| QuotaLedger | 商业化域 | - | 1个 | 2个 | 0个 | 3个 |
+| AddOnOrder | 商业化域 | AddOnOrderStateMachine | 2个 | 4个 | 1个 | 5个 |
+| RenewalOrder | 商业化域 | RenewalOrderStateMachine | 2个 | 4个 | 1个 | 5个 |
+| OverdueEvent | 商业化域 | OverdueEventStateMachine | 1个 | 3个 | 1个 | 5个 |
+| SuspensionRecord | 商业化域 | - | 1个 | 3个 | 1个 | 5个 |
+
+---
+
+## 六点六、AI Agent 能力追踪链
+
+### 6.6.1 Agent 能力追溯矩阵
+
+| Agent编码 | Agent名称 | 所属域 | 可访问对象 | 可调用动作 | 禁止动作 | 风险等级 | 执行模式 | 审计要求 |
+|-----------|-----------|--------|------------|------------|----------|----------|----------|----------|
+| AGENT_ACQUISITION | 获客Agent | 获客域 | Lead, Channel, Campaign | 3个 | 3个 | 低 | 自动模式 | 线索创建记录 |
+| AGENT_LEAD_CLEAN | 线索清洗Agent | 获客域 | Lead, Contact | 4个 | 2个 | 低 | 自动/审批 | 合并记录 |
+| AGENT_CONVERSATION | 会话接待Agent | 沟通域 | Conversation, Message, Knowledge, Customer | 4个 | 3个 | 低 | 建议/辅助 | 回复记录 |
+| AGENT_SALES_FOLLOW | 销售跟进Agent | 销售域 | Lead, Customer, FollowRecord | 4个 | 3个 | 低 | 自动/建议 | 跟进记录 |
+| AGENT_OPPORTUNITY | 商机推进Agent | 销售域 | Opportunity, Quote, Customer | 3个 | 3个 | 中 | 辅助/建议 | 阶段变更记录 |
+| AGENT_TICKET | 工单处理Agent | 服务域 | Ticket, Knowledge, Agent | 3个 | 3个 | 中 | 自动/辅助 | 派单记录 |
+| AGENT_KNOWLEDGE | 知识辅助Agent | 沟通域 | Knowledge, KnowledgeCategory, KnowledgeFeedback | 3个 | 3个 | 低 | 自动模式 | 检索记录 |
+| AGENT_QUALITY | 质检Agent | 服务域 | Conversation, Message, Ticket, QualityRecord | 3个 | 3个 | 低 | 自动模式 | 质检记录 |
+| AGENT_INSIGHT | 洞察分析Agent | 运营域 | 全部业务对象(只读) | 4个 | 3个 | 低 | 自动模式 | 分析记录 |
+| AGENT_ORCHESTRATE | 运营编排Agent | 运营域 | AutomationRule, Task, AgentRegistry | 3个 | 3个 | 高 | 辅助模式 | 编排记录 |
+| AGENT_DASHBOARD | 管理驾驶舱Agent | 运营域 | 全部业务对象(只读) | 4个 | 3个 | 低 | 自动/建议 | 汇总记录 |
+
+### 6.6.2 Agent 与业务对象关联
+
+| Agent | 可读对象 | 可写对象 | 可创建对象 | 说明 |
+|-------|----------|----------|------------|------|
+| 获客Agent | Channel, Campaign | Lead | Lead | 线索获取入口 |
+| 线索清洗Agent | Lead, Contact | Lead | - | 线索质量保障 |
+| 会话接待Agent | Conversation, Message, Knowledge, Customer | Conversation, Message | Message | 会话服务核心 |
+| 销售跟进Agent | Lead, Customer, FollowRecord | Lead, FollowRecord | FollowRecord | 销售执行支持 |
+| 商机推进Agent | Opportunity, Quote, Customer | Opportunity, Quote | Quote | 商机转化支持 |
+| 工单处理Agent | Ticket, Knowledge, Agent | Ticket | - | 服务执行支持 |
+| 知识辅助Agent | Knowledge, KnowledgeCategory, KnowledgeFeedback | KnowledgeFeedback | KnowledgeFeedback | 知识服务支持 |
+| 质检Agent | Conversation, Message, Ticket | QualityRecord | QualityRecord | 质量保障 |
+| 洞察分析Agent | 全部业务对象 | Report | Report | 数据分析 |
+| 运营编排Agent | AutomationRule, AgentRegistry | Task | Task | 自动化编排 |
+| 管理驾驶舱Agent | 全部业务对象 | Dashboard | Dashboard | 决策支持 |
+
+### 6.6.3 Agent 与状态机关联
+
+| Agent | 触发状态变更 | 监听状态事件 | 说明 |
+|-------|--------------|--------------|------|
+| 获客Agent | Lead: new→assigned | - | 新线索触发分配 |
+| 线索清洗Agent | Lead: new→invalid | Lead状态变更 | 线索质量影响状态 |
+| 会话接待Agent | Conversation: pending→active→closed | - | 会话生命周期 |
+| 销售跟进Agent | Lead: assigned→following | Lead状态变更 | 跟进触发状态 |
+| 商机推进Agent | Opportunity: 阶段推进 | Opportunity状态变更 | 商机阶段管理 |
+| 工单处理Agent | Ticket: pending→assigned | Ticket状态变更 | 工单派发 |
+| 知识辅助Agent | - | - | 无状态变更 |
+| 质检Agent | - | Conversation/Ticket状态变更 | 质检触发 |
+| 洞察分析Agent | - | 全部状态变更事件 | 数据分析 |
+| 运营编排Agent | 根据规则触发 | 全部状态变更事件 | 自动化触发 |
+| 管理驾驶舱Agent | - | 全部状态变更事件 | 指标汇总 |
+
+---
+
 ## 七、需求变更影响分析
 
 ### 7.1 变更影响范围
