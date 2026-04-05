@@ -1,11 +1,6 @@
 ﻿# MOY P0 文档体系（SSOT 实现级冻结版）
 
 ## 1. 文档元信息
-> Archived / Deprecated
-> - `docs/P0` 已转为历史快照，不再作为执行与开发主入口。
-> - 唯一执行入口已迁移至 `docs/SSOT/00_README_唯一执行入口.md`。
-> - 如需追溯原始 P0 文档，请优先查阅 `docs/_archive/p0_snapshot/`。
-
 | 属性 | 内容 |
 | --- | --- |
 | 文档名称 | MOY P0 文档体系（SSOT 实现级冻结版） |
