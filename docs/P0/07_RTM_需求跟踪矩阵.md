@@ -271,69 +271,67 @@
 
 | 页面ID | 页面名称 | 路由 | 所属模块 | 优先级 |
 |--------|----------|------|----------|--------|
-| PAGE-001 | 登录页 | /login | 认证 | P0 |
-| PAGE-002 | 密码找回页 | /forgot-password | 认证 | P0 |
-| PAGE-003 | 工作台首页 | /dashboard | 系统 | P0 |
-| PAGE-004 | 客户列表页 | /customers | 客户管理 | P0 |
-| PAGE-005 | 客户详情页 | /customers/:id | 客户管理 | P0 |
-| PAGE-006 | 客户编辑页 | /customers/create, /customers/:id/edit | 客户管理 | P0 |
-| PAGE-007 | 线索列表页 | /leads | 线索管理 | P0 |
-| PAGE-008 | 线索详情页 | /leads/:id | 线索管理 | P0 |
-| PAGE-009 | 线索录入页 | /leads/create | 线索管理 | P0 |
-| PAGE-010 | 线索导入页 | /leads/import | 线索管理 | P0 |
-| PAGE-011 | 会话列表页 | /conversations | 会话管理 | P0 |
-| PAGE-012 | 会话窗口页 | /conversations/:id | 会话管理 | P0 |
-| PAGE-013 | 商机列表页 | /opportunities | 商机管理 | P0 |
-| PAGE-014 | 商机详情页 | /opportunities/:id | 商机管理 | P0 |
-| PAGE-015 | 商机创建页 | /opportunities/create | 商机管理 | P0 |
-| PAGE-016 | 工单列表页 | /tickets | 工单管理 | P0 |
-| PAGE-017 | 工单详情页 | /tickets/:id | 工单管理 | P0 |
-| PAGE-018 | 工单创建页 | /tickets/create | 工单管理 | P0 |
-| PAGE-019 | 任务列表页 | /tasks | 任务管理 | P0 |
-| PAGE-020 | 通知中心页 | /notifications | 通知管理 | P0 |
-| PAGE-021 | 用户管理页 | /settings/users | 系统设置 | P0 |
-| PAGE-022 | 角色管理页 | /settings/roles | 系统设置 | P0 |
-| PAGE-023 | 组织设置页 | /settings/organization | 系统设置 | P0 |
-| PAGE-024 | 审计日志页 | /settings/audit-logs | 系统设置 | P0 |
-| PAGE-025 | 知识库搜索页 | /knowledge | 知识库 | P1 |
-| PAGE-026 | 知识库管理页 | /knowledge/manage | 知识库 | P1 |
-| PAGE-027 | 销售看板页 | /dashboards/sales | 数据看板 | P1 |
-| PAGE-028 | 客服看板页 | /dashboards/service | 数据看板 | P1 |
-| PAGE-029 | 自动化规则页 | /settings/automation | 系统设置 | P1 |
-| PAGE-030 | AI工作台页 | /settings/ai | AI工作台 | P1 |
+| PAGE-AUTH-001 | 登录页 | /login | 认证授权 | P0 |
+| PAGE-AUTH-002 | 忘记密码页 | /forgot-password | 认证授权 | P0 |
+| PAGE-SYS-001 | 首页/工作台 | / | 系统管理 | P0 |
+| PAGE-CM-001 | 客户列表页 | /customers | 客户管理 | P0 |
+| PAGE-CM-002 | 客户详情页 | /customers/:id | 客户管理 | P0 |
+| PAGE-CM-003 | 客户创建页 | /customers/create | 客户管理 | P0 |
+| PAGE-LM-001 | 线索列表页 | /leads | 线索管理 | P0 |
+| PAGE-LM-002 | 线索详情页 | /leads/:id | 线索管理 | P0 |
+| PAGE-LM-003 | 线索创建页 | /leads/create | 线索管理 | P0 |
+| PAGE-SM-001 | 会话列表页 | /conversations | 会话管理 | P0 |
+| PAGE-SM-002 | 会话详情页 | /conversations/:id | 会话管理 | P0 |
+| PAGE-OM-001 | 商机列表页 | /opportunities | 商机管理 | P0 |
+| PAGE-OM-002 | 商机详情页 | /opportunities/:id | 商机管理 | P0 |
+| PAGE-OM-003 | 商机创建页 | /opportunities/create | 商机管理 | P0 |
+| PAGE-TM-001 | 工单列表页 | /tickets | 工单管理 | P0 |
+| PAGE-TM-002 | 工单详情页 | /tickets/:id | 工单管理 | P0 |
+| PAGE-TM-003 | 工单创建页 | /tickets/create | 工单管理 | P0 |
+| PAGE-SYS-002 | 用户管理页 | /system/users | 系统管理 | P0 |
+| PAGE-SYS-003 | 角色管理页 | /system/roles | 系统管理 | P0 |
+| PAGE-SYS-004 | 部门管理页 | /system/departments | 系统管理 | P0 |
+| PAGE-SYS-005 | 个人设置页 | /settings/profile | 系统管理 | P0 |
+| PAGE-SYS-006 | 组织设置页 | /settings/organization | 系统管理 | P0 |
+| PAGE-KB-001 | 知识库列表页 | /knowledge | 知识库 | P1 |
+| PAGE-KB-002 | 知识详情页 | /knowledge/:id | 知识库 | P1 |
+| PAGE-KB-003 | 知识创建页 | /knowledge/create | 知识库 | P1 |
+| PAGE-DB-001 | 销售看板 | /dashboard/sales | 数据看板 | P1 |
+| PAGE-DB-002 | 客服看板 | /dashboard/service | 数据看板 | P1 |
+| PAGE-DB-003 | 运营看板 | /dashboard/operation | 数据看板 | P1 |
 
 ### 5.2 PRD需求→页面追踪
 
 | PRD需求ID | PRD需求描述 | 页面ID | 页面名称 | 前端状态 |
 |-----------|-------------|--------|----------|----------|
-| REQ-CM-001 | 客户创建功能 | PAGE-006 | 客户编辑页 | 待开发 |
-| REQ-CM-002 | 客户编辑功能 | PAGE-006 | 客户编辑页 | 待开发 |
-| REQ-CM-003 | 客户查询功能 | PAGE-004 | 客户列表页 | 待开发 |
-| REQ-CM-004 | 客户详情展示 | PAGE-005 | 客户详情页 | 待开发 |
-| REQ-CM-005 | 客户分组功能 | PAGE-004, PAGE-005 | 客户列表页, 客户详情页 | 待开发 |
-| REQ-CM-006 | 客户状态管理 | PAGE-005 | 客户详情页 | 待开发 |
-| REQ-LM-001 | 线索录入功能 | PAGE-009 | 线索录入页 | 待开发 |
-| REQ-LM-002 | 线索导入功能 | PAGE-010 | 线索导入页 | 待开发 |
-| REQ-LM-003 | 线索分配功能 | PAGE-008 | 线索详情页 | 待开发 |
-| REQ-LM-004 | 线索跟进记录 | PAGE-008 | 线索详情页 | 待开发 |
-| REQ-LM-005 | 线索状态管理 | PAGE-008 | 线索详情页 | 待开发 |
-| REQ-LM-006 | 线索转化功能 | PAGE-008 | 线索详情页 | 待开发 |
-| REQ-SM-001 | 渠道接入功能 | PAGE-011, PAGE-012 | 会话列表页, 会话窗口页 | 待开发 |
-| REQ-SM-002 | 会话列表功能 | PAGE-011 | 会话列表页 | 待开发 |
-| REQ-SM-003 | 会话详情功能 | PAGE-012 | 会话窗口页 | 待开发 |
-| REQ-SM-004 | 消息发送功能 | PAGE-012 | 会话窗口页 | 待开发 |
-| REQ-SM-005 | 智能回复推荐 | PAGE-012 | 会话窗口页 | 待开发 |
-| REQ-OM-001 | 商机创建功能 | PAGE-015 | 商机创建页 | 待开发 |
-| REQ-OM-002 | 商机列表功能 | PAGE-013 | 商机列表页 | 待开发 |
-| REQ-OM-003 | 商机详情功能 | PAGE-014 | 商机详情页 | 待开发 |
-| REQ-OM-004 | 商机阶段功能 | PAGE-014 | 商机详情页 | 待开发 |
-| REQ-TM-001 | 工单创建功能 | PAGE-018 | 工单创建页 | 待开发 |
-| REQ-TM-002 | 工单列表功能 | PAGE-016 | 工单列表页 | 待开发 |
-| REQ-TM-003 | 工单详情功能 | PAGE-017 | 工单详情页 | 待开发 |
-| REQ-KB-001 | 知识检索功能 | PAGE-025 | 知识库搜索页 | 待开发 |
-| REQ-DB-001 | 销售看板功能 | PAGE-027 | 销售看板页 | 待开发 |
-| REQ-SYS-001 | 登录功能 | PAGE-001 | 登录页 | 待开发 |
-| REQ-SYS-002 | 权限控制功能 | PAGE-021, PAGE-022 | 用户管理页, 角色管理页 | 待开发 |
+| REQ-CM-001 | 客户创建功能 | PAGE-CM-003 | 客户创建页 | 待开发 |
+| REQ-CM-002 | 客户编辑功能 | PAGE-CM-002 | 客户详情页 | 待开发 |
+| REQ-CM-003 | 客户查询功能 | PAGE-CM-001 | 客户列表页 | 待开发 |
+| REQ-CM-004 | 客户详情展示 | PAGE-CM-002 | 客户详情页 | 待开发 |
+| REQ-CM-005 | 客户分组功能 | PAGE-CM-001, PAGE-CM-002 | 客户列表页, 客户详情页 | 待开发 |
+| REQ-CM-006 | 客户状态管理 | PAGE-CM-002 | 客户详情页 | 待开发 |
+| REQ-LM-001 | 线索录入功能 | PAGE-LM-003 | 线索创建页 | 待开发 |
+| REQ-LM-002 | 线索导入功能 | PAGE-LM-003 | 线索创建页 | 待开发 |
+| REQ-LM-003 | 线索分配功能 | PAGE-LM-002 | 线索详情页 | 待开发 |
+| REQ-LM-004 | 线索跟进记录 | PAGE-LM-002 | 线索详情页 | 待开发 |
+| REQ-LM-005 | 线索状态管理 | PAGE-LM-002 | 线索详情页 | 待开发 |
+| REQ-LM-006 | 线索转化功能 | PAGE-LM-002 | 线索详情页 | 待开发 |
+| REQ-SM-001 | 渠道接入功能 | PAGE-SM-001, PAGE-SM-002 | 会话列表页, 会话详情页 | 待开发 |
+| REQ-SM-002 | 会话列表功能 | PAGE-SM-001 | 会话列表页 | 待开发 |
+| REQ-SM-003 | 会话详情功能 | PAGE-SM-002 | 会话详情页 | 待开发 |
+| REQ-SM-004 | 消息发送功能 | PAGE-SM-002 | 会话详情页 | 待开发 |
+| REQ-SM-005 | 智能回复推荐 | PAGE-SM-002 | 会话详情页 | 待开发 |
+| REQ-OM-001 | 商机创建功能 | PAGE-OM-003 | 商机创建页 | 待开发 |
+| REQ-OM-002 | 商机列表功能 | PAGE-OM-001 | 商机列表页 | 待开发 |
+| REQ-OM-003 | 商机详情功能 | PAGE-OM-002 | 商机详情页 | 待开发 |
+| REQ-OM-004 | 商机阶段功能 | PAGE-OM-002 | 商机详情页 | 待开发 |
+| REQ-TM-001 | 工单创建功能 | PAGE-TM-003 | 工单创建页 | 待开发 |
+| REQ-TM-002 | 工单列表功能 | PAGE-TM-001 | 工单列表页 | 待开发 |
+| REQ-TM-003 | 工单详情功能 | PAGE-TM-002 | 工单详情页 | 待开发 |
+| REQ-KB-001 | 知识检索功能 | PAGE-KB-001 | 知识库列表页 | 待开发 |
+| REQ-DB-001 | 销售看板功能 | PAGE-DB-001 | 销售看板 | 待开发 |
+| REQ-SYS-001 | 登录功能 | PAGE-AUTH-001 | 登录页 | 待开发 |
+| REQ-SYS-002 | 权限控制功能 | PAGE-SYS-002, PAGE-SYS-003 | 用户管理页, 角色管理页 | 待开发 |
 
 ---
 
@@ -374,8 +372,8 @@
 | API-GET-OM-002 | /api/v1/opportunities/:id | GET | 获取商机详情 | 商机管理 |
 | API-PUT-OM-001 | /api/v1/opportunities/:id | PUT | 更新商机信息 | 商机管理 |
 | API-PUT-OM-002 | /api/v1/opportunities/:id/stage | PUT | 更新商机阶段 | 商机管理 |
-| API-PUT-OM-003 | /api/v1/opportunities/:id/won | PUT | 标记商机赢单 | 商机管理 |
-| API-PUT-OM-004 | /api/v1/opportunities/:id/lost | PUT | 标记商机输单 | 商机管理 |
+| API-PUT-OM-003 | POST /api/v1/opportunities/{id}/win | 标记商机成交 | 商机管理 |
+| API-PUT-OM-004 | POST /api/v1/opportunities/{id}/lose | 标记商机失败 | 商机管理 |
 | API-GET-TM-001 | /api/v1/tickets | GET | 工单列表查询 | 工单管理 |
 | API-POST-TM-001 | /api/v1/tickets | POST | 创建工单 | 工单管理 |
 | API-GET-TM-002 | /api/v1/tickets/:id | GET | 获取工单详情 | 工单管理 |
@@ -383,9 +381,9 @@
 | API-POST-TM-003 | /api/v1/tickets/:id/transfer | POST | 转派工单 | 工单管理 |
 | API-POST-TM-004 | /api/v1/tickets/:id/resolve | POST | 解决工单 | 工单管理 |
 | API-POST-TM-005 | /api/v1/tickets/:id/close | POST | 关闭工单 | 工单管理 |
-| API-GET-KB-001 | /api/v1/knowledge | GET | 知识检索 | 知识库 |
+| API-GET-KB-001 | /api/v1/knowledge/search | GET | 知识检索 | 知识库 |
 | API-GET-KB-002 | /api/v1/knowledge/:id | GET | 获取知识详情 | 知识库 |
-| API-POST-KB-001 | /api/v1/knowledge/ask | POST | AI问答 | 知识库 |
+| API-POST-KB-001 | /api/v1/knowledge/qa | POST | AI问答 | 知识库 |
 
 ### 6.2 PRD需求→接口追踪
 
@@ -413,8 +411,8 @@
 | REQ-TM-001 | 工单创建功能 | API-POST-TM-001 | POST /api/v1/tickets | 待开发 |
 | REQ-TM-002 | 工单列表功能 | API-GET-TM-001 | GET /api/v1/tickets | 待开发 |
 | REQ-TM-005 | 工单处理功能 | API-POST-TM-002 | POST /api/v1/tickets/:id/handle | 待开发 |
-| REQ-KB-001 | 知识检索功能 | API-GET-KB-001 | GET /api/v1/knowledge | 待开发 |
-| REQ-KB-003 | AI问答功能 | API-POST-KB-001 | POST /api/v1/knowledge/ask | 待开发 |
+| REQ-KB-001 | 知识检索功能 | API-GET-KB-001 | GET /api/v1/knowledge/search | 待开发 |
+| REQ-KB-003 | AI问答功能 | API-POST-KB-001 | POST /api/v1/knowledge/qa | 待开发 |
 | REQ-SYS-001 | 登录功能 | API-POST-AUTH-001 | POST /api/v1/auth/login | 待开发 |
 
 ---
@@ -531,7 +529,8 @@
 | PERM-LM-ASSIGN | 分配线索 | lead:assign | 线索管理 | 分配线索给销售 |
 | PERM-LM-CONVERT | 转化线索 | lead:convert | 线索管理 | 将线索转化为商机 |
 | PERM-SM-READ | 查看会话 | conversation:read | 会话管理 | 查看会话列表和详情 |
-| PERM-SM-HANDLE | 处理会话 | conversation:handle | 会话管理 | 接入和处理会话 |
+| PERM-SM-SEND | 发送消息 | conversation:send | 会话管理 | 发送会话消息 |
+| PERM-SM-CLOSE | 关闭会话 | conversation:close | 会话管理 | 关闭会话 |
 | PERM-SM-TRANSFER | 转接会话 | conversation:transfer | 会话管理 | 转接会话给其他客服 |
 | PERM-SM-MONITOR | 监控会话 | conversation:monitor | 会话管理 | 监控团队会话 |
 | PERM-OM-READ | 查看商机 | opportunity:read | 商机管理 | 查看商机列表和详情 |
@@ -758,7 +757,7 @@
 | TRAE-TM-002 | 实现SLA管理 | 实现SLA超时升级功能 | PRD 4.10, 35_横切能力规范 | SLA代码 | P0 |
 | TRAE-KB-001 | 实现知识库模块 | 实现知识CRUD、检索功能 | PRD 4.11, API 十一, DBD 11 | 知识库模块代码 | P1 |
 | TRAE-KB-002 | 实现AI问答功能 | 实现基于知识库的AI问答 | PRD 4.11, 20_AI治理规范 | AI问答代码 | P1 |
-| TRAE-DB-001 | 实现数据看板模块 | 实现销售/客服看板 | PRD 4.14, API 十二 | 看板模块代码 | P1 |
+| TRAE-DASH-001 | 实现数据看板模块 | 实现销售/客服看板 | PRD 4.14, API 十二 | 看板模块代码 | P1 |
 | TRAE-FRONT-001 | 实现前端框架搭建 | 搭建Next.js项目框架 | 33_前端工程规范 | 前端项目骨架 | P0 |
 | TRAE-FRONT-002 | 实现前端组件库 | 实现UI组件库 | 25_前端UI组件库规范 | 组件库代码 | P0 |
 | TRAE-FRONT-003 | 实现前端页面 | 实现所有页面 | 32_页面实现规范 | 页面代码 | P0 |
@@ -783,7 +782,7 @@
 | REQ-TM-010 | SLA管理功能 | TRAE-TM-002 | 实现SLA管理 | 待执行 |
 | REQ-KB-001 | 知识检索功能 | TRAE-KB-001 | 实现知识库模块 | 待执行 |
 | REQ-KB-003 | AI问答功能 | TRAE-KB-002 | 实现AI问答功能 | 待执行 |
-| REQ-DB-001 | 销售看板功能 | TRAE-DB-001 | 实现数据看板模块 | 待执行 |
+| REQ-DB-001 | 销售看板功能 | TRAE-DASH-001 | 实现数据看板模块 | 待执行 |
 
 ---
 

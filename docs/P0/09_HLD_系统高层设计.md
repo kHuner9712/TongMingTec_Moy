@@ -406,7 +406,7 @@ graph TB
 
 | 接口                         | 方法 | 说明         |
 | ---------------------------- | ---- | ------------ |
-| /api/v1/knowledge            | GET  | 获取知识列表 |
+| /api/v1/knowledge/search    | GET  | 知识检索     |
 | /api/v1/knowledge            | POST | 创建知识     |
 | /api/v1/knowledge/{id}       | GET  | 获取知识详情 |
 | /api/v1/knowledge/{id}       | PUT  | 更新知识内容 |

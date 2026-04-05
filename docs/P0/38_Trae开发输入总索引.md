@@ -346,9 +346,9 @@
 **页面映射：**
 | 页面ID | 页面名称 | 路由 |
 |--------|----------|------|
-| PAGE-004 | 客户列表页 | /customers |
-| PAGE-005 | 客户详情页 | /customers/:id |
-| PAGE-006 | 客户编辑页 | /customers/create, /customers/:id/edit |
+| PAGE-CM-001 | 客户列表页 | /customers |
+| PAGE-CM-002 | 客户详情页 | /customers/:id |
+| PAGE-CM-003 | 客户创建页 | /customers/create |
 
 **测试点：**
 | 测试点ID | 测试场景 | 期望结果 |
@@ -454,10 +454,9 @@
 **页面映射：**
 | 页面ID | 页面名称 | 路由 |
 |--------|----------|------|
-| PAGE-007 | 线索列表页 | /leads |
-| PAGE-008 | 线索详情页 | /leads/:id |
-| PAGE-009 | 线索录入页 | /leads/create |
-| PAGE-010 | 线索导入页 | /leads/import |
+| PAGE-LM-001 | 线索列表页 | /leads |
+| PAGE-LM-002 | 线索详情页 | /leads/:id |
+| PAGE-LM-003 | 线索创建页 | /leads/create |
 
 **测试点：**
 | 测试点ID | 测试场景 | 期望结果 |
@@ -532,8 +531,8 @@
 | API-GET-OM-002 | GET | /api/v1/opportunities/:id | 获取商机详情 | opportunity:read |
 | API-PUT-OM-001 | PUT | /api/v1/opportunities/:id | 更新商机信息 | opportunity:update |
 | API-PUT-OM-002 | PUT | /api/v1/opportunities/:id/stage | 更新商机阶段 | opportunity:stage |
-| API-PUT-OM-003 | PUT | /api/v1/opportunities/:id/won | 标记商机赢单 | opportunity:stage |
-| API-PUT-OM-004 | PUT | /api/v1/opportunities/:id/lost | 标记商机输单 | opportunity:stage |
+| API-PUT-OM-003 | POST | /api/v1/opportunities/:id/win | 标记商机成交 | opportunity:stage |
+| API-PUT-OM-004 | POST | /api/v1/opportunities/:id/lose | 标记商机失败 | opportunity:stage |
 
 **数据表：**
 | 表名 | 用途 |
@@ -563,9 +562,9 @@
 **页面映射：**
 | 页面ID | 页面名称 | 路由 |
 |--------|----------|------|
-| PAGE-013 | 商机列表页 | /opportunities |
-| PAGE-014 | 商机详情页 | /opportunities/:id |
-| PAGE-015 | 商机创建页 | /opportunities/create |
+| PAGE-OM-001 | 商机列表页 | /opportunities |
+| PAGE-OM-002 | 商机详情页 | /opportunities/:id |
+| PAGE-OM-003 | 商机创建页 | /opportunities/create |
 
 **测试点：**
 | 测试点ID | 测试场景 | 期望结果 |
@@ -637,10 +636,10 @@
 |--------|------|------|------|------|
 | API-GET-SM-001 | GET | /api/v1/conversations | 会话列表查询 | conversation:read |
 | API-GET-SM-002 | GET | /api/v1/conversations/:id | 获取会话详情 | conversation:read |
-| API-POST-SM-001 | POST | /api/v1/conversations/:id/messages | 发送消息 | conversation:handle |
+| API-POST-SM-001 | POST | /api/v1/conversations/:id/messages | 发送消息 | conversation:send |
 | API-POST-SM-002 | POST | /api/v1/conversations/:id/transfer | 转接会话 | conversation:transfer |
-| API-POST-SM-003 | POST | /api/v1/conversations/:id/close | 关闭会话 | conversation:handle |
-| API-GET-SM-003 | GET | /api/v1/conversations/:id/smart-reply | 获取智能回复 | conversation:handle |
+| API-POST-SM-003 | POST | /api/v1/conversations/:id/close | 关闭会话 | conversation:close |
+| API-GET-SM-003 | GET | /api/v1/conversations/:id/smart-reply | 获取智能回复 | conversation:send |
 
 **数据表：**
 | 表名 | 用途 |
@@ -660,15 +659,16 @@
 | 权限ID | 权限名称 | 权限标识 |
 |--------|----------|----------|
 | PERM-SM-READ | 查看会话 | conversation:read |
-| PERM-SM-HANDLE | 处理会话 | conversation:handle |
+| PERM-SM-SEND | 发送消息 | conversation:send |
+| PERM-SM-CLOSE | 关闭会话 | conversation:close |
 | PERM-SM-TRANSFER | 转接会话 | conversation:transfer |
 | PERM-SM-MONITOR | 监控会话 | conversation:monitor |
 
 **页面映射：**
 | 页面ID | 页面名称 | 路由 |
 |--------|----------|------|
-| PAGE-011 | 会话列表页 | /conversations |
-| PAGE-012 | 会话窗口页 | /conversations/:id |
+| PAGE-SM-001 | 会话列表页 | /conversations |
+| PAGE-SM-002 | 会话详情页 | /conversations/:id |
 
 **测试点：**
 | 测试点ID | 测试场景 | 期望结果 |
@@ -770,9 +770,9 @@
 **页面映射：**
 | 页面ID | 页面名称 | 路由 |
 |--------|----------|------|
-| PAGE-016 | 工单列表页 | /tickets |
-| PAGE-017 | 工单详情页 | /tickets/:id |
-| PAGE-018 | 工单创建页 | /tickets/create |
+| PAGE-TM-001 | 工单列表页 | /tickets |
+| PAGE-TM-002 | 工单详情页 | /tickets/:id |
+| PAGE-TM-003 | 工单创建页 | /tickets/create |
 
 **测试点：**
 | 测试点ID | 测试场景 | 期望结果 |
@@ -835,9 +835,9 @@
 **接口清单：**
 | 接口ID | 方法 | 路径 | 功能 | 权限 |
 |--------|------|------|------|------|
-| API-GET-KB-001 | GET | /api/v1/knowledge | 知识检索 | knowledge:read |
+| API-GET-KB-001 | GET | /api/v1/knowledge/search | 知识检索 | knowledge:read |
 | API-GET-KB-002 | GET | /api/v1/knowledge/:id | 获取知识详情 | knowledge:read |
-| API-POST-KB-001 | POST | /api/v1/knowledge/ask | AI问答 | knowledge:read |
+| API-POST-KB-001 | POST | /api/v1/knowledge/qa | AI问答 | knowledge:read |
 
 **数据表：**
 | 表名 | 用途 |
@@ -854,8 +854,8 @@
 **页面映射：**
 | 页面ID | 页面名称 | 路由 |
 |--------|----------|------|
-| PAGE-025 | 知识库搜索页 | /knowledge |
-| PAGE-026 | 知识库管理页 | /knowledge/manage |
+| PAGE-KB-001 | 知识库列表页 | /knowledge |
+| PAGE-KB-002 | 知识详情页 | /knowledge/:id |
 
 **禁止事项：**
 - [ ] 禁止新增 PRD 未定义的知识类型
@@ -868,7 +868,7 @@
 
 | 属性 | 内容 |
 |------|------|
-| **模块ID** | TRAE-DB-001 |
+| **模块ID** | TRAE-DASH-001 |
 | **模块名称** | 数据看板模块 |
 | **阶段** | 阶段3 |
 | **优先级** | P1 |
@@ -902,8 +902,8 @@
 **页面映射：**
 | 页面ID | 页面名称 | 路由 |
 |--------|----------|------|
-| PAGE-027 | 销售看板页 | /dashboards/sales |
-| PAGE-028 | 客服看板页 | /dashboards/service |
+| PAGE-DB-001 | 销售看板 | /dashboard/sales |
+| PAGE-DB-002 | 客服看板 | /dashboard/service |
 
 **禁止事项：**
 - [ ] 禁止新增 PRD 未定义的看板指标
@@ -1104,7 +1104,7 @@
 | 任务ID | 任务名称 | 前置任务 | 预估工时 | 输出物 |
 |--------|----------|----------|----------|--------|
 | TRAE-KB-001 | 知识库模块 | TRAE-AUTH-001 | 4天 | 知识库模块代码 |
-| TRAE-DB-001 | 数据看板模块 | 阶段1-2完成 | 4天 | 看板模块代码 |
+| TRAE-DASH-001 | 数据看板模块 | 阶段1-2完成 | 4天 | 看板模块代码 |
 | TRAE-TASK-001 | 任务管理模块 | TRAE-AUTH-001 | 2天 | 任务模块代码 |
 | TRAE-NT-001 | 通知管理模块 | TRAE-AUTH-001 | 2天 | 通知模块代码 |
 | TRAE-CH-001 | 渠道管理模块 | TRAE-AUTH-001 | 2天 | 渠道模块代码 |
@@ -1260,7 +1260,7 @@
 | 5 | 跟进线索 | 线索管理 | POST /api/v1/leads/:id/follow-ups |
 | 6 | 转化商机 | 线索管理 | POST /api/v1/leads/:id/convert |
 | 7 | 推进阶段 | 商机管理 | PUT /api/v1/opportunities/:id/stage |
-| 8 | 赢单 | 商机管理 | PUT /api/v1/opportunities/:id/won |
+| 8 | 赢单 | 商机管理 | POST /api/v1/opportunities/:id/win |
 
 ### 7.3 最小闭环验收
 
