@@ -60,13 +60,15 @@
 | TASK-AI-001 | AI | REQ-AI-001 | 智能回复 |
 | TASK-AI-002 | AI | REQ-AI-002 | AI任务查询 |
 | TASK-AUD-001 | AUD | REQ-AUD-001 | 审计日志查询 |
+| TASK-SYS-001 | SYS | REQ-SYS-001 | 仪表盘汇总数据能力 |
+| TASK-SYS-002 | SYS | REQ-SYS-002 | 系统配置查询与更新 |
 
 ## 5. 可立即启动的开发顺序
 1. AUTH/ORG/USR
 2. CM -> LM -> OM
 3. CNV -> TK
 4. TSK/NTF/CHN
-5. AI/AUD
+5. AI/AUD/SYS
 6. 前后端联调与 ACPT 验收
 
 ## 6. 并行策略

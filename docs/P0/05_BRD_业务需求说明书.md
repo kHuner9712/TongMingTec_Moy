@@ -71,6 +71,7 @@
 | BRD-REQ-CHN-001 | CHN | 渠道配置与状态监控 | P0 | 已确认 |
 | BRD-REQ-AI-001 | AI | 智能回复与 AI 任务追踪 | P0 | 已确认 |
 | BRD-REQ-AUD-001 | AUD | 审计追踪与合规留痕 | P0 | 已确认 |
+| BRD-REQ-SYS-001 | SYS | 仪表盘与系统配置能力 | P0 | 已确认 |
 | BRD-REQ-KB-001 | KB | 知识库检索与维护 | P1 | 暂不纳入 |
 | BRD-REQ-DASH-001 | DASH | 销售/服务看板 | P1 | 暂不纳入 |
 | BRD-REQ-AUTO-001 | AUTO | 自动化规则引擎 | P1 | 暂不纳入 |

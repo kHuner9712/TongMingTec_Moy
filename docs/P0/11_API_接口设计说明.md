@@ -110,6 +110,9 @@
 | API-AI-001 | POST | `/api/v1/ai/smart-reply` | PERM-AI-EXECUTE | conversation_id, message | ai_task |
 | API-AI-002 | GET | `/api/v1/ai/tasks/{id}` | PERM-AI-EXECUTE | - | ai_task detail |
 | API-AUD-001 | GET | `/api/v1/audit-logs` | PERM-AUD-VIEW | filters, pagination | audit log list |
+| API-SYS-001 | GET | `/api/v1/dashboard/summary` | PERM-SYS-VIEW | date_range | dashboard summary |
+| API-SYS-002 | GET | `/api/v1/system-configs` | PERM-SYS-MANAGE | module | system config list |
+| API-SYS-003 | PUT | `/api/v1/system-configs/{id}` | PERM-SYS-MANAGE | value | system config |
 
 ## 6. 关键接口样例
 

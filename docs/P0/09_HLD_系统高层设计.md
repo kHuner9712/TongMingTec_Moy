@@ -45,7 +45,7 @@
 | CHN | 渠道配置 | channels | `/api/v1/channels/*` |
 | AI | 智能回复任务生成与查询 | ai_tasks | `/api/v1/ai/*` |
 | AUD | 审计检索 | audit_logs | `/api/v1/audit-logs/*` |
-| SYS | 系统配置（受限） | system_configs | `/api/v1/system-configs/*` |
+| SYS | 仪表盘汇总与系统配置（受限） | system_configs | `/api/v1/dashboard/*`, `/api/v1/system-configs/*` |
 
 ## 6. 关键业务链路（P0）
 
@@ -67,6 +67,10 @@
 - `REQ-TK-002` 分配工单
 - `REQ-TK-003` 处理并解决
 - `REQ-TK-004` 关闭工单
+
+### 6.4 系统模块链路
+- `REQ-SYS-001` 仪表盘汇总数据展示
+- `REQ-SYS-002` 系统配置查询与更新
 
 ## 7. 状态机架构约束
 统一采用 `SM-*`：

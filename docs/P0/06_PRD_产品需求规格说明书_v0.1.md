@@ -24,8 +24,8 @@
 ## 4. P0 需求清单（冻结）
 | REQ ID | 模块 | 需求描述 | 优先级 | 页面 |
 | --- | --- | --- | --- | --- |
-| REQ-AUTH-001 | AUTH | 登录 | P0 | PAGE-SYS-001 |
-| REQ-AUTH-002 | AUTH | 刷新令牌与会话续期 | P0 | PAGE-SYS-001 |
+| REQ-AUTH-001 | AUTH | 登录 | P0 | PAGE-AUTH-001 |
+| REQ-AUTH-002 | AUTH | 刷新令牌与会话续期 | P0 | PAGE-AUTH-001 |
 | REQ-USR-001 | USR | 用户列表与用户状态管理 | P0 | PAGE-USR-001 |
 | REQ-USR-002 | USR | 角色权限配置 | P0 | PAGE-USR-002 |
 | REQ-ORG-001 | ORG | 组织信息与部门管理 | P0 | PAGE-ORG-001 |
@@ -57,12 +57,15 @@
 | REQ-AI-001 | AI | 智能回复生成 | P0 | PAGE-CNV-002 |
 | REQ-AI-002 | AI | AI任务状态查询 | P0 | PAGE-CNV-002 |
 | REQ-AUD-001 | AUD | 审计日志查询 | P0 | PAGE-AUD-001 |
+| REQ-SYS-001 | SYS | 仪表盘汇总数据展示 | P0 | PAGE-SYS-001 |
+| REQ-SYS-002 | SYS | 系统配置查询与更新 | P0 | PAGE-SYS-002 |
 
 ## 5. 页面清单（P0）
 | PAGE ID | 页面名称 | 路由 | 模块 | 优先级 |
 | --- | --- | --- | --- | --- |
-| PAGE-SYS-001 | 登录页 | `/login` | AUTH | P0 |
-| PAGE-SYS-002 | 仪表盘 | `/dashboard` | SYS | P0 |
+| PAGE-AUTH-001 | 登录页 | `/login` | AUTH | P0 |
+| PAGE-SYS-001 | 仪表盘 | `/dashboard` | SYS | P0 |
+| PAGE-SYS-002 | 系统配置 | `/settings/system-configs` | SYS | P0 |
 | PAGE-CM-001 | 客户列表 | `/customers` | CM | P0 |
 | PAGE-CM-002 | 客户详情 | `/customers/{id}` | CM | P0 |
 | PAGE-LM-001 | 线索列表 | `/leads` | LM | P0 |

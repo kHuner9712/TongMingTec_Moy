@@ -122,7 +122,7 @@
 2. CM -> LM -> OM
 3. CNV -> TK
 4. TSK/NTF/CHN
-5. AI/AUD
+5. AI/AUD/SYS
 6. 前后端联调与 ACPT 验收
 
 ## 17. 版本记录
