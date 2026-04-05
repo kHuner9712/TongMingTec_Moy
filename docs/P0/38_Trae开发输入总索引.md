@@ -4,86 +4,111 @@
 | 属性 | 内容 |
 | --- | --- |
 | 文档编号 | MOY_EXEC_001 |
-| 文档版本 | v2.1 |
-| 文档状态 | 已确认（冻结） |
+| 文档版本 | v3.0 |
+| 文档状态 | 已确认（实现级冻结） |
 | 日期 | 2026-04-05 |
-| 执行对象 | Trae、Codex、前后端开发、测试、联调 |
+| 执行对象 | Trae、Codex、前后端开发、测试、联调、发布 |
 
 ## 2. 执行入口声明
 - 本文档是 P0 唯一执行入口。
-- `14_Trae_开发输入清单.md` 仅为历史参考，不具备执行效力。
+- `14_Trae_开发输入清单.md` 仅历史参考，不得作为执行基线。
 
-## 3. 必读顺序（强制）
+## 3. 必读文档（强制顺序）
 1. `41_SSOT冻结基线总报告.md`
 2. `README.md`
 3. `06_PRD_产品需求规格说明书_v0.1.md`
 4. `07_RTM_需求跟踪矩阵.md`
-5. `27_状态机实现规范.md`
-6. `10_DBD_数据模型与数据字典.md`
-7. `11_API_接口设计说明.md`
-8. `32_页面实现规范.md`
-9. `34_模块级详细设计.md`
+5. `10_DBD_数据模型与数据字典.md`
+6. `11_API_接口设计说明.md`
+7. `42_API请求响应Schema字典.md`
+8. `27_状态机实现规范.md`
+9. `17_权限模型设计.md`
+10. `32_页面实现规范.md`
+11. `43_页面级详细交互规格.md`
+12. `23_测试与验收方案.md`
+13. `44_TEST_ACPT可执行用例集.md`
+14. `24_实施与上线指南.md`
 
-## 4. 开发任务清单（与 RTM 一致）
-| TASK ID | 模块 | 对应 REQ | 主要输出 |
+## 4. 开发顺序与依赖
+| 阶段 | 模块 | 前置依赖 | 输出目标 |
 | --- | --- | --- | --- |
-| TASK-AUTH-001 | AUTH | REQ-AUTH-001 | 登录能力 |
-| TASK-AUTH-002 | AUTH | REQ-AUTH-002 | 刷新令牌 |
-| TASK-USR-001 | USR | REQ-USR-001 | 用户管理 |
-| TASK-USR-002 | USR | REQ-USR-002 | 角色权限配置 |
-| TASK-ORG-001 | ORG | REQ-ORG-001 | 组织设置 |
-| TASK-CM-001 | CM | REQ-CM-001 | 客户列表与检索 |
-| TASK-CM-002 | CM | REQ-CM-002 | 客户创建 |
-| TASK-CM-003 | CM | REQ-CM-003 | 客户更新 |
-| TASK-CM-004 | CM | REQ-CM-004 | 客户状态流转 |
-| TASK-LM-001 | LM | REQ-LM-001 | 线索录入 |
-| TASK-LM-002 | LM | REQ-LM-002 | 线索分配 |
-| TASK-LM-003 | LM | REQ-LM-003 | 线索跟进 |
-| TASK-LM-004 | LM | REQ-LM-004 | 线索转化 |
-| TASK-OM-001 | OM | REQ-OM-001 | 商机创建与编辑 |
-| TASK-OM-002 | OM | REQ-OM-002 | 商机阶段推进 |
-| TASK-OM-003 | OM | REQ-OM-003 | 商机结果标记 |
-| TASK-CNV-001 | CNV | REQ-CNV-001 | 会话列表与详情 |
-| TASK-CNV-002 | CNV | REQ-CNV-002 | 消息发送 |
-| TASK-CNV-003 | CNV | REQ-CNV-003 | 会话接入与转接 |
-| TASK-CNV-004 | CNV | REQ-CNV-004 | 会话关闭 |
-| TASK-CNV-005 | CNV | REQ-CNV-005 | 会话转工单 |
-| TASK-TK-001 | TK | REQ-TK-001 | 工单创建 |
-| TASK-TK-002 | TK | REQ-TK-002 | 工单分配 |
-| TASK-TK-003 | TK | REQ-TK-003 | 工单处理与解决 |
-| TASK-TK-004 | TK | REQ-TK-004 | 工单关闭 |
-| TASK-TSK-001 | TSK | REQ-TSK-001 | 任务创建 |
-| TASK-TSK-002 | TSK | REQ-TSK-002 | 任务状态更新 |
-| TASK-NTF-001 | NTF | REQ-NTF-001 | 通知列表 |
-| TASK-NTF-002 | NTF | REQ-NTF-002 | 通知已读 |
-| TASK-CHN-001 | CHN | REQ-CHN-001 | 渠道配置 |
-| TASK-AI-001 | AI | REQ-AI-001 | 智能回复 |
-| TASK-AI-002 | AI | REQ-AI-002 | AI任务查询 |
-| TASK-AUD-001 | AUD | REQ-AUD-001 | 审计日志查询 |
-| TASK-SYS-001 | SYS | REQ-SYS-001 | 仪表盘汇总数据能力 |
-| TASK-SYS-002 | SYS | REQ-SYS-002 | 系统配置查询与更新 |
+| S1 | AUTH/ORG/USR | DBD、API、权限模型 | 登录、组织/部门、用户状态、角色权限 |
+| S2 | CM/LM/OM | S1 | 客户与销售主链路 |
+| S3 | CHN/CNV/TK | S1,S2 | 渠道、会话、工单闭环 |
+| S4 | TSK/NTF | S1 | 任务与通知 |
+| S5 | AI/AUD/SYS | S1,S3,S4 | AI 回复、审计查询、系统配置与仪表盘 |
+| S6 | 联调/回归/验收 | S1~S5 | 全链路发布就绪 |
 
-## 5. 可立即启动的开发顺序
-1. AUTH/ORG/USR
-2. CM -> LM -> OM
-3. CNV -> TK
-4. TSK/NTF/CHN
-5. AI/AUD/SYS
-6. 前后端联调与 ACPT 验收
+## 5. 模块级开发输入/输出（可直接执行）
+| 模块 | 输入（REQ/API/TABLE/PAGE） | 输出（代码与测试） |
+| --- | --- | --- |
+| AUTH | REQ-AUTH-001/002；API-AUTH-001~003；TABLE-USR-001；PAGE-AUTH-001 | 登录/刷新接口、AuthGuard、登录页、TEST-AUTH-* |
+| ORG | REQ-ORG-001；API-ORG-001~005；TABLE-ORG-001/002；PAGE-ORG-001 | 组织/部门 API、设置页、TEST-ORG-001 |
+| USR | REQ-USR-001/002；API-USR-001~005；TABLE-USR-*；PAGE-USR-001/002 | 用户列表与状态、角色权限配置、TEST-USR-* |
+| CM | REQ-CM-001~004；API-CM-001~005；TABLE-CM-*；PAGE-CM-001/002 | 客户 CRUD + 状态流转、TEST-CM-* |
+| LM | REQ-LM-001~004；API-LM-001~006；TABLE-LM-*；PAGE-LM-001/002 | 线索录入/分配/跟进/转化、TEST-LM-* |
+| OM | REQ-OM-001~003；API-OM-001~006；TABLE-OM-*；PAGE-OM-001/002 | 商机推进与结果标记、TEST-OM-* |
+| CHN | REQ-CHN-001；API-CHN-001~003；TABLE-CHN-001；PAGE-CHN-001 | 渠道配置、TEST-CHN-001 |
+| CNV | REQ-CNV-001~005；API-CNV-001~008；TABLE-CNV-*；PAGE-CNV-001/002 | 会话中心与消息实时联动、TEST-CNV-* |
+| TK | REQ-TK-001~004；API-TK-001~007；TABLE-TK-*；PAGE-TK-001/002 | 工单全状态机闭环、TEST-TK-* |
+| TSK | REQ-TSK-001/002；API-TSK-001~004；TABLE-TSK-001；PAGE-TSK-001 | 任务管理与流转、TEST-TSK-* |
+| NTF | REQ-NTF-001/002；API-NTF-001/002；TABLE-NTF-001；PAGE-NTF-001 | 通知列表与已读、TEST-NTF-* |
+| AI | REQ-AI-001/002；API-AI-001/002；TABLE-AI-001；PAGE-CNV-002 | AI 回复任务链路、TEST-AI-* |
+| AUD | REQ-AUD-001；API-AUD-001；TABLE-AUD-001；PAGE-AUD-001 | 审计检索与展示、TEST-AUD-001 |
+| SYS | REQ-SYS-001/002；API-SYS-001~003；TABLE-SYS-001；PAGE-SYS-001/002 | 仪表盘与系统配置、TEST-SYS-* |
 
-## 6. 并行策略
-- 线A：CM/LM/OM
-- 线B：CNV/TK
-- 线C：前端页面并行（列表页 + 详情页）
-- 线D：测试用例并行编写（TEST/ACPT）
+## 6. 建议代码落点（生成器默认）
+| 层 | 建议路径 |
+| --- | --- |
+| API 后端 | `apps/api/src/modules/{mod}/` |
+| Web 前端 | `apps/web/src/pages/`、`apps/web/src/components/business/` |
+| DTO/Schema | `apps/api/src/modules/{mod}/dto/`（以 `42` 为准） |
+| 测试 | `apps/api/test/`、`apps/web/src/**/__tests__/`、`apps/e2e/tests/` |
+| migration | `apps/api/migrations/`（按 DBD 顺序） |
 
-## 7. 发布门禁
-- RTM 覆盖率 100%
-- API 契约一致性 100%
-- 状态机合法流转测试通过
-- 权限与租户隔离测试通过
+## 7. Trae 执行模板（每个模块）
+1. 读取模块输入：REQ/API/TABLE/PAGE/PERM/SM/TEST。
+2. 生成 migration 与实体。
+3. 生成 DTO + Controller + Service + Repository。
+4. 生成页面与 API client。
+5. 生成模块测试（API + 状态机 + 权限 + 跨租户）。
+6. 执行自检（第 8 章）。
 
-## 8. 版本记录
+## 8. 自检清单（提交前）
+- [ ] API path/method/permission 与 `11_API` 一致
+- [ ] DTO 字段与 `42_API请求响应Schema字典` 一致
+- [ ] 数据表字段/索引/外键与 `10_DBD` 一致
+- [ ] 状态机流转与 `27_状态机实现规范` 一致
+- [ ] 页面按钮显隐与 `43_页面级详细交互规格` 一致
+- [ ] 错误码映射与 `28_API错误码清单` 一致
+- [ ] 写操作审计日志完整
+- [ ] org_id 隔离校验通过
+
+## 9. 联调清单
+- [ ] 登录后可访问 `/dashboard`
+- [ ] 列表分页 `meta` 字段一致
+- [ ] 会话消息实时推送可消费
+- [ ] 会话转工单跨模块事务一致
+- [ ] AI 失败可降级为人工回复
+- [ ] 审计日志可按 request_id 追踪
+
+## 10. 提交门禁
+- TEST 全绿（35/35）。
+- ACPT 全通过（35/35）。
+- 无 P0 阻断级缺陷。
+- migration 可正向执行且可回滚。
+- 发布 checklist 完整通过。
+
+## 11. Definition of Done（DoD）
+模块完成必须同时满足：
+1. 需求闭环：REQ -> PAGE/API/TABLE/SM/PERM/TEST/ACPT/TASK 全关联。
+2. 实现闭环：前端、后端、DB、WS（适用时）均完成。
+3. 质量闭环：测试通过 + 关键日志与审计可追踪。
+4. 联调闭环：跨模块链路验收通过。
+5. 文档闭环：若实现与文档差异，先回写文档再合并代码。
+
+## 12. 版本记录
 | 版本 | 日期 | 说明 |
 | --- | --- | --- |
-| v2.1 | 2026-04-05 | 任务清单展开为逐条 TASK ID，完全对齐 RTM |
+| v3.0 | 2026-04-05 | 升级为实现级执行入口：补齐依赖顺序、输入输出、代码落点、自检联调清单与 DoD |
+| v2.1 | 2026-04-05 | 任务清单展开为逐条 TASK ID |
