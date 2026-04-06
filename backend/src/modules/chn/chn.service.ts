@@ -56,10 +56,14 @@ export class ChnService {
     data: Partial<Channel>,
     version: number,
   ): Promise<Channel> {
-    await this.channelRepository.update(id, {
+    const updateData: Partial<Channel> = {
       ...data,
+      version: undefined,
+    };
+    await this.channelRepository.update(id, {
+      ...updateData,
       version: () => 'version + 1',
-    });
+    } as any);
 
     return this.findChannelById(id, orgId);
   }

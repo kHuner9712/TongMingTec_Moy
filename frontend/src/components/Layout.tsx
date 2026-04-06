@@ -6,7 +6,7 @@ import {
   UserOutlined,
   PhoneOutlined,
   CustomerServiceOutlined,
-  TicketOutlined,
+  FileTextOutlined,
   SettingOutlined,
   LogoutOutlined,
 } from '@ant-design/icons';
@@ -21,7 +21,7 @@ const menuItems = [
   { key: '/leads', icon: <UserOutlined />, label: '线索管理' },
   { key: '/opportunities', icon: <PhoneOutlined />, label: '商机管理' },
   { key: '/conversations', icon: <CustomerServiceOutlined />, label: '会话中心' },
-  { key: '/tickets', icon: <TicketOutlined />, label: '工单管理' },
+  { key: '/tickets', icon: <FileTextOutlined />, label: '工单管理' },
   { key: '/users', icon: <UserOutlined />, label: '用户管理' },
   { key: '/settings', icon: <SettingOutlined />, label: '系统设置' },
 ];

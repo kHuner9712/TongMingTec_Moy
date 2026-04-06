@@ -158,14 +158,13 @@ describe('LmService', () => {
 
   describe('assignLead', () => {
     it('should assign lead to user and change status to assigned', async () => {
-      leadRepository.findOne.mockResolvedValue(mockLead);
-      leadRepository.update.mockResolvedValue({ affected: 1 });
       leadRepository.findOne.mockResolvedValueOnce(mockLead);
       leadRepository.findOne.mockResolvedValueOnce({
         ...mockLead,
         ownerUserId: 'agent-uuid-123',
         status: LeadStatus.ASSIGNED,
       });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.assignLead(
         'lead-uuid-123',
@@ -193,11 +192,38 @@ describe('LmService', () => {
         service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('should throw BadRequestException for invalid status transition from converted', async () => {
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.CONVERTED,
+        version: 1,
+      });
+
+      await expect(
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for invalid status transition from invalid', async () => {
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+        version: 1,
+      });
+
+      await expect(
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('addFollowUp', () => {
     it('should add follow up and change status to following', async () => {
-      leadRepository.findOne.mockResolvedValue(mockLead);
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.ASSIGNED,
+      });
       followUpRepository.create.mockReturnValue(mockFollowUp);
       followUpRepository.save.mockResolvedValue(mockFollowUp);
       leadRepository.update.mockResolvedValue({ affected: 1 });
@@ -239,11 +265,30 @@ describe('LmService', () => {
         ),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('should throw BadRequestException for invalid status transition from new', async () => {
+      leadRepository.findOne.mockResolvedValue(mockLead);
+
+      await expect(
+        service.addFollowUp(
+          'lead-uuid-123',
+          'org-uuid-123',
+          '跟进内容',
+          FollowType.CALL,
+          null,
+          'user-uuid-123',
+          1,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('convert', () => {
     it('should convert lead to customer and opportunity', async () => {
-      leadRepository.findOne.mockResolvedValue(mockLead);
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.FOLLOWING,
+      });
       leadRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.convert(
@@ -264,7 +309,15 @@ describe('LmService', () => {
       expect(result.opportunityId).toBe('placeholder-opportunity-id');
     });
 
-    it('should throw BadRequestException if lead already converted', async () => {
+    it('should throw BadRequestException for invalid status transition from new', async () => {
+      leadRepository.findOne.mockResolvedValue(mockLead);
+
+      await expect(
+        service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for invalid status transition from converted', async () => {
       leadRepository.findOne.mockResolvedValue({
         ...mockLead,
         status: LeadStatus.CONVERTED,
@@ -278,12 +331,105 @@ describe('LmService', () => {
     it('should throw ConflictException for version mismatch', async () => {
       leadRepository.findOne.mockResolvedValue({
         ...mockLead,
+        status: LeadStatus.FOLLOWING,
         version: 2,
       });
 
       await expect(
         service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
       ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('markInvalid', () => {
+    it('should mark lead as invalid from new status', async () => {
+      leadRepository.findOne.mockResolvedValueOnce(mockLead);
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
+
+      const result = await service.markInvalid(
+        'lead-uuid-123',
+        'org-uuid-123',
+        '无效线索',
+        'user-uuid-123',
+        1,
+      );
+
+      expect(leadRepository.update).toHaveBeenCalledWith(
+        'lead-uuid-123',
+        expect.objectContaining({ status: LeadStatus.INVALID }),
+      );
+    });
+
+    it('should mark lead as invalid from assigned status', async () => {
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.ASSIGNED,
+      });
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.markInvalid(
+        'lead-uuid-123',
+        'org-uuid-123',
+        '无效线索',
+        'user-uuid-123',
+        1,
+      );
+
+      expect(leadRepository.update).toHaveBeenCalled();
+    });
+
+    it('should mark lead as invalid from following status', async () => {
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.FOLLOWING,
+      });
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.markInvalid(
+        'lead-uuid-123',
+        'org-uuid-123',
+        '无效线索',
+        'user-uuid-123',
+        1,
+      );
+
+      expect(leadRepository.update).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for invalid status transition from converted', async () => {
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.CONVERTED,
+        version: 1,
+      });
+
+      await expect(
+        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for invalid status transition from invalid', async () => {
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+        version: 1,
+      });
+
+      await expect(
+        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -300,13 +446,12 @@ describe('LmService', () => {
 
   describe('SM-lead state machine validation', () => {
     it('should allow transition from new to assigned', async () => {
-      leadRepository.findOne.mockResolvedValue(mockLead);
-      leadRepository.update.mockResolvedValue({ affected: 1 });
       leadRepository.findOne.mockResolvedValueOnce(mockLead);
       leadRepository.findOne.mockResolvedValueOnce({
         ...mockLead,
         status: LeadStatus.ASSIGNED,
       });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
 
       await expect(
         service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
@@ -347,6 +492,85 @@ describe('LmService', () => {
       await expect(
         service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
       ).resolves.not.toThrow();
+    });
+
+    it('should allow transition from new to invalid', async () => {
+      leadRepository.findOne.mockResolvedValueOnce(mockLead);
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
+
+      await expect(
+        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
+      ).resolves.not.toThrow();
+    });
+
+    it('should allow transition from assigned to invalid', async () => {
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.ASSIGNED,
+        version: 1,
+      });
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
+
+      await expect(
+        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
+      ).resolves.not.toThrow();
+    });
+
+    it('should allow transition from following to invalid', async () => {
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.FOLLOWING,
+        version: 1,
+      });
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+      leadRepository.update.mockResolvedValue({ affected: 1 });
+
+      await expect(
+        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
+      ).resolves.not.toThrow();
+    });
+
+    it('should block transition from converted to assigned', async () => {
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.CONVERTED,
+        version: 1,
+      });
+
+      await expect(
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should block transition from invalid to following', async () => {
+      leadRepository.findOne.mockResolvedValue({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+        version: 1,
+      });
+
+      await expect(
+        service.addFollowUp(
+          'lead-uuid-123',
+          'org-uuid-123',
+          '跟进内容',
+          FollowType.CALL,
+          null,
+          'user-uuid-123',
+          1,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

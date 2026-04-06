@@ -3,6 +3,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import type { LoginResponse } from '../types';
 
 interface LoginForm {
   username: string;
@@ -16,9 +17,10 @@ export default function Login() {
 
   const handleSubmit = async (values: LoginForm) => {
     try {
-      const response = await api.post('/auth/login', values);
-      setUser(response.user);
-      setTokens(response.tokens);
+      const response = await api.post<LoginResponse>('/auth/login', values);
+      const data = response as unknown as LoginResponse;
+      setUser(data.user);
+      setTokens(data.tokens);
       message.success('登录成功');
       navigate('/dashboard');
     } catch (error: any) {

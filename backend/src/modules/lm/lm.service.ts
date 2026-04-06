@@ -4,6 +4,14 @@ import { Repository, DataSource } from 'typeorm';
 import { Lead, LeadStatus } from './entities/lead.entity';
 import { LeadFollowUp, FollowType } from './entities/lead-follow-up.entity';
 
+const VALID_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
+  [LeadStatus.NEW]: [LeadStatus.ASSIGNED, LeadStatus.INVALID],
+  [LeadStatus.ASSIGNED]: [LeadStatus.FOLLOWING, LeadStatus.INVALID],
+  [LeadStatus.FOLLOWING]: [LeadStatus.CONVERTED, LeadStatus.INVALID],
+  [LeadStatus.CONVERTED]: [],
+  [LeadStatus.INVALID]: [],
+};
+
 @Injectable()
 export class LmService {
   constructor(
@@ -81,6 +89,10 @@ export class LmService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
+    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.ASSIGNED)) {
+      throw new BadRequestException('STATUS_TRANSITION_INVALID');
+    }
+
     await this.leadRepository.update(id, {
       ownerUserId,
       status: LeadStatus.ASSIGNED,
@@ -103,6 +115,10 @@ export class LmService {
 
     if (lead.version !== version) {
       throw new ConflictException('CONFLICT_VERSION');
+    }
+
+    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.FOLLOWING)) {
+      throw new BadRequestException('STATUS_TRANSITION_INVALID');
     }
 
     const followUp = this.followUpRepository.create({
@@ -133,12 +149,12 @@ export class LmService {
   ): Promise<{ leadId: string; customerId: string; opportunityId: string }> {
     const lead = await this.findLeadById(id, orgId);
 
-    if (lead.status === LeadStatus.CONVERTED) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
-
     if (lead.version !== version) {
       throw new ConflictException('CONFLICT_VERSION');
+    }
+
+    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.CONVERTED)) {
+      throw new BadRequestException('STATUS_TRANSITION_INVALID');
     }
 
     await this.leadRepository.update(id, {
@@ -151,6 +167,31 @@ export class LmService {
       customerId: 'placeholder-customer-id',
       opportunityId: 'placeholder-opportunity-id',
     };
+  }
+
+  async markInvalid(
+    id: string,
+    orgId: string,
+    reason: string,
+    userId: string,
+    version: number,
+  ): Promise<Lead> {
+    const lead = await this.findLeadById(id, orgId);
+
+    if (lead.version !== version) {
+      throw new ConflictException('CONFLICT_VERSION');
+    }
+
+    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.INVALID)) {
+      throw new BadRequestException('STATUS_TRANSITION_INVALID');
+    }
+
+    await this.leadRepository.update(id, {
+      status: LeadStatus.INVALID,
+      version: () => 'version + 1',
+    });
+
+    return this.findLeadById(id, orgId);
   }
 
   async findFollowUps(leadId: string, orgId: string): Promise<LeadFollowUp[]> {

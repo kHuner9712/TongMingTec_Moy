@@ -43,7 +43,7 @@ export class TskService {
       });
     }
 
-    qb.orderBy('task.dueAt', 'ASC', { nulls: 'NULLS LAST' });
+    qb.orderBy('task.dueAt', 'ASC', 'NULLS LAST');
     qb.addOrderBy('task.createdAt', 'DESC');
     qb.skip((page - 1) * pageSize).take(pageSize);
 
