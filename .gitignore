@@ -18,6 +18,8 @@ out/
 # IDE
 .idea/
 .vscode/
+.trae/
+.history/
 *.swp
 *.swo
 
