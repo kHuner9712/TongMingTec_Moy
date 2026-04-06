@@ -47,6 +47,15 @@ describe('AuthService', () => {
     },
   };
 
+  const createMockQueryBuilder = () => {
+    const qb: any = {
+      innerJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn(),
+    };
+    return qb;
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -67,11 +76,7 @@ describe('AuthService', () => {
         {
           provide: getRepositoryToken(RolePermission),
           useValue: {
-            createQueryBuilder: jest.fn(() => ({
-              innerJoinAndSelect: jest.fn().mockReturnThis(),
-              where: jest.fn().mockReturnThis(),
-              getMany: jest.fn(),
-            })),
+            createQueryBuilder: jest.fn(createMockQueryBuilder),
           },
         },
         {
@@ -108,7 +113,10 @@ describe('AuthService', () => {
       userRepository.findOne.mockResolvedValue(mockUser);
       jest.spyOn(bcrypt, 'compare').mockResolvedValue(true as never);
       userRoleRepository.find.mockResolvedValue([mockUserRole]);
-      rolePermissionRepository.createQueryBuilder().getMany.mockResolvedValue([mockRolePermission]);
+      
+      const mockQb = createMockQueryBuilder();
+      mockQb.getMany.mockResolvedValue([mockRolePermission]);
+      rolePermissionRepository.createQueryBuilder.mockReturnValue(mockQb);
 
       const result = await service.login({
         username: 'testuser',
@@ -155,7 +163,10 @@ describe('AuthService', () => {
       jwtService.verify.mockReturnValue({ sub: 'user-uuid-123', orgId: 'org-uuid-123' });
       userRepository.findOne.mockResolvedValue(mockUser);
       userRoleRepository.find.mockResolvedValue([mockUserRole]);
-      rolePermissionRepository.createQueryBuilder().getMany.mockResolvedValue([mockRolePermission]);
+      
+      const mockQb = createMockQueryBuilder();
+      mockQb.getMany.mockResolvedValue([mockRolePermission]);
+      rolePermissionRepository.createQueryBuilder.mockReturnValue(mockQb);
 
       const result = await service.refresh({ refreshToken: 'valid-refresh-token' });
 

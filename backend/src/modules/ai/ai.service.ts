@@ -37,7 +37,6 @@ export class AiService {
       },
       status: AITaskStatus.PENDING,
       conversationId,
-      createdBy: userId,
     });
 
     const saved = await this.aiTaskRepository.save(task);
@@ -61,7 +60,7 @@ export class AiService {
 
       await this.aiTaskRepository.update(taskId, {
         status: AITaskStatus.COMPLETED,
-        outputPayload,
+        outputPayload: outputPayload as any,
       });
     } catch (error: any) {
       await this.aiTaskRepository.update(taskId, {
