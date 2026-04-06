@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Table,
   Button,
@@ -14,27 +14,33 @@ import {
   Drawer,
   Timeline,
   DatePicker,
-} from 'antd';
-import { PlusOutlined, EyeOutlined, UserSwitchOutlined, SyncOutlined } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { leadApi, FollowUpDto } from '../services/lead';
-import { Lead, LeadStatus, CreateLeadDto, LeadFollowUp } from '../types';
-import dayjs from 'dayjs';
+} from "antd";
+import {
+  PlusOutlined,
+  EyeOutlined,
+  UserSwitchOutlined,
+  SyncOutlined,
+} from "@ant-design/icons";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { leadApi, FollowUpDto } from "../services/lead";
+import { Lead, LeadStatus, CreateLeadDto, LeadFollowUp } from "../types";
+import UserSelect from "../components/UserSelect";
+import dayjs from "dayjs";
 
 const STATUS_CONFIG: Record<LeadStatus, { color: string; text: string }> = {
-  new: { color: 'blue', text: '新线索' },
-  assigned: { color: 'cyan', text: '已分配' },
-  following: { color: 'green', text: '跟进中' },
-  converted: { color: 'purple', text: '已转化' },
-  invalid: { color: 'red', text: '无效' },
+  new: { color: "blue", text: "新线索" },
+  assigned: { color: "cyan", text: "已分配" },
+  following: { color: "green", text: "跟进中" },
+  converted: { color: "purple", text: "已转化" },
+  invalid: { color: "red", text: "无效" },
 };
 
 const FOLLOW_TYPE_CONFIG: Record<string, string> = {
-  call: '电话',
-  wechat: '微信',
-  email: '邮件',
-  meeting: '会议',
-  manual: '手动',
+  call: "电话",
+  wechat: "微信",
+  email: "邮件",
+  meeting: "会议",
+  manual: "手动",
 };
 
 export default function Leads() {
@@ -53,26 +59,26 @@ export default function Leads() {
   const [followUpForm] = Form.useForm();
 
   const { data, isLoading } = useQuery(
-    ['leads', page, pageSize, statusFilter],
+    ["leads", page, pageSize, statusFilter],
     () => leadApi.list({ page, page_size: pageSize, status: statusFilter }),
     { keepPreviousData: true },
   );
 
   const { data: leadDetail, refetch: refetchLeadDetail } = useQuery(
-    ['lead', selectedLead?.id],
+    ["lead", selectedLead?.id],
     () => leadApi.get(selectedLead!.id),
     { enabled: !!selectedLead && isDetailDrawerOpen },
   );
 
   const createMutation = useMutation(leadApi.create, {
     onSuccess: () => {
-      message.success('创建成功');
+      message.success("创建成功");
       setIsCreateModalOpen(false);
       createForm.resetFields();
-      queryClient.invalidateQueries(['leads']);
+      queryClient.invalidateQueries(["leads"]);
     },
     onError: (error: any) => {
-      message.error(error?.message || '创建失败');
+      message.error(error?.message || "创建失败");
     },
   });
 
@@ -81,45 +87,47 @@ export default function Leads() {
       leadApi.assign(data.id, data.ownerUserId, data.version),
     {
       onSuccess: () => {
-        message.success('分配成功');
+        message.success("分配成功");
         setIsAssignModalOpen(false);
         assignForm.resetFields();
-        queryClient.invalidateQueries(['leads']);
+        queryClient.invalidateQueries(["leads"]);
       },
       onError: (error: any) => {
-        message.error(error?.message || '分配失败');
+        message.error(error?.message || "分配失败");
       },
     },
   );
 
   const followUpMutation = useMutation(
-    (data: { id: string; data: FollowUpDto }) => leadApi.addFollowUp(data.id, data.data),
+    (data: { id: string; data: FollowUpDto }) =>
+      leadApi.addFollowUp(data.id, data.data),
     {
       onSuccess: () => {
-        message.success('跟进记录已添加');
+        message.success("跟进记录已添加");
         setIsFollowUpModalOpen(false);
         followUpForm.resetFields();
-        queryClient.invalidateQueries(['leads']);
+        queryClient.invalidateQueries(["leads"]);
         if (selectedLead) {
           refetchLeadDetail();
         }
       },
       onError: (error: any) => {
-        message.error(error?.message || '添加失败');
+        message.error(error?.message || "添加失败");
       },
     },
   );
 
   const convertMutation = useMutation(
-    (data: { id: string; version: number }) => leadApi.convert(data.id, data.version),
+    (data: { id: string; version: number }) =>
+      leadApi.convert(data.id, data.version),
     {
       onSuccess: () => {
-        message.success('转化成功，已创建客户和商机');
+        message.success("转化成功，已创建客户和商机");
         setIsConvertModalOpen(false);
-        queryClient.invalidateQueries(['leads']);
+        queryClient.invalidateQueries(["leads"]);
       },
       onError: (error: any) => {
-        message.error(error?.message || '转化失败');
+        message.error(error?.message || "转化失败");
       },
     },
   );
@@ -190,38 +198,57 @@ export default function Leads() {
   };
 
   const columns = [
-    { title: '姓名', dataIndex: 'name', key: 'name' },
-    { title: '手机', dataIndex: 'mobile', key: 'mobile' },
-    { title: '邮箱', dataIndex: 'email', key: 'email' },
-    { title: '公司', dataIndex: 'companyName', key: 'companyName' },
-    { title: '来源', dataIndex: 'source', key: 'source' },
-    { title: '负责人', dataIndex: 'ownerUserName', key: 'ownerUserName' },
+    { title: "姓名", dataIndex: "name", key: "name" },
+    { title: "手机", dataIndex: "mobile", key: "mobile" },
+    { title: "邮箱", dataIndex: "email", key: "email" },
+    { title: "公司", dataIndex: "companyName", key: "companyName" },
+    { title: "来源", dataIndex: "source", key: "source" },
+    { title: "负责人", dataIndex: "ownerUserName", key: "ownerUserName" },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      title: "状态",
+      dataIndex: "status",
+      key: "status",
       render: (v: LeadStatus) => (
         <Tag color={STATUS_CONFIG[v]?.color}>{STATUS_CONFIG[v]?.text || v}</Tag>
       ),
     },
-    { title: '评分', dataIndex: 'score', key: 'score' },
+    { title: "评分", dataIndex: "score", key: "score" },
     {
-      title: '操作',
-      key: 'action',
+      title: "操作",
+      key: "action",
       width: 280,
       render: (_: any, record: Lead) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetailDrawer(record)}>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => openDetailDrawer(record)}
+          >
             详情
           </Button>
-          <Button type="link" size="small" icon={<UserSwitchOutlined />} onClick={() => openAssignModal(record)}>
+          <Button
+            type="link"
+            size="small"
+            icon={<UserSwitchOutlined />}
+            onClick={() => openAssignModal(record)}
+          >
             分配
           </Button>
-          <Button type="link" size="small" onClick={() => openFollowUpModal(record)}>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => openFollowUpModal(record)}
+          >
             跟进
           </Button>
-          {record.status === 'following' && (
-            <Button type="link" size="small" icon={<SyncOutlined />} onClick={() => openConvertModal(record)}>
+          {record.status === "following" && (
+            <Button
+              type="link"
+              size="small"
+              icon={<SyncOutlined />}
+              onClick={() => openConvertModal(record)}
+            >
               转化
             </Button>
           )}
@@ -232,7 +259,13 @@ export default function Leads() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <Space>
           <Select
             placeholder="状态筛选"
@@ -248,7 +281,11 @@ export default function Leads() {
             ))}
           </Select>
         </Space>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsCreateModalOpen(true)}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setIsCreateModalOpen(true)}
+        >
           新建线索
         </Button>
       </div>
@@ -279,7 +316,11 @@ export default function Leads() {
         confirmLoading={createMutation.isLoading}
       >
         <Form form={createForm} layout="vertical">
-          <Form.Item name="name" label="姓名" rules={[{ required: true, message: '请输入姓名' }]}>
+          <Form.Item
+            name="name"
+            label="姓名"
+            rules={[{ required: true, message: "请输入姓名" }]}
+          >
             <Input maxLength={128} />
           </Form.Item>
           <Form.Item name="mobile" label="手机">
@@ -311,8 +352,12 @@ export default function Leads() {
         confirmLoading={assignMutation.isLoading}
       >
         <Form form={assignForm} layout="vertical">
-          <Form.Item name="ownerUserId" label="负责人" rules={[{ required: true, message: '请选择负责人' }]}>
-            <Input placeholder="请输入负责人ID（后续改为用户选择器）" />
+          <Form.Item
+            name="ownerUserId"
+            label="负责人"
+            rules={[{ required: true, message: "请选择负责人" }]}
+          >
+            <UserSelect placeholder="选择负责人" />
           </Form.Item>
         </Form>
       </Modal>
@@ -334,11 +379,15 @@ export default function Leads() {
               ))}
             </Select>
           </Form.Item>
-          <Form.Item name="content" label="跟进内容" rules={[{ required: true, message: '请输入跟进内容' }]}>
+          <Form.Item
+            name="content"
+            label="跟进内容"
+            rules={[{ required: true, message: "请输入跟进内容" }]}
+          >
             <Input.TextArea rows={3} />
           </Form.Item>
           <Form.Item name="nextActionAt" label="下次跟进时间">
-            <DatePicker showTime style={{ width: '100%' }} />
+            <DatePicker showTime style={{ width: "100%" }} />
           </Form.Item>
         </Form>
       </Modal>
@@ -365,25 +414,41 @@ export default function Leads() {
           <div>
             <Card title="基本信息" style={{ marginBottom: 16 }}>
               <Descriptions column={2} bordered size="small">
-                <Descriptions.Item label="姓名">{leadDetail.name}</Descriptions.Item>
-                <Descriptions.Item label="手机">{leadDetail.mobile || '-'}</Descriptions.Item>
-                <Descriptions.Item label="邮箱">{leadDetail.email || '-'}</Descriptions.Item>
-                <Descriptions.Item label="公司">{leadDetail.companyName || '-'}</Descriptions.Item>
-                <Descriptions.Item label="来源">{leadDetail.source || '-'}</Descriptions.Item>
+                <Descriptions.Item label="姓名">
+                  {leadDetail.name}
+                </Descriptions.Item>
+                <Descriptions.Item label="手机">
+                  {leadDetail.mobile || "-"}
+                </Descriptions.Item>
+                <Descriptions.Item label="邮箱">
+                  {leadDetail.email || "-"}
+                </Descriptions.Item>
+                <Descriptions.Item label="公司">
+                  {leadDetail.companyName || "-"}
+                </Descriptions.Item>
+                <Descriptions.Item label="来源">
+                  {leadDetail.source || "-"}
+                </Descriptions.Item>
                 <Descriptions.Item label="状态">
                   <Tag color={STATUS_CONFIG[leadDetail.status]?.color}>
                     {STATUS_CONFIG[leadDetail.status]?.text}
                   </Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="评分">{leadDetail.score || '-'}</Descriptions.Item>
-                <Descriptions.Item label="负责人">{leadDetail.ownerUserName || '-'}</Descriptions.Item>
+                <Descriptions.Item label="评分">
+                  {leadDetail.score || "-"}
+                </Descriptions.Item>
+                <Descriptions.Item label="负责人">
+                  {leadDetail.ownerUserName || "-"}
+                </Descriptions.Item>
                 <Descriptions.Item label="创建时间">
-                  {dayjs(leadDetail.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                  {dayjs(leadDetail.createdAt).format("YYYY-MM-DD HH:mm:ss")}
                 </Descriptions.Item>
                 <Descriptions.Item label="最后跟进">
                   {leadDetail.lastFollowUpAt
-                    ? dayjs(leadDetail.lastFollowUpAt).format('YYYY-MM-DD HH:mm:ss')
-                    : '-'}
+                    ? dayjs(leadDetail.lastFollowUpAt).format(
+                        "YYYY-MM-DD HH:mm:ss",
+                      )
+                    : "-"}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -392,17 +457,21 @@ export default function Leads() {
               {leadDetail.followUps && leadDetail.followUps.length > 0 ? (
                 <Timeline
                   items={leadDetail.followUps.map((item: LeadFollowUp) => ({
-                    color: 'blue',
+                    color: "blue",
                     children: (
                       <div>
                         <div style={{ fontWeight: 500 }}>
-                          {FOLLOW_TYPE_CONFIG[item.followType || 'manual'] || '跟进'} -{' '}
-                          {dayjs(item.createdAt).format('YYYY-MM-DD HH:mm')}
+                          {FOLLOW_TYPE_CONFIG[item.followType || "manual"] ||
+                            "跟进"}{" "}
+                          - {dayjs(item.createdAt).format("YYYY-MM-DD HH:mm")}
                         </div>
                         <div>{item.content}</div>
                         {item.nextActionAt && (
-                          <div style={{ color: '#999', fontSize: 12 }}>
-                            下次跟进: {dayjs(item.nextActionAt).format('YYYY-MM-DD HH:mm')}
+                          <div style={{ color: "#999", fontSize: 12 }}>
+                            下次跟进:{" "}
+                            {dayjs(item.nextActionAt).format(
+                              "YYYY-MM-DD HH:mm",
+                            )}
                           </div>
                         )}
                       </div>
@@ -410,7 +479,11 @@ export default function Leads() {
                   }))}
                 />
               ) : (
-                <div style={{ color: '#999', textAlign: 'center', padding: 20 }}>暂无跟进记录</div>
+                <div
+                  style={{ color: "#999", textAlign: "center", padding: 20 }}
+                >
+                  暂无跟进记录
+                </div>
               )}
             </Card>
           </div>

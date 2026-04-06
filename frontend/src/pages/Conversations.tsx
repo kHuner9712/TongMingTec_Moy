@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 import {
   Table,
   Button,
@@ -15,45 +15,56 @@ import {
   List,
   Avatar,
   Rate,
-} from 'antd';
+} from "antd";
 import {
   EyeOutlined,
   UserSwitchOutlined,
   SwapOutlined,
   CloseCircleOutlined,
   SendOutlined,
-} from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { conversationApi, SendMessageDto } from '../services/conversation';
-import { Conversation, ConversationStatus, ConversationMessage } from '../types';
-import dayjs from 'dayjs';
+} from "@ant-design/icons";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { conversationApi, SendMessageDto } from "../services/conversation";
+import {
+  Conversation,
+  ConversationStatus,
+  ConversationMessage,
+} from "../types";
+import UserSelect from "../components/UserSelect";
+import dayjs from "dayjs";
 
-const STATUS_CONFIG: Record<ConversationStatus, { color: string; text: string }> = {
-  queued: { color: 'default', text: '排队中' },
-  waiting: { color: 'orange', text: '等待中' },
-  active: { color: 'green', text: '进行中' },
-  paused: { color: 'blue', text: '暂停' },
-  closed: { color: 'red', text: '已关闭' },
+const STATUS_CONFIG: Record<
+  ConversationStatus,
+  { color: string; text: string }
+> = {
+  queued: { color: "default", text: "排队中" },
+  waiting: { color: "orange", text: "等待中" },
+  active: { color: "green", text: "进行中" },
+  paused: { color: "blue", text: "暂停" },
+  closed: { color: "red", text: "已关闭" },
 };
 
 const SENDER_TYPE_CONFIG: Record<string, { color: string; text: string }> = {
-  customer: { color: 'blue', text: '客户' },
-  agent: { color: 'green', text: '客服' },
-  ai: { color: 'purple', text: 'AI' },
-  system: { color: 'default', text: '系统' },
+  customer: { color: "blue", text: "客户" },
+  agent: { color: "green", text: "客服" },
+  ai: { color: "purple", text: "AI" },
+  system: { color: "default", text: "系统" },
 };
 
 export default function Conversations() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [statusFilter, setStatusFilter] = useState<ConversationStatus | undefined>();
+  const [statusFilter, setStatusFilter] = useState<
+    ConversationStatus | undefined
+  >();
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
   const [isAcceptModalOpen, setIsAcceptModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [messageInput, setMessageInput] = useState('');
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
+  const [messageInput, setMessageInput] = useState("");
   const [messagePage, setMessagePage] = useState(1);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [acceptForm] = Form.useForm();
@@ -61,39 +72,45 @@ export default function Conversations() {
   const [closeForm] = Form.useForm();
 
   const { data, isLoading } = useQuery(
-    ['conversations', page, pageSize, statusFilter],
-    () => conversationApi.list({ page, page_size: pageSize, status: statusFilter }),
+    ["conversations", page, pageSize, statusFilter],
+    () =>
+      conversationApi.list({ page, page_size: pageSize, status: statusFilter }),
     { keepPreviousData: true },
   );
 
   const { data: conversationDetail } = useQuery(
-    ['conversation', selectedConversation?.id],
+    ["conversation", selectedConversation?.id],
     () => conversationApi.get(selectedConversation!.id),
     { enabled: !!selectedConversation && isDetailDrawerOpen },
   );
 
   const { data: messagesData, refetch: refetchMessages } = useQuery(
-    ['messages', selectedConversation?.id, messagePage],
-    () => conversationApi.getMessages(selectedConversation!.id, { page: messagePage, page_size: 50 }),
+    ["messages", selectedConversation?.id, messagePage],
+    () =>
+      conversationApi.getMessages(selectedConversation!.id, {
+        page: messagePage,
+        page_size: 50,
+      }),
     { enabled: !!selectedConversation && isDetailDrawerOpen },
   );
 
   useEffect(() => {
     if (messagesData?.items) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messagesData]);
 
   const sendMessageMutation = useMutation(
-    (data: { id: string; data: SendMessageDto }) => conversationApi.sendMessage(data.id, data.data),
+    (data: { id: string; data: SendMessageDto }) =>
+      conversationApi.sendMessage(data.id, data.data),
     {
       onSuccess: () => {
-        setMessageInput('');
+        setMessageInput("");
         refetchMessages();
-        queryClient.invalidateQueries(['conversations']);
+        queryClient.invalidateQueries(["conversations"]);
       },
       onError: (error: any) => {
-        message.error(error?.message || '发送失败');
+        message.error(error?.message || "发送失败");
       },
     },
   );
@@ -103,29 +120,39 @@ export default function Conversations() {
       conversationApi.accept(data.id, data.assigneeUserId, data.version),
     {
       onSuccess: () => {
-        message.success('接入成功');
+        message.success("接入成功");
         setIsAcceptModalOpen(false);
         acceptForm.resetFields();
-        queryClient.invalidateQueries(['conversations']);
+        queryClient.invalidateQueries(["conversations"]);
       },
       onError: (error: any) => {
-        message.error(error?.message || '接入失败');
+        message.error(error?.message || "接入失败");
       },
     },
   );
 
   const transferMutation = useMutation(
-    (data: { id: string; targetUserId: string; reason?: string; version: number }) =>
-      conversationApi.transfer(data.id, data.targetUserId, data.reason, data.version),
+    (data: {
+      id: string;
+      targetUserId: string;
+      reason?: string;
+      version: number;
+    }) =>
+      conversationApi.transfer(
+        data.id,
+        data.targetUserId,
+        data.reason,
+        data.version,
+      ),
     {
       onSuccess: () => {
-        message.success('转接成功');
+        message.success("转接成功");
         setIsTransferModalOpen(false);
         transferForm.resetFields();
-        queryClient.invalidateQueries(['conversations']);
+        queryClient.invalidateQueries(["conversations"]);
       },
       onError: (error: any) => {
-        message.error(error?.message || '转接失败');
+        message.error(error?.message || "转接失败");
       },
     },
   );
@@ -135,14 +162,14 @@ export default function Conversations() {
       conversationApi.close(data.id, data.closeReason, data.version),
     {
       onSuccess: () => {
-        message.success('关闭成功');
+        message.success("关闭成功");
         setIsCloseModalOpen(false);
         closeForm.resetFields();
-        queryClient.invalidateQueries(['conversations']);
+        queryClient.invalidateQueries(["conversations"]);
         setIsDetailDrawerOpen(false);
       },
       onError: (error: any) => {
-        message.error(error?.message || '关闭失败');
+        message.error(error?.message || "关闭失败");
       },
     },
   );
@@ -152,7 +179,7 @@ export default function Conversations() {
     sendMessageMutation.mutate({
       id: selectedConversation.id,
       data: {
-        messageType: 'text',
+        messageType: "text",
         content: messageInput.trim(),
         version: selectedConversation.version,
       },
@@ -221,49 +248,69 @@ export default function Conversations() {
   };
 
   const columns = [
-    { title: '渠道', dataIndex: 'channelName', key: 'channelName' },
-    { title: '客户', dataIndex: 'customerName', key: 'customerName' },
-    { title: '负责人', dataIndex: 'assigneeUserName', key: 'assigneeUserName' },
+    { title: "渠道", dataIndex: "channelName", key: "channelName" },
+    { title: "客户", dataIndex: "customerName", key: "customerName" },
+    { title: "负责人", dataIndex: "assigneeUserName", key: "assigneeUserName" },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
+      title: "状态",
+      dataIndex: "status",
+      key: "status",
       render: (v: ConversationStatus) => (
         <Tag color={STATUS_CONFIG[v]?.color}>{STATUS_CONFIG[v]?.text || v}</Tag>
       ),
     },
     {
-      title: '评分',
-      dataIndex: 'ratingScore',
-      key: 'ratingScore',
-      render: (v: number) => (v ? <Rate disabled defaultValue={v} /> : '-'),
+      title: "评分",
+      dataIndex: "ratingScore",
+      key: "ratingScore",
+      render: (v: number) => (v ? <Rate disabled defaultValue={v} /> : "-"),
     },
     {
-      title: '创建时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      render: (v: string) => dayjs(v).format('YYYY-MM-DD HH:mm'),
+      title: "创建时间",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (v: string) => dayjs(v).format("YYYY-MM-DD HH:mm"),
     },
     {
-      title: '操作',
-      key: 'action',
+      title: "操作",
+      key: "action",
       width: 280,
       render: (_: any, record: Conversation) => (
         <Space size="small">
-          <Button type="link" size="small" icon={<EyeOutlined />} onClick={() => openDetailDrawer(record)}>
+          <Button
+            type="link"
+            size="small"
+            icon={<EyeOutlined />}
+            onClick={() => openDetailDrawer(record)}
+          >
             详情
           </Button>
-          {record.status === 'queued' && (
-            <Button type="link" size="small" icon={<UserSwitchOutlined />} onClick={() => openAcceptModal(record)}>
+          {record.status === "queued" && (
+            <Button
+              type="link"
+              size="small"
+              icon={<UserSwitchOutlined />}
+              onClick={() => openAcceptModal(record)}
+            >
               接入
             </Button>
           )}
-          {record.status === 'active' && (
+          {record.status === "active" && (
             <>
-              <Button type="link" size="small" icon={<SwapOutlined />} onClick={() => openTransferModal(record)}>
+              <Button
+                type="link"
+                size="small"
+                icon={<SwapOutlined />}
+                onClick={() => openTransferModal(record)}
+              >
                 转接
               </Button>
-              <Button type="link" size="small" icon={<CloseCircleOutlined />} onClick={() => openCloseModal(record)}>
+              <Button
+                type="link"
+                size="small"
+                icon={<CloseCircleOutlined />}
+                onClick={() => openCloseModal(record)}
+              >
                 关闭
               </Button>
             </>
@@ -275,7 +322,13 @@ export default function Conversations() {
 
   return (
     <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <Space>
           <Select
             placeholder="状态筛选"
@@ -319,8 +372,12 @@ export default function Conversations() {
         confirmLoading={acceptMutation.isLoading}
       >
         <Form form={acceptForm} layout="vertical">
-          <Form.Item name="assigneeUserId" label="负责人" rules={[{ required: true, message: '请输入负责人ID' }]}>
-            <Input placeholder="请输入负责人ID（后续改为用户选择器）" />
+          <Form.Item
+            name="assigneeUserId"
+            label="负责人"
+            rules={[{ required: true, message: "请选择负责人" }]}
+          >
+            <UserSelect placeholder="选择负责人" />
           </Form.Item>
         </Form>
       </Modal>
@@ -333,8 +390,12 @@ export default function Conversations() {
         confirmLoading={transferMutation.isLoading}
       >
         <Form form={transferForm} layout="vertical">
-          <Form.Item name="targetUserId" label="目标负责人" rules={[{ required: true, message: '请输入目标负责人ID' }]}>
-            <Input placeholder="请输入目标负责人ID（后续改为用户选择器）" />
+          <Form.Item
+            name="targetUserId"
+            label="目标负责人"
+            rules={[{ required: true, message: "请选择目标负责人" }]}
+          >
+            <UserSelect placeholder="选择目标负责人" />
           </Form.Item>
           <Form.Item name="reason" label="转接原因">
             <Input.TextArea rows={2} />
@@ -367,46 +428,63 @@ export default function Conversations() {
           <div>
             <Card style={{ marginBottom: 16 }}>
               <Descriptions column={2} bordered size="small">
-                <Descriptions.Item label="渠道">{conversationDetail.channelName || '-'}</Descriptions.Item>
-                <Descriptions.Item label="客户">{conversationDetail.customerName || '-'}</Descriptions.Item>
-                <Descriptions.Item label="负责人">{conversationDetail.assigneeUserName || '-'}</Descriptions.Item>
+                <Descriptions.Item label="渠道">
+                  {conversationDetail.channelName || "-"}
+                </Descriptions.Item>
+                <Descriptions.Item label="客户">
+                  {conversationDetail.customerName || "-"}
+                </Descriptions.Item>
+                <Descriptions.Item label="负责人">
+                  {conversationDetail.assigneeUserName || "-"}
+                </Descriptions.Item>
                 <Descriptions.Item label="状态">
                   <Tag color={STATUS_CONFIG[conversationDetail.status]?.color}>
                     {STATUS_CONFIG[conversationDetail.status]?.text}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="创建时间">
-                  {dayjs(conversationDetail.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                  {dayjs(conversationDetail.createdAt).format(
+                    "YYYY-MM-DD HH:mm:ss",
+                  )}
                 </Descriptions.Item>
                 <Descriptions.Item label="评分">
                   {conversationDetail.ratingScore ? (
-                    <Rate disabled defaultValue={conversationDetail.ratingScore} />
+                    <Rate
+                      disabled
+                      defaultValue={conversationDetail.ratingScore}
+                    />
                   ) : (
-                    '-'
+                    "-"
                   )}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
 
             <Card title="消息记录" style={{ marginBottom: 16 }}>
-              <div style={{ height: 400, overflow: 'auto', marginBottom: 16 }}>
+              <div style={{ height: 400, overflow: "auto", marginBottom: 16 }}>
                 <List
                   dataSource={messagesData?.items || []}
                   renderItem={(item: ConversationMessage) => (
-                    <List.Item style={{ border: 'none', padding: '8px 0' }}>
+                    <List.Item style={{ border: "none", padding: "8px 0" }}>
                       <div
                         style={{
-                          display: 'flex',
-                          width: '100%',
-                          justifyContent: item.direction === 'outbound' ? 'flex-end' : 'flex-start',
+                          display: "flex",
+                          width: "100%",
+                          justifyContent:
+                            item.direction === "outbound"
+                              ? "flex-end"
+                              : "flex-start",
                         }}
                       >
                         <div
                           style={{
-                            maxWidth: '70%',
-                            display: 'flex',
-                            flexDirection: item.direction === 'outbound' ? 'row-reverse' : 'row',
-                            alignItems: 'flex-start',
+                            maxWidth: "70%",
+                            display: "flex",
+                            flexDirection:
+                              item.direction === "outbound"
+                                ? "row-reverse"
+                                : "row",
+                            alignItems: "flex-start",
                             gap: 8,
                           }}
                         >
@@ -414,25 +492,37 @@ export default function Conversations() {
                             size="small"
                             style={{
                               backgroundColor:
-                                SENDER_TYPE_CONFIG[item.senderType]?.color === 'green'
-                                  ? '#52c41a'
-                                  : SENDER_TYPE_CONFIG[item.senderType]?.color === 'purple'
-                                  ? '#722ed1'
-                                  : '#1890ff',
+                                SENDER_TYPE_CONFIG[item.senderType]?.color ===
+                                "green"
+                                  ? "#52c41a"
+                                  : SENDER_TYPE_CONFIG[item.senderType]
+                                        ?.color === "purple"
+                                    ? "#722ed1"
+                                    : "#1890ff",
                             }}
                           >
-                            {item.senderName?.[0] || '?'}
+                            {item.senderName?.[0] || "?"}
                           </Avatar>
                           <div>
-                            <div style={{ fontSize: 12, color: '#999', marginBottom: 4 }}>
-                              {item.senderName || SENDER_TYPE_CONFIG[item.senderType]?.text} ·{' '}
-                              {dayjs(item.sentAt).format('HH:mm')}
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: "#999",
+                                marginBottom: 4,
+                              }}
+                            >
+                              {item.senderName ||
+                                SENDER_TYPE_CONFIG[item.senderType]?.text}{" "}
+                              · {dayjs(item.sentAt).format("HH:mm")}
                             </div>
                             <div
                               style={{
-                                padding: '8px 12px',
+                                padding: "8px 12px",
                                 borderRadius: 8,
-                                backgroundColor: item.direction === 'outbound' ? '#e6f7ff' : '#f5f5f5',
+                                backgroundColor:
+                                  item.direction === "outbound"
+                                    ? "#e6f7ff"
+                                    : "#f5f5f5",
                               }}
                             >
                               {item.content}
@@ -446,8 +536,8 @@ export default function Conversations() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {conversationDetail.status === 'active' && (
-                <div style={{ display: 'flex', gap: 8 }}>
+              {conversationDetail.status === "active" && (
+                <div style={{ display: "flex", gap: 8 }}>
                   <Input.TextArea
                     value={messageInput}
                     onChange={(e) => setMessageInput(e.target.value)}

@@ -31,6 +31,7 @@ import {
   OpportunityResult,
   CreateOpportunityDto,
 } from "../types";
+import CustomerSelect from "../components/CustomerSelect";
 import dayjs from "dayjs";
 
 const STAGE_CONFIG: Record<OpportunityStage, { text: string; color: string }> =
@@ -370,9 +371,9 @@ export default function Opportunities() {
           <Form.Item
             name="customerId"
             label="客户"
-            rules={[{ required: true, message: "请输入客户ID" }]}
+            rules={[{ required: true, message: "请选择客户" }]}
           >
-            <Input placeholder="请输入客户ID（后续改为客户选择器）" />
+            <CustomerSelect placeholder="选择客户" />
           </Form.Item>
           <Form.Item
             name="name"
