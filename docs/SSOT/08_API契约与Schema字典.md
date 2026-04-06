@@ -8,6 +8,13 @@
 - 请求/响应 Schema 命名
 - 并发、幂等、事务、审计规则
 
+### 1.1 实现级展开入口
+- `08` 主文继续承担 API / WS / Schema 的唯一主链索引与全局规则。
+- 终局实现阶段的最终 contract input 统一以下列子文档为准：
+  - [08A_原子API与Schema展开.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/08A_原子API与Schema展开.md)
+  - [08B_原子Schema字段字典.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/08B_原子Schema字段字典.md)
+- 本文后续章节中的区间 API、资源族级 schema 仅保留索引意义，不再作为 codegen、contract test、前后端联调的最终输入。
+
 ## 2. 全局强约束
 - 统一前缀：`/api/v1`
 - 路径参数统一 `{id}`，禁止 `:id`
@@ -76,7 +83,8 @@
 - 事件：`WS-{event_name}`
 
 ### 4.1 原子 API-ID 展开规则
-- `05` 中允许使用 `API-{MOD}-{start}~{end}` 作为压缩写法，但实现阶段必须展开为原子 API-ID。
+- `08A` 中只允许使用原子 `API-{MOD}-{NNN}` 作为最终实现输入。
+- 本文中允许保留 `API-{MOD}-{start}~{end}` 作为压缩索引写法，但实现阶段必须以 `08A` 展开的原子 API-ID 为准。
 - 同一行 `Method / Path` 中的端点顺序，必须与 API-ID 顺序一一对应；禁止自行重排。
 - 若字段只写一组通用约束，则表示该约束对本区间全部原子 API-ID 生效。
 - 若字段写成 `A / B / C` 多组模式，则按 API-ID 顺序逐项对应。
@@ -107,7 +115,11 @@
   - 实时页：若 API 对应 `WS-*` 事件，页面必须接入实时刷新
 - 生成器不得发明第二套 DTO、错误码或权限命名。
 
-## 5. API 契约总表
+## 5. API 历史压缩索引（非最终实现输入）
+本节仅保留模块级 API 历史索引，便于从旧文档快速定位。
+- 最终实现输入：`08A`
+- 字段级 schema 输入：`08B`
+- 若本节与 `08A/08B` 不一致，以 `08A/08B` 为准。
 说明：
 - `权限` 为必须权限；匿名接口记 `-`
 - `数据范围` 取 `SELF/TEAM/ORG/PORTAL`
@@ -181,7 +193,11 @@
 | `bill.status.changed` | API-BILL-001~004, API-PAY-001 | `WS-bill-status-changed` | 账单状态变化 |
 | `subscription.status.changed` | API-SUB-001~004 | `WS-subscription-status-changed` | 订阅状态变化 |
 
-## 7. Schema 字典
+## 7. Schema 历史索引（非最终实现输入）
+本节仅保留旧口径的 schema 族级导航，帮助从模块入口跳转到实现级定义。
+- 最终 schema 定义：`08A` + `08B`
+- 本节中的 `SCH-XXX-*` 不得直接用于 DTO / controller / client / contract test 生成。
+
 ### 7.1 资源族 Schema
 | 资源族 | Query | Create | Update | Detail | List Response |
 | --- | --- | --- | --- | --- | --- |
@@ -215,4 +231,4 @@
 ## 9. 变更规则
 - 任何 API 变更必须至少同步：`03 -> 04 -> 08 -> 09 -> 12`。
 - 不允许在 SSOT 外维护第二套错误码、Schema 或 WebSocket 文档。
-- 新增 API 时，必须先满足 `4.1~4.3` 的原子展开条件，再追加到 `05` 的主表中。
+- 新增 API 时，必须先满足 `4.1~4.3` 的原子展开条件，并同步回写 `08A/08B -> 09/09A -> 12/12A -> 04`。
