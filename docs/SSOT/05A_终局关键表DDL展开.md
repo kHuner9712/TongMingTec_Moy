@@ -1,7 +1,7 @@
 # MOY 终局关键表 DDL 级展开
 
 ## 1. 文档定位
-本文档是 [05_对象模型与数据库设计.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/05_对象模型与数据库设计.md) 的实现级子文档。`05` 继续承担主链目录与建模规则入口，本文负责把终局关键表补到 migration-ready / DDL-ready。
+本文档是 [05_对象模型与数据库设计.md](./05_对象模型与数据库设计.md) 的实现级子文档。`05` 继续承担主链目录与建模规则入口，本文负责把终局关键表补到 migration-ready / DDL-ready。
 
 状态约定：
 - `status=implementation-ready`：可直接驱动 migration / ORM / repository 生成。
@@ -69,7 +69,7 @@
 
 ## 3. 跨表统一约束
 - `org_id` 是所有租户级表的默认复合索引首列；常用查询索引统一优先 `org_id + status/owner/time`。
-- 所有状态字段必须与 [06_状态机总表.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/06_状态机总表.md) 对齐；不允许在 DDL 中定义额外终态。
+- 所有状态字段必须与 [06_状态机总表.md](./06_状态机总表.md) 对齐；不允许在 DDL 中定义额外终态。
 - 财务与审计相关表禁止物理删除；错误修正通过补偿流水或回滚批次完成，不通过硬删“回到过去”。
 - S1 租户初始化最少写入：`organizations/departments/users/roles/permissions/user_roles/role_permissions/channels`。
 - S3 商业化初始化最少写入：`plans/add_ons/deployment_profiles`；S4 国际化/私有化初始化最少写入：`locale_resources/region_policies/license_tokens`。

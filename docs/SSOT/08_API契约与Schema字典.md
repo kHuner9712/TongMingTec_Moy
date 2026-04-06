@@ -10,10 +10,10 @@
 
 ### 1.1 实现级展开入口
 - `08` 主文继续承担 API / WS / Schema 的唯一主链索引与全局规则。
-- 终局实现阶段的最终 contract input 统一以下列子文档为准：
-  - [08A_原子API与Schema展开.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/08A_原子API与Schema展开.md)
-  - [08B_原子Schema字段字典.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/08B_原子Schema字段字典.md)
-- 本文后续章节中的区间 API、资源族级 schema 仅保留索引意义，不再作为 codegen、contract test、前后端联调的最终输入。
+- 终局实现阶段的契约层最终实现输入统一以下列子文档为准：
+  - [08A_原子API与Schema展开.md](./08A_原子API与Schema展开.md)
+  - [08B_原子Schema字段字典.md](./08B_原子Schema字段字典.md)
+- 本文后续章节中的区间 API、资源族级 schema 仅保留索引意义，不再作为 codegen、contract test、前后端联调的最终实现输入。
 
 ## 2. 全局强约束
 - 统一前缀：`/api/v1`
