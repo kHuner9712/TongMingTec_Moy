@@ -68,7 +68,7 @@ describe('UserSelect', () => {
     const option = screen.getByText('张三');
     await userEvent.click(option);
     
-    expect(handleChange).toHaveBeenCalledWith('1');
+    expect(handleChange).toHaveBeenCalledWith('1', expect.any(Object));
   });
 
   it('显示已选中的值', () => {
