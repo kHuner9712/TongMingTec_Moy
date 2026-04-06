@@ -1,12 +1,12 @@
 # MOY 原子 API 与 Schema 展开
 
 ## 1. 文档定位
-本文档是 [08_API契约与Schema字典.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/08_API契约与Schema字典.md) 的实现级子文档。
+本文档是 [08_API契约与Schema字典.md](./08_API契约与Schema字典.md) 的实现级子文档。
 
 约束：
-- 仅本文中的原子 `API-ID` 与 `SCH-*` 可以作为 codegen / 前后端联调 / contract test 的最终输入。
+- 仅本文中的原子 `API-ID` 与 `SCH-*` 可以作为 codegen / 前后端联调 / contract test 的最终实现输入。
 - `08` 主文中的区间 API、资源族级 schema 仅保留为索引说明，不再构成实现输入。
-- 模块级字段化 schema 字典见 [08B_原子Schema字段字典.md](C:/Users/15864/Desktop/TongMingTech_Moy/docs/SSOT/08B_原子Schema字段字典.md)。
+- 模块级字段化 schema 字典见 [08B_原子Schema字段字典.md](./08B_原子Schema字段字典.md)。
 - 所有条目都继承 `introduced_in / required_in / release_scope / status`；本文默认 `status=implementation-ready`。
 
 记法：
