@@ -83,17 +83,18 @@ export class CnvService {
     }
 
     const now = new Date();
-    const updateData: Partial<Conversation> = {
-      assigneeUserId,
-      status: ConversationStatus.ACTIVE,
-      version: () => 'version + 1',
-    };
 
-    if (!conv.firstResponseAt) {
-      updateData.firstResponseAt = now;
-    }
-
-    await this.conversationRepository.update(id, updateData);
+    await this.conversationRepository
+      .createQueryBuilder()
+      .update(Conversation)
+      .set({
+        assigneeUserId,
+        status: ConversationStatus.ACTIVE,
+        firstResponseAt: conv.firstResponseAt || now,
+        version: () => 'version + 1',
+      })
+      .where('id = :id', { id })
+      .execute();
 
     return this.findConversationById(id, orgId);
   }
@@ -116,10 +117,15 @@ export class CnvService {
       throw new BadRequestException('STATUS_TRANSITION_INVALID');
     }
 
-    await this.conversationRepository.update(id, {
-      assigneeUserId: targetUserId,
-      version: () => 'version + 1',
-    });
+    await this.conversationRepository
+      .createQueryBuilder()
+      .update(Conversation)
+      .set({
+        assigneeUserId: targetUserId,
+        version: () => 'version + 1',
+      })
+      .where('id = :id', { id })
+      .execute();
 
     return this.findConversationById(id, orgId);
   }
@@ -141,12 +147,17 @@ export class CnvService {
       throw new BadRequestException('STATUS_TRANSITION_INVALID');
     }
 
-    await this.conversationRepository.update(id, {
-      status: ConversationStatus.CLOSED,
-      closeReason,
-      closedAt: new Date(),
-      version: () => 'version + 1',
-    });
+    await this.conversationRepository
+      .createQueryBuilder()
+      .update(Conversation)
+      .set({
+        status: ConversationStatus.CLOSED,
+        closeReason,
+        closedAt: new Date(),
+        version: () => 'version + 1',
+      })
+      .where('id = :id', { id })
+      .execute();
 
     return this.findConversationById(id, orgId);
   }
@@ -207,11 +218,16 @@ export class CnvService {
     await this.messageRepository.save(message);
 
     if (conv.status === ConversationStatus.QUEUED || conv.status === ConversationStatus.WAITING) {
-      await this.conversationRepository.update(conv.id, {
-        status: ConversationStatus.ACTIVE,
-        firstResponseAt: conv.firstResponseAt || new Date(),
-        version: () => 'version + 1',
-      });
+      await this.conversationRepository
+        .createQueryBuilder()
+        .update(Conversation)
+        .set({
+          status: ConversationStatus.ACTIVE,
+          firstResponseAt: conv.firstResponseAt || new Date(),
+          version: () => 'version + 1',
+        })
+        .where('id = :id', { id: conv.id })
+        .execute();
     }
 
     return message;
