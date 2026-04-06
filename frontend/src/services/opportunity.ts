@@ -7,6 +7,12 @@ import {
   PaginatedResponse,
 } from "../types";
 
+export interface OpportunitySummary {
+  total: number;
+  totalAmount: number;
+  byStage: Record<OpportunityStage, number>;
+  byResult: { won: number; lost: number };
+}
 export const opportunityApi = {
   list: async (params?: {
     page?: number;
@@ -19,6 +25,10 @@ export const opportunityApi = {
 
   get: async (id: string): Promise<Opportunity & { stageHistory: any[] }> => {
     return api.get(`/opportunities/${id}`);
+  },
+
+  getSummary: async (): Promise<OpportunitySummary> => {
+    return api.get("/opportunities/summary");
   },
 
   create: async (data: CreateOpportunityDto): Promise<Opportunity> => {

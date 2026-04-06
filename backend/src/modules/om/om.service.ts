@@ -180,4 +180,53 @@ export class OmService {
       order: { changedAt: 'DESC' },
     });
   }
+
+  async getSummary(
+    orgId: string,
+    userId: string,
+    dataScope: string,
+  ): Promise<{
+    total: number;
+    totalAmount: number;
+    byStage: Record<OpportunityStage, number>;
+    byResult: { won: number; lost: number };
+  }> {
+    const qb = this.opportunityRepository.createQueryBuilder('opp').where('opp.orgId = :orgId', { orgId });
+
+    if (dataScope === 'self') {
+      qb.andWhere('opp.ownerUserId = :userId', { userId });
+    }
+
+    const opportunities = await qb.getMany();
+
+    const byStage: Record<OpportunityStage, number> = {
+      [OpportunityStage.DISCOVERY]: 0,
+      [OpportunityStage.QUALIFICATION]: 0,
+      [OpportunityStage.PROPOSAL]: 0,
+      [OpportunityStage.NEGOTIATION]: 0,
+    };
+
+    let won = 0;
+    let lost = 0;
+    let totalAmount = 0;
+
+    for (const opp of opportunities) {
+      if (opp.result === OpportunityResult.WON) {
+        won++;
+        totalAmount += opp.amount || 0;
+      } else if (opp.result === OpportunityResult.LOST) {
+        lost++;
+      } else {
+        byStage[opp.stage]++;
+        totalAmount += opp.amount || 0;
+      }
+    }
+
+    return {
+      total: opportunities.length,
+      totalAmount,
+      byStage,
+      byResult: { won, lost },
+    };
+  }
 }

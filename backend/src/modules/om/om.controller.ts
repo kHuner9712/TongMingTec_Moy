@@ -121,6 +121,16 @@ export class OmController {
     };
   }
 
+  @Get('summary')
+  @Permissions('PERM-OM-VIEW')
+  async getSummary(
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('dataScope') dataScope: string,
+  ) {
+    return this.omService.getSummary(orgId, userId, dataScope);
+  }
+
   @Get(':id')
   @Permissions('PERM-OM-VIEW')
   async getOpportunity(

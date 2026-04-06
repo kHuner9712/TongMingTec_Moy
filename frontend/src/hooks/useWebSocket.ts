@@ -88,6 +88,18 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
       queryClient.invalidateQueries(['ai-tasks']);
     });
 
+    socket.on('opportunity.stage.changed', () => {
+      queryClient.invalidateQueries(['opportunities']);
+      queryClient.invalidateQueries(['opportunity']);
+      queryClient.invalidateQueries(['opportunity-summary']);
+    });
+
+    socket.on('opportunity.result.changed', () => {
+      queryClient.invalidateQueries(['opportunities']);
+      queryClient.invalidateQueries(['opportunity']);
+      queryClient.invalidateQueries(['opportunity-summary']);
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;

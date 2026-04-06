@@ -16,15 +16,20 @@ import {
   DatePicker,
   Timeline,
   Steps,
+  Row,
+  Col,
+  Statistic,
+  Alert,
 } from "antd";
 import {
   PlusOutlined,
   EyeOutlined,
   RightOutlined,
   TrophyOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { opportunityApi } from "../services/opportunity";
+import { opportunityApi, OpportunitySummary } from "../services/opportunity";
 import {
   Opportunity,
   OpportunityStage,
@@ -33,6 +38,8 @@ import {
 } from "../types";
 import CustomerSelect from "../components/CustomerSelect";
 import dayjs from "dayjs";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { useAuthStore } from "../stores/authStore";
 
 const STAGE_CONFIG: Record<OpportunityStage, { text: string; color: string }> =
   {
@@ -57,8 +64,66 @@ const RESULT_CONFIG: Record<
   lost: { text: "输单", color: "red" },
 };
 
+function SummaryCards({ summary }: { summary?: OpportunitySummary }) {
+  return (
+    <Row gutter={16} style={{ marginBottom: 16 }}>
+      <Col span={4}>
+        <Card>
+          <Statistic
+            title="商机总数"
+            value={summary?.total || 0}
+            suffix="个"
+          />
+        </Card>
+      </Col>
+      <Col span={4}>
+        <Card>
+          <Statistic
+            title="总金额"
+            value={summary?.totalAmount || 0}
+            prefix="¥"
+            precision={2}
+          />
+        </Card>
+      </Col>
+      <Col span={4}>
+        <Card>
+          <Statistic
+            title="赢单数"
+            value={summary?.byResult?.won || 0}
+            valueStyle={{ color: "#52c41a" }}
+            suffix="个"
+          />
+        </Card>
+      </Col>
+    </Row>
+  );
+}
+
+function StageStats({ summary }: { summary?: OpportunitySummary }) {
+  return (
+    <Card title="阶段分布" style={{ marginBottom: 16 }}>
+      <Row gutter={16}>
+        {STAGE_ORDER.map((stage) => (
+          <Col span={6} key={stage}>
+            <div style={{ textAlign: "center" }}>
+              <Tag color={STAGE_CONFIG[stage].color} style={{ marginBottom: 8 }}>
+                {STAGE_CONFIG[stage].text}
+              </Tag>
+              <div style={{ fontSize: 24, fontWeight: 600 }}>
+                {summary?.byStage?.[stage] || 0}
+              </div>
+            </div>
+          </Col>
+        ))}
+      </Row>
+    </Card>
+  );
+}
+
 export default function Opportunities() {
   const queryClient = useQueryClient();
+  const tokens = useAuthStore((state) => state.tokens);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [stageFilter, setStageFilter] = useState<
@@ -76,6 +141,9 @@ export default function Opportunities() {
   const [createForm] = Form.useForm();
   const [stageForm] = Form.useForm();
   const [resultForm] = Form.useForm();
+  const [versionConflict, setVersionConflict] = useState<string | null>(null);
+
+  useWebSocket({ token: tokens?.accessToken || "" });
 
   const { data, isLoading } = useQuery(
     ["opportunities", page, pageSize, stageFilter, resultFilter],
@@ -89,6 +157,12 @@ export default function Opportunities() {
     { keepPreviousData: true },
   );
 
+  const { data: summary } = useQuery(
+    ["opportunity-summary"],
+    () => opportunityApi.getSummary(),
+    { refetchInterval: 30000 },
+  );
+
   const { data: opportunityDetail, refetch: refetchOpportunityDetail } =
     useQuery(
       ["opportunity", selectedOpportunity?.id],
@@ -96,15 +170,26 @@ export default function Opportunities() {
       { enabled: !!selectedOpportunity && isDetailDrawerOpen },
     );
 
+  const handleVersionConflict = (error: any) => {
+    if (error?.code === "CONFLICT_VERSION" || error?.message?.includes("CONFLICT_VERSION")) {
+      setVersionConflict("该商机已被他人修改，请刷新页面后重试");
+      return true;
+    }
+    return false;
+  };
+
   const createMutation = useMutation(opportunityApi.create, {
     onSuccess: () => {
       message.success("创建成功");
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries(["opportunities"]);
+      queryClient.invalidateQueries(["opportunity-summary"]);
     },
     onError: (error: any) => {
-      message.error(error?.message || "创建失败");
+      if (!handleVersionConflict(error)) {
+        message.error(error?.message || "创建失败");
+      }
     },
   });
 
@@ -127,12 +212,15 @@ export default function Opportunities() {
         setIsStageModalOpen(false);
         stageForm.resetFields();
         queryClient.invalidateQueries(["opportunities"]);
+        queryClient.invalidateQueries(["opportunity-summary"]);
         if (selectedOpportunity) {
           refetchOpportunityDetail();
         }
       },
       onError: (error: any) => {
-        message.error(error?.message || "阶段推进失败");
+        if (!handleVersionConflict(error)) {
+          message.error(error?.message || "阶段推进失败");
+        }
       },
     },
   );
@@ -156,9 +244,12 @@ export default function Opportunities() {
         setIsResultModalOpen(false);
         resultForm.resetFields();
         queryClient.invalidateQueries(["opportunities"]);
+        queryClient.invalidateQueries(["opportunity-summary"]);
       },
       onError: (error: any) => {
-        message.error(error?.message || "结果标记失败");
+        if (!handleVersionConflict(error)) {
+          message.error(error?.message || "结果标记失败");
+        }
       },
     },
   );
@@ -201,11 +292,13 @@ export default function Opportunities() {
 
   const openDetailDrawer = (record: Opportunity) => {
     setSelectedOpportunity(record);
+    setVersionConflict(null);
     setIsDetailDrawerOpen(true);
   };
 
   const openStageModal = (record: Opportunity) => {
     setSelectedOpportunity(record);
+    setVersionConflict(null);
     const currentIndex = STAGE_ORDER.indexOf(record.stage);
     const nextStage = STAGE_ORDER[currentIndex + 1];
     stageForm.setFieldsValue({ toStage: nextStage, reason: "" });
@@ -214,12 +307,19 @@ export default function Opportunities() {
 
   const openResultModal = (record: Opportunity) => {
     setSelectedOpportunity(record);
+    setVersionConflict(null);
     resultForm.resetFields();
     setIsResultModalOpen(true);
   };
 
   const getCurrentStep = (stage: OpportunityStage) =>
     STAGE_ORDER.indexOf(stage);
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries(["opportunities"]);
+    queryClient.invalidateQueries(["opportunity-summary"]);
+    setVersionConflict(null);
+  };
 
   const columns = [
     { title: "商机名称", dataIndex: "name", key: "name" },
@@ -281,7 +381,7 @@ export default function Opportunities() {
               推进
             </Button>
           )}
-          {!record.result && (
+          {!record.result && record.stage === "negotiation" && (
             <Button
               type="link"
               size="small"
@@ -298,6 +398,25 @@ export default function Opportunities() {
 
   return (
     <div>
+      {versionConflict && (
+        <Alert
+          message={versionConflict}
+          type="warning"
+          showIcon
+          action={
+            <Button size="small" icon={<ReloadOutlined />} onClick={handleRefresh}>
+              刷新
+            </Button>
+          }
+          style={{ marginBottom: 16 }}
+          closable
+          onClose={() => setVersionConflict(null)}
+        />
+      )}
+
+      <SummaryCards summary={summary} />
+      <StageStats summary={summary} />
+
       <div
         style={{
           marginBottom: 16,
