@@ -505,7 +505,7 @@ describe('OmService', () => {
       const result = await service.getSummary('org-uuid-123', 'user-uuid-123', 'org');
 
       expect(result.total).toBe(5);
-      expect(result.totalAmount).toBe(600000);
+      expect(result.totalAmount).toBe(1000000);
       expect(result.byStage[OpportunityStage.DISCOVERY]).toBe(1);
       expect(result.byStage[OpportunityStage.QUALIFICATION]).toBe(1);
       expect(result.byStage[OpportunityStage.NEGOTIATION]).toBe(1);

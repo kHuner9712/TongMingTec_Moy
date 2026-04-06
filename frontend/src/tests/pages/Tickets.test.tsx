@@ -47,12 +47,12 @@ describe('Tickets 页面', () => {
 
   it('渲染状态筛选器', () => {
     render(<Tickets />, { wrapper: createWrapper() });
-    expect(screen.getByPlaceholderText('状态筛选')).toBeInTheDocument();
+    expect(screen.getByText('状态筛选')).toBeInTheDocument();
   });
 
   it('渲染优先级筛选器', () => {
     render(<Tickets />, { wrapper: createWrapper() });
-    expect(screen.getByPlaceholderText('优先级筛选')).toBeInTheDocument();
+    expect(screen.getByText('优先级筛选')).toBeInTheDocument();
   });
 
   it('表格列头正确渲染', () => {

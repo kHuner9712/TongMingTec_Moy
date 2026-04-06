@@ -35,7 +35,7 @@ describe('Conversations 页面', () => {
 
   it('渲染状态筛选器', () => {
     render(<Conversations />, { wrapper: createWrapper() });
-    expect(screen.getByPlaceholderText('状态筛选')).toBeInTheDocument();
+    expect(screen.getByText('状态筛选')).toBeInTheDocument();
   });
 
   it('显示表格', () => {
