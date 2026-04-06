@@ -20,6 +20,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { AudModule } from './modules/aud/aud.module';
 import { SysModule } from './modules/sys/sys.module';
 
+import { WebSocketModule } from './common/gateway/websocket.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { TenantGuard } from './common/guards/tenant.guard';
@@ -77,6 +78,7 @@ import jwtConfig from './config/jwt.config';
     AiModule,
     AudModule,
     SysModule,
+    WebSocketModule,
   ],
   providers: [
     {

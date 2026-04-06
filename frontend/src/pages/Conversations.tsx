@@ -15,6 +15,7 @@ import {
   List,
   Avatar,
   Rate,
+  Badge,
 } from "antd";
 import {
   EyeOutlined,
@@ -31,6 +32,8 @@ import {
   ConversationMessage,
 } from "../types";
 import UserSelect from "../components/UserSelect";
+import { useConversationWebSocket } from "../hooks/useWebSocket";
+import { useAuthStore } from "../stores/authStore";
 import dayjs from "dayjs";
 
 const STATUS_CONFIG: Record<
@@ -53,6 +56,7 @@ const SENDER_TYPE_CONFIG: Record<string, { color: string; text: string }> = {
 
 export default function Conversations() {
   const queryClient = useQueryClient();
+  const tokens = useAuthStore((state) => state.tokens);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<
@@ -70,6 +74,11 @@ export default function Conversations() {
   const [acceptForm] = Form.useForm();
   const [transferForm] = Form.useForm();
   const [closeForm] = Form.useForm();
+
+  const { isConnected } = useConversationWebSocket(
+    selectedConversation?.id,
+    tokens?.accessToken || "",
+  );
 
   const { data, isLoading } = useQuery(
     ["conversations", page, pageSize, statusFilter],
@@ -418,7 +427,15 @@ export default function Conversations() {
       </Modal>
 
       <Drawer
-        title="会话详情"
+        title={
+          <Space>
+            会话详情
+            <Badge
+              status={isConnected ? "success" : "default"}
+              text={isConnected ? "实时连接" : "未连接"}
+            />
+          </Space>
+        }
         placement="right"
         width={700}
         onClose={() => setIsDetailDrawerOpen(false)}
