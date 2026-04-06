@@ -488,14 +488,32 @@ export default function Opportunities() {
                     : "-"}
                 </Descriptions.Item>
                 <Descriptions.Item label="阶段">
-                  <Tag color={STAGE_CONFIG[opportunityDetail.stage]?.color}>
-                    {STAGE_CONFIG[opportunityDetail.stage]?.text}
+                  <Tag
+                    color={
+                      STAGE_CONFIG[opportunityDetail.stage as OpportunityStage]
+                        ?.color
+                    }
+                  >
+                    {
+                      STAGE_CONFIG[opportunityDetail.stage as OpportunityStage]
+                        ?.text
+                    }
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="结果">
                   {opportunityDetail.result ? (
-                    <Tag color={RESULT_CONFIG[opportunityDetail.result]?.color}>
-                      {RESULT_CONFIG[opportunityDetail.result]?.text}
+                    <Tag
+                      color={
+                        RESULT_CONFIG[
+                          opportunityDetail.result as OpportunityResult
+                        ]?.color
+                      }
+                    >
+                      {
+                        RESULT_CONFIG[
+                          opportunityDetail.result as OpportunityResult
+                        ]?.text
+                      }
                     </Tag>
                   ) : (
                     "-"

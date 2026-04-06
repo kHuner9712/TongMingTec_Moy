@@ -455,8 +455,18 @@ export default function Conversations() {
                   {conversationDetail.assigneeUserName || "-"}
                 </Descriptions.Item>
                 <Descriptions.Item label="状态">
-                  <Tag color={STATUS_CONFIG[conversationDetail.status]?.color}>
-                    {STATUS_CONFIG[conversationDetail.status]?.text}
+                  <Tag
+                    color={
+                      STATUS_CONFIG[
+                        conversationDetail.status as ConversationStatus
+                      ]?.color
+                    }
+                  >
+                    {
+                      STATUS_CONFIG[
+                        conversationDetail.status as ConversationStatus
+                      ]?.text
+                    }
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="创建时间">
@@ -557,10 +567,14 @@ export default function Conversations() {
                 <div style={{ display: "flex", gap: 8 }}>
                   <Input.TextArea
                     value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                      setMessageInput(e.target.value)
+                    }
                     placeholder="输入消息..."
                     autoSize={{ minRows: 1, maxRows: 3 }}
-                    onPressEnter={(e) => {
+                    onPressEnter={(
+                      e: React.KeyboardEvent<HTMLTextAreaElement>,
+                    ) => {
                       if (!e.shiftKey) {
                         e.preventDefault();
                         handleSendMessage();

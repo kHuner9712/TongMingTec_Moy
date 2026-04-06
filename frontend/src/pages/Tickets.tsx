@@ -496,13 +496,25 @@ export default function Tickets() {
                   {ticketDetail.assigneeUserName || "-"}
                 </Descriptions.Item>
                 <Descriptions.Item label="优先级">
-                  <Tag color={PRIORITY_CONFIG[ticketDetail.priority]?.color}>
-                    {PRIORITY_CONFIG[ticketDetail.priority]?.text}
+                  <Tag
+                    color={
+                      PRIORITY_CONFIG[ticketDetail.priority as TicketPriority]
+                        ?.color
+                    }
+                  >
+                    {
+                      PRIORITY_CONFIG[ticketDetail.priority as TicketPriority]
+                        ?.text
+                    }
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="状态">
-                  <Tag color={STATUS_CONFIG[ticketDetail.status]?.color}>
-                    {STATUS_CONFIG[ticketDetail.status]?.text}
+                  <Tag
+                    color={
+                      STATUS_CONFIG[ticketDetail.status as TicketStatus]?.color
+                    }
+                  >
+                    {STATUS_CONFIG[ticketDetail.status as TicketStatus]?.text}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="描述" span={2}>

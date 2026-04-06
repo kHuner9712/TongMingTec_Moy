@@ -430,8 +430,12 @@ export default function Leads() {
                   {leadDetail.source || "-"}
                 </Descriptions.Item>
                 <Descriptions.Item label="状态">
-                  <Tag color={STATUS_CONFIG[leadDetail.status]?.color}>
-                    {STATUS_CONFIG[leadDetail.status]?.text}
+                  <Tag
+                    color={
+                      STATUS_CONFIG[leadDetail.status as LeadStatus]?.color
+                    }
+                  >
+                    {STATUS_CONFIG[leadDetail.status as LeadStatus]?.text}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="评分">
