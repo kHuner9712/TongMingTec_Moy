@@ -484,4 +484,81 @@ describe('OmService', () => {
       }
     });
   });
+
+  describe('getSummary', () => {
+    it('should return summary statistics for org scope', async () => {
+      const mockOpportunities = [
+        { ...mockOpportunity, stage: OpportunityStage.DISCOVERY, result: null, amount: 100000 },
+        { ...mockOpportunity, stage: OpportunityStage.QUALIFICATION, result: null, amount: 200000 },
+        { ...mockOpportunity, stage: OpportunityStage.NEGOTIATION, result: null, amount: 300000 },
+        { ...mockOpportunity, stage: OpportunityStage.NEGOTIATION, result: OpportunityResult.WON, amount: 400000 },
+        { ...mockOpportunity, stage: OpportunityStage.NEGOTIATION, result: OpportunityResult.LOST, amount: 50000 },
+      ];
+
+      const mockQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockOpportunities),
+      };
+      opportunityRepository.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.getSummary('org-uuid-123', 'user-uuid-123', 'org');
+
+      expect(result.total).toBe(5);
+      expect(result.totalAmount).toBe(600000);
+      expect(result.byStage[OpportunityStage.DISCOVERY]).toBe(1);
+      expect(result.byStage[OpportunityStage.QUALIFICATION]).toBe(1);
+      expect(result.byStage[OpportunityStage.NEGOTIATION]).toBe(1);
+      expect(result.byResult.won).toBe(1);
+      expect(result.byResult.lost).toBe(1);
+    });
+
+    it('should filter by self dataScope', async () => {
+      const mockQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockOpportunity]),
+      };
+      opportunityRepository.createQueryBuilder.mockReturnValue(mockQb);
+
+      await service.getSummary('org-uuid-123', 'user-uuid-123', 'self');
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith('opp.ownerUserId = :userId', { userId: 'user-uuid-123' });
+    });
+
+    it('should calculate totalAmount correctly excluding lost opportunities', async () => {
+      const mockOpportunities = [
+        { ...mockOpportunity, stage: OpportunityStage.DISCOVERY, result: null, amount: 100000 },
+        { ...mockOpportunity, stage: OpportunityStage.NEGOTIATION, result: OpportunityResult.WON, amount: 200000 },
+        { ...mockOpportunity, stage: OpportunityStage.NEGOTIATION, result: OpportunityResult.LOST, amount: 50000 },
+      ];
+
+      const mockQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockOpportunities),
+      };
+      opportunityRepository.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.getSummary('org-uuid-123', 'user-uuid-123', 'org');
+
+      expect(result.totalAmount).toBe(300000);
+    });
+
+    it('should return zero values when no opportunities exist', async () => {
+      const mockQb = {
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      opportunityRepository.createQueryBuilder.mockReturnValue(mockQb);
+
+      const result = await service.getSummary('org-uuid-123', 'user-uuid-123', 'org');
+
+      expect(result.total).toBe(0);
+      expect(result.totalAmount).toBe(0);
+      expect(result.byResult.won).toBe(0);
+      expect(result.byResult.lost).toBe(0);
+    });
+  });
 });
