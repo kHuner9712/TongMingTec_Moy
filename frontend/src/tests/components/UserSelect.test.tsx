@@ -12,12 +12,7 @@ const mockUsers = [
   { id: '3', displayName: '王五', username: 'wangwu', status: 'active' },
 ];
 
-interface MockQueryResult {
-  data: { items: typeof mockUsers } | null;
-  isLoading: boolean;
-}
-
-const mockUseQuery = useQuery as ReturnType<typeof vi.fn<() => MockQueryResult>>;
+const mockUseQuery = useQuery as ReturnType<typeof vi.fn>;
 
 describe('UserSelect', () => {
   it('渲染选择器并显示加载状态', () => {

@@ -56,11 +56,16 @@ export class ChnService {
     data: Partial<Channel>,
     _version: number,
   ): Promise<Channel> {
-    const { version: _version, ...updateData } = data;
-    await this.channelRepository.update(id, {
+    const { configJson, ...updateData } = data;
+    delete updateData.version;
+    const updatePayload: Record<string, unknown> = {
       ...updateData,
       version: () => 'version + 1',
-    } as Partial<Channel> & { version: () => string });
+    };
+    if (configJson !== undefined) {
+      updatePayload.configJson = JSON.parse(JSON.stringify(configJson));
+    }
+    await this.channelRepository.update(id, updatePayload);
 
     return this.findChannelById(id, orgId);
   }

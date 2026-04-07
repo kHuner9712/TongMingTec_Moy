@@ -1,7 +1,9 @@
 import { vi } from 'vitest';
 import { UseQueryResult } from 'react-query';
 
-export type MockUseQuery = ReturnType<typeof vi.fn<() => UseQueryResult<unknown, Error>>>;
+export type MockUseQuery = ReturnType<typeof vi.fn> & {
+  mockReturnValue: (value: UseQueryResult<unknown, Error>) => MockUseQuery;
+};
 
 export interface MockQueryResult<T> {
   data: T | null;
@@ -10,7 +12,7 @@ export interface MockQueryResult<T> {
 }
 
 export function createMockUseQuery<T>(result: MockQueryResult<T>): MockUseQuery {
-  return vi.fn().mockReturnValue(result);
+  return vi.fn().mockReturnValue(result) as MockUseQuery;
 }
 
 export interface MockApiFunction {

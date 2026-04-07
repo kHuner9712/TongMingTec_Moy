@@ -57,7 +57,7 @@ interface MockTicketListResult {
   meta: { total: number };
 }
 
-const mockTicketApiList = ticketApi.ticketApi.list as ReturnType<typeof vi.fn<() => Promise<MockTicketListResult>>>;
+const mockTicketApiList = ticketApi.ticketApi.list as ReturnType<typeof vi.fn>;
 
 describe('Tickets 页面', () => {
   beforeEach(() => {

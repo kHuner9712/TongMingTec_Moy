@@ -27,8 +27,14 @@ vi.mock("../../services/opportunity", () => ({
   },
 }));
 
+interface CustomerSelectProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+}
+
 vi.mock("../../components/CustomerSelect", () => ({
-  default: ({ value, onChange, placeholder }: any) => (
+  default: ({ value, onChange, placeholder }: CustomerSelectProps) => (
     <select
       data-testid="customer-select"
       value={value || ""}
@@ -44,9 +50,20 @@ vi.mock("../../hooks/useWebSocket", () => ({
   useWebSocket: vi.fn(() => ({ socket: null, isConnected: true })),
 }));
 
+interface AuthState {
+  user: { id: string; username: string; permissions: string[] };
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    tokenType: string;
+  };
+  isAuthenticated: boolean;
+}
+
 vi.mock("../../stores/authStore", () => ({
-  useAuthStore: vi.fn((selector: any) => {
-    const state = {
+  useAuthStore: vi.fn((selector?: (state: AuthState) => unknown) => {
+    const state: AuthState = {
       user: { id: "1", username: "admin", permissions: [] },
       tokens: {
         accessToken: "test-token",

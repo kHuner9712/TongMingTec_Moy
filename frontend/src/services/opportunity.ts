@@ -2,6 +2,7 @@ import api from "../utils/api";
 import {
   Opportunity,
   OpportunityStage,
+  OpportunityStageHistory,
   OpportunityResult,
   CreateOpportunityDto,
   PaginatedResponse,

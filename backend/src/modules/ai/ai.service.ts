@@ -82,7 +82,7 @@ export class AiService {
 
       await this.aiTaskRepository.update(taskId, {
         status: AITaskStatus.COMPLETED,
-        outputPayload: outputPayload,
+        outputPayload: outputPayload as any,
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

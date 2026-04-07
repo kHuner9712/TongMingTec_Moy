@@ -52,7 +52,7 @@ interface MockConversationListResult {
   meta: { total: number };
 }
 
-const mockConversationApiList = conversationApi.conversationApi.list as ReturnType<typeof vi.fn<() => Promise<MockConversationListResult>>>;
+const mockConversationApiList = conversationApi.conversationApi.list as ReturnType<typeof vi.fn>;
 
 describe('Conversations 页面', () => {
   beforeEach(() => {
