@@ -5,16 +5,30 @@ import Tickets from '../../pages/Tickets';
 import * as ticketApi from '../../services/ticket';
 
 vi.mock('../../services/ticket');
+
+interface UserSelectProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+}
+
 vi.mock('../../components/UserSelect', () => ({
-  default: ({ value, onChange, placeholder }: any) => (
+  default: ({ value, onChange, placeholder }: UserSelectProps) => (
     <select data-testid="user-select" value={value || ''} onChange={(e) => onChange?.(e.target.value)}>
       <option value="">{placeholder || '选择用户'}</option>
       <option value="1">张三</option>
     </select>
   ),
 }));
+
+interface CustomerSelectProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+}
+
 vi.mock('../../components/CustomerSelect', () => ({
-  default: ({ value, onChange, placeholder }: any) => (
+  default: ({ value, onChange, placeholder }: CustomerSelectProps) => (
     <select data-testid="customer-select" value={value || ''} onChange={(e) => onChange?.(e.target.value)}>
       <option value="">{placeholder || '选择客户'}</option>
       <option value="1">测试客户</option>
@@ -29,10 +43,26 @@ const createWrapper = () => {
   );
 };
 
+interface MockTicketListResult {
+  items: Array<{
+    id: string;
+    title: string;
+    customerName: string;
+    assigneeUserName: string;
+    priority: string;
+    status: string;
+    createdAt: string;
+    version: number;
+  }>;
+  meta: { total: number };
+}
+
+const mockTicketApiList = ticketApi.ticketApi.list as ReturnType<typeof vi.fn<() => Promise<MockTicketListResult>>>;
+
 describe('Tickets 页面', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (ticketApi.ticketApi.list as any).mockResolvedValue({ items: [], meta: { total: 0 } });
+    mockTicketApiList.mockResolvedValue({ items: [], meta: { total: 0 } });
   });
 
   it('渲染新建工单按钮', () => {
@@ -67,7 +97,7 @@ describe('Tickets 页面', () => {
   });
 
   it('渲染工单列表数据', async () => {
-    const mockData = {
+    const mockData: MockTicketListResult = {
       items: [
         {
           id: '1',
@@ -82,7 +112,7 @@ describe('Tickets 页面', () => {
       ],
       meta: { total: 1 },
     };
-    (ticketApi.ticketApi.list as any).mockResolvedValue(mockData);
+    mockTicketApiList.mockResolvedValue(mockData);
 
     render(<Tickets />, { wrapper: createWrapper() });
     expect(screen.getByRole('table')).toBeInTheDocument();

@@ -170,8 +170,9 @@ export default function Tickets() {
         queryClient.invalidateQueries(["tickets"]);
         setIsDetailDrawerOpen(false);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "操作失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "操作失败");
       },
     },
   );

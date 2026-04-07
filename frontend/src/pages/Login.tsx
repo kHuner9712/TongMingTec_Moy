@@ -23,8 +23,9 @@ export default function Login() {
       setTokens(data.tokens);
       message.success('登录成功');
       navigate('/dashboard');
-    } catch (error: any) {
-      message.error(error?.message || '登录失败');
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      message.error(err?.message || '登录失败');
     }
   };
 

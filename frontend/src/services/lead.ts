@@ -5,6 +5,8 @@ import {
   CreateLeadDto,
   PaginatedResponse,
   LeadStatus,
+  Customer,
+  Opportunity,
 } from "../types";
 
 export interface FollowUpDto {
@@ -47,7 +49,7 @@ export const leadApi = {
   convert: async (
     id: string,
     version: number,
-  ): Promise<{ customer: any; opportunity: any }> => {
+  ): Promise<{ customer: Customer; opportunity: Opportunity }> => {
     return api.post(`/leads/${id}/convert`, { version });
   },
 };

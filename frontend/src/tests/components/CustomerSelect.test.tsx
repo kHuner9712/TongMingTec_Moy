@@ -12,9 +12,16 @@ const mockCustomers = [
   { id: '3', name: '测试公司C', status: 'active' },
 ];
 
+interface MockQueryResult {
+  data: { items: typeof mockCustomers } | null;
+  isLoading: boolean;
+}
+
+const mockUseQuery = useQuery as ReturnType<typeof vi.fn<() => MockQueryResult>>;
+
 describe('CustomerSelect', () => {
   it('渲染选择器并显示加载状态', () => {
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: null,
       isLoading: true,
     });
@@ -24,7 +31,7 @@ describe('CustomerSelect', () => {
   });
 
   it('加载完成后显示客户选项', async () => {
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: { items: mockCustomers },
       isLoading: false,
     });
@@ -39,7 +46,7 @@ describe('CustomerSelect', () => {
   });
 
   it('支持搜索过滤', async () => {
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: { items: mockCustomers },
       isLoading: false,
     });
@@ -56,7 +63,7 @@ describe('CustomerSelect', () => {
 
   it('调用 onChange 回调', async () => {
     const handleChange = vi.fn();
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: { items: mockCustomers },
       isLoading: false,
     });
@@ -72,7 +79,7 @@ describe('CustomerSelect', () => {
   });
 
   it('显示已选中的值', () => {
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: { items: mockCustomers },
       isLoading: false,
     });
@@ -82,7 +89,7 @@ describe('CustomerSelect', () => {
   });
 
   it('禁用状态下不可选择', () => {
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: { items: mockCustomers },
       isLoading: false,
     });
@@ -94,7 +101,7 @@ describe('CustomerSelect', () => {
 
   it('支持清除选择', async () => {
     const handleChange = vi.fn();
-    (useQuery as any).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       data: { items: mockCustomers },
       isLoading: false,
     });

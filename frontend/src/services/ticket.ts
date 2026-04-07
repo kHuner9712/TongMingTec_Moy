@@ -5,6 +5,7 @@ import {
   TicketPriority,
   CreateTicketDto,
   PaginatedResponse,
+  TicketLog,
 } from "../types";
 
 export const ticketApi = {
@@ -17,7 +18,7 @@ export const ticketApi = {
     return api.get("/tickets", { params });
   },
 
-  get: async (id: string): Promise<Ticket & { logs: any[] }> => {
+  get: async (id: string): Promise<Ticket & { logs: TicketLog[] }> => {
     return api.get(`/tickets/${id}`);
   },
 

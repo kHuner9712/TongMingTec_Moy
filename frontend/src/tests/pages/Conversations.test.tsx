@@ -5,10 +5,21 @@ import Conversations from '../../pages/Conversations';
 import * as conversationApi from '../../services/conversation';
 
 vi.mock('../../services/conversation');
+
+interface UserSelectProps {
+  value?: string;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+}
+
 vi.mock('../../components/UserSelect', () => ({
-  default: ({ value, onChange, placeholder }: any) => (
-    <select data-testid="user-select" value={value || ''} onChange={(e) => onChange?.(e.target.value)}>
-      <option value="">{placeholder || '选择用户'}</option>
+  default: ({ value, onChange, placeholder }: UserSelectProps) => (
+    <select
+      data-testid="user-select"
+      value={value || ""}
+      onChange={(e) => onChange?.(e.target.value)}
+    >
+      <option value="">{placeholder || "选择用户"}</option>
       <option value="1">张三</option>
     </select>
   ),
@@ -27,10 +38,26 @@ const createWrapper = () => {
   );
 };
 
+interface MockConversationListResult {
+  items: Array<{
+    id: string;
+    channelName: string;
+    customerName: string;
+    assigneeUserName: string;
+    status: string;
+    ratingScore: number;
+    createdAt: string;
+    version: number;
+  }>;
+  meta: { total: number };
+}
+
+const mockConversationApiList = conversationApi.conversationApi.list as ReturnType<typeof vi.fn<() => Promise<MockConversationListResult>>>;
+
 describe('Conversations 页面', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (conversationApi.conversationApi.list as any).mockResolvedValue({ items: [], meta: { total: 0 } });
+    mockConversationApiList.mockResolvedValue({ items: [], meta: { total: 0 } });
   });
 
   it('渲染状态筛选器', () => {
@@ -44,7 +71,7 @@ describe('Conversations 页面', () => {
   });
 
   it('渲染会话列表数据', async () => {
-    const mockData = {
+    const mockData: MockConversationListResult = {
       items: [
         {
           id: '1',
@@ -59,7 +86,7 @@ describe('Conversations 页面', () => {
       ],
       meta: { total: 1 },
     };
-    (conversationApi.conversationApi.list as any).mockResolvedValue(mockData);
+    mockConversationApiList.mockResolvedValue(mockData);
 
     render(<Conversations />, { wrapper: createWrapper() });
     expect(screen.getByRole('table')).toBeInTheDocument();

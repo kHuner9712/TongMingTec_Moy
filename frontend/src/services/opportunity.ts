@@ -23,7 +23,7 @@ export const opportunityApi = {
     return api.get("/opportunities", { params });
   },
 
-  get: async (id: string): Promise<Opportunity & { stageHistory: any[] }> => {
+  get: async (id: string): Promise<Opportunity & { stageHistory: OpportunityStageHistory[] }> => {
     return api.get(`/opportunities/${id}`);
   },
 
