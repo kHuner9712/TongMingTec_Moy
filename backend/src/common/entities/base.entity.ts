@@ -1,14 +1,11 @@
 import {
-  Entity,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
   Column,
-  BeforeInsert,
   BeforeUpdate,
 } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
 
 export abstract class BaseEntity {
   @PrimaryGeneratedColumn('uuid')

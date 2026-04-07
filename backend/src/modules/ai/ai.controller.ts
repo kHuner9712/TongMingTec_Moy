@@ -10,10 +10,8 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import {
   IsString,
-  IsOptional,
   IsUUID,
   IsNotEmpty,
-  MaxLength,
 } from 'class-validator';
 
 class SmartReplyDto {

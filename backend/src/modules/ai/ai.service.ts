@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AITask, AITaskType, AITaskStatus } from './entities/ai-task.entity';
@@ -26,7 +26,7 @@ export class AiService {
     orgId: string,
     conversationId: string,
     prompt: string,
-    userId: string,
+    _userId: string,
   ): Promise<AITask> {
     const task = this.aiTaskRepository.create({
       orgId,
@@ -70,7 +70,7 @@ export class AiService {
     }
   }
 
-  private async simulateAIProcessing(task: AITask): Promise<void> {
+  private async simulateAIProcessing(_task: AITask): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 

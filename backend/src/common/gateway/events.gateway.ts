@@ -8,7 +8,7 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable, UseGuards } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 interface AuthenticatedSocket extends Socket {
@@ -71,7 +71,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.orgRooms.get(orgId)!.add(client.id);
 
       client.emit('connected', { userId, orgId });
-    } catch (error) {
+    } catch {
       client.disconnect();
     }
   }

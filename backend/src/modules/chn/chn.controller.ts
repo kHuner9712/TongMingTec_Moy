@@ -14,8 +14,6 @@ import { ChannelType, ChannelStatus } from './entities/channel.entity';
 import {
   IsString,
   IsOptional,
-  IsUUID,
-  IsNotEmpty,
   MaxLength,
   IsInt,
   Min,

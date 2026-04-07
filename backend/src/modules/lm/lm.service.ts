@@ -66,7 +66,7 @@ export class LmService {
   async createLead(
     orgId: string,
     data: Partial<Lead>,
-    userId: string,
+    _userId: string,
   ): Promise<Lead> {
     const lead = this.leadRepository.create({
       ...data,

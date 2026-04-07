@@ -22,7 +22,6 @@ import {
   Max,
   IsEnum,
   IsArray,
-  ValidateNested,
 } from 'class-validator';
 
 class SendMessageDto {

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserStatus } from './entities/user.entity';
 import { Role } from './entities/role.entity';
@@ -70,7 +70,7 @@ export class UsrService {
   async createUser(
     orgId: string,
     data: Partial<User>,
-    userId: string,
+    _userId: string,
   ): Promise<User> {
     const existing = await this.userRepository.findOne({
       where: { orgId, username: data.username },
@@ -127,7 +127,7 @@ export class UsrService {
     orgId: string,
     tempPassword: string,
   ): Promise<void> {
-    const user = await this.findUserById(id, orgId);
+    await this.findUserById(id, orgId);
 
     const passwordHash = await bcrypt.hash(tempPassword, 10);
     await this.userRepository.update(id, {

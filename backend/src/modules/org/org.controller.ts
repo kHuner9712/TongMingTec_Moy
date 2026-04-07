@@ -5,12 +5,11 @@ import {
   Post,
   Body,
   Param,
-  Query,
 } from '@nestjs/common';
 import { OrgService } from './org.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
-import { IsString, IsOptional, IsUUID, IsNotEmpty, MaxLength, IsInt, Min } from 'class-validator';
+import { IsString, IsOptional, IsUUID, MaxLength, IsInt, Min } from 'class-validator';
 
 class UpdateOrgDto {
   @IsOptional()

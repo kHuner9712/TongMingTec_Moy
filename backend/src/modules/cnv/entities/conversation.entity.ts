@@ -1,4 +1,4 @@
-import { Entity, Column, Index, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Channel } from '../../chn/entities/channel.entity';
 import { Customer } from '../../cm/entities/customer.entity';

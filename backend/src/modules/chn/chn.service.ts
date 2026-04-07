@@ -54,7 +54,7 @@ export class ChnService {
     id: string,
     orgId: string,
     data: Partial<Channel>,
-    version: number,
+    _version: number,
   ): Promise<Channel> {
     const updateData: Partial<Channel> = {
       ...data,

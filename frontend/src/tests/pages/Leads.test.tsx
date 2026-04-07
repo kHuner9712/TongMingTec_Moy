@@ -2,15 +2,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   render,
   screen,
-  fireEvent,
-  waitFor,
-  within,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "react-query";
 import Leads from "../../pages/Leads";
-import * as leadApi from "../../services/lead";
 
-vi.mock("../../services/lead");
+vi.mock("../../services/lead", () => ({
+  leadApi: {
+    list: vi.fn(() => Promise.resolve({ items: [], meta: { total: 0 } })),
+    get: vi.fn(),
+    create: vi.fn(),
+    assign: vi.fn(),
+    addFollowUp: vi.fn(),
+    convert: vi.fn(),
+  },
+}));
+
 vi.mock("../../components/UserSelect", () => ({
   default: ({ value, onChange, placeholder }: any) => (
     <select
@@ -70,10 +76,6 @@ afterEach(() => {
 describe("Leads 页面 - 基础渲染", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (leadApi.leadApi.list as any).mockResolvedValue({
-      items: [],
-      meta: { total: 0 },
-    });
   });
 
   it("渲染页面标题", () => {

@@ -66,7 +66,7 @@ export class TskService {
   async createTask(
     orgId: string,
     data: Partial<Task>,
-    userId: string,
+    _userId: string,
   ): Promise<Task> {
     const task = this.taskRepository.create({
       ...data,
@@ -102,7 +102,7 @@ export class TskService {
     id: string,
     orgId: string,
     status: TaskStatus,
-    userId: string,
+    _userId: string,
     version: number,
   ): Promise<Task> {
     const task = await this.findTaskById(id, orgId);
@@ -126,8 +126,8 @@ export class TskService {
   async remind(
     id: string,
     orgId: string,
-    message: string,
+    _message: string,
   ): Promise<void> {
-    const task = await this.findTaskById(id, orgId);
+    await this.findTaskById(id, orgId);
   }
 }

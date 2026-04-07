@@ -2,14 +2,13 @@ import {
   Controller,
   Get,
   Post,
-  Put,
   Body,
   Param,
 } from '@nestjs/common';
 import { SysService } from './sys.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
-import { IsString, IsObject, IsArray, ValidateNested, IsOptional } from 'class-validator';
+import { IsString, IsObject, IsArray } from 'class-validator';
 
 class SetConfigDto {
   @IsString()

@@ -7,7 +7,6 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { BaseEntity } from '../../../common/entities/base.entity';
-import { Organization } from '../../org/entities/organization.entity';
 
 @Entity('departments')
 export class Department extends BaseEntity {

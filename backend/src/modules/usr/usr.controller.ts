@@ -16,7 +16,6 @@ import {
   IsString,
   IsOptional,
   IsUUID,
-  IsNotEmpty,
   MaxLength,
   MinLength,
   IsInt,

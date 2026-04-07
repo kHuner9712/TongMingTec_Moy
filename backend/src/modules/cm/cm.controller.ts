@@ -15,8 +15,6 @@ import { CustomerStatus, CustomerLevel } from './entities/customer.entity';
 import {
   IsString,
   IsOptional,
-  IsUUID,
-  IsNotEmpty,
   MaxLength,
   IsInt,
   Min,

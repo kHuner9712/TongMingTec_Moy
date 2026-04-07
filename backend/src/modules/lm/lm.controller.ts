@@ -10,13 +10,11 @@ import { LmService } from './lm.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PageQueryDto } from '../../common/dto/pagination.dto';
-import { LeadStatus, Lead } from './entities/lead.entity';
 import { FollowType } from './entities/lead-follow-up.entity';
 import {
   IsString,
   IsOptional,
   IsUUID,
-  IsNotEmpty,
   MaxLength,
   IsInt,
   Min,

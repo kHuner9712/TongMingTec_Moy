@@ -10,12 +10,11 @@ import { TkService } from './tk.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { PageQueryDto } from '../../common/dto/pagination.dto';
-import { TicketPriority, TicketStatus } from './entities/ticket.entity';
+import { TicketPriority } from './entities/ticket.entity';
 import {
   IsString,
   IsOptional,
   IsUUID,
-  IsNotEmpty,
   MaxLength,
   IsInt,
   Min,

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Organization, OrganizationStatus } from './entities/organization.entity';
+import { Organization } from './entities/organization.entity';
 import { Department } from './entities/department.entity';
 
 @Injectable()
@@ -54,7 +54,7 @@ export class OrgService {
   async createDepartment(
     orgId: string,
     data: Partial<Department>,
-    userId: string,
+    _userId: string,
   ): Promise<Department> {
     const existing = await this.deptRepository.findOne({
       where: { orgId, code: data.code },
