@@ -76,8 +76,9 @@ export default function Customers() {
       createForm.resetFields();
       queryClient.invalidateQueries(["customers"]);
     },
-    onError: (error: any) => {
-      message.error(error?.message || "创建失败");
+    onError: (error: unknown) => {
+      const err = error as { message?: string };
+      message.error(err?.message || "创建失败");
     },
   });
 
@@ -91,8 +92,9 @@ export default function Customers() {
         editForm.resetFields();
         queryClient.invalidateQueries(["customers"]);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "更新失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "更新失败");
       },
     },
   );
@@ -112,8 +114,9 @@ export default function Customers() {
         statusForm.resetFields();
         queryClient.invalidateQueries(["customers"]);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "状态变更失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "状态变更失败");
       },
     },
   );
@@ -189,7 +192,7 @@ export default function Customers() {
       title: "操作",
       key: "action",
       width: 200,
-      render: (_: any, record: Customer) => (
+      render: (_: unknown, record: Customer) => (
         <Space>
           <Button
             type="link"

@@ -12,12 +12,18 @@ interface UseWebSocketOptions {
   onError?: (error: Error) => void;
 }
 
+interface WebSocketData {
+  conversationId?: string;
+  ticketId?: string;
+  [key: string]: unknown;
+}
+
 interface UseWebSocketReturn {
   socket: Socket | null;
   isConnected: boolean;
-  subscribe: (event: string, callback: (data: any) => void) => void;
-  unsubscribe: (event: string, callback: (data: any) => void) => void;
-  emit: (event: string, data: any) => void;
+  subscribe: (event: string, callback: (data: WebSocketData) => void) => void;
+  unsubscribe: (event: string, callback: (data: WebSocketData) => void) => void;
+  emit: (event: string, data: WebSocketData) => void;
   subscribeConversation: (conversationId: string) => void;
   unsubscribeConversation: (conversationId: string) => void;
   subscribeTicket: (ticketId: string) => void;
@@ -106,15 +112,15 @@ export function useWebSocket(options: UseWebSocketOptions): UseWebSocketReturn {
     };
   }, [token, onConnect, onDisconnect, onError, queryClient]);
 
-  const subscribe = useCallback((event: string, callback: (data: any) => void) => {
+  const subscribe = useCallback((event: string, callback: (data: WebSocketData) => void) => {
     socketRef.current?.on(event, callback);
   }, []);
 
-  const unsubscribe = useCallback((event: string, callback: (data: any) => void) => {
+  const unsubscribe = useCallback((event: string, callback: (data: WebSocketData) => void) => {
     socketRef.current?.off(event, callback);
   }, []);
 
-  const emit = useCallback((event: string, data: any) => {
+  const emit = useCallback((event: string, data: WebSocketData) => {
     socketRef.current?.emit(event, data);
   }, []);
 

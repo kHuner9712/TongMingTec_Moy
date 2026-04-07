@@ -154,7 +154,7 @@ export interface ConversationMessage extends BaseEntity {
   senderName: string | null;
   content: string;
   contentType: string;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
   sentAt: string;
   deliveredAt: string | null;
   readAt: string | null;
@@ -222,7 +222,7 @@ export interface Notification extends BaseEntity {
 export interface Channel extends BaseEntity {
   type: string;
   name: string;
-  config: Record<string, any> | null;
+  config: Record<string, unknown> | null;
   isActive: boolean;
 }
 
@@ -231,8 +231,8 @@ export type AiTaskStatus = 'pending' | 'running' | 'completed' | 'failed';
 export interface AiTask extends BaseEntity {
   type: string;
   status: AiTaskStatus;
-  input: Record<string, any> | null;
-  output: Record<string, any> | null;
+  input: Record<string, unknown> | null;
+  output: Record<string, unknown> | null;
   error: string | null;
   costTokens: number | null;
   costAmount: number | null;
@@ -246,8 +246,8 @@ export interface AuditLog extends BaseEntity {
   action: string;
   resourceType: string;
   resourceId: string | null;
-  oldValue: Record<string, any> | null;
-  newValue: Record<string, any> | null;
+  oldValue: Record<string, unknown> | null;
+  newValue: Record<string, unknown> | null;
   ip: string | null;
   userAgent: string | null;
 }
@@ -261,7 +261,7 @@ export interface DashboardSummary {
   pendingTaskCount: number;
 }
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code?: string;
   message?: string;
   data?: T;

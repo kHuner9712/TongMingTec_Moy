@@ -21,6 +21,49 @@ interface AuthenticatedSocket extends Socket {
   };
 }
 
+interface ConversationMessagePayload {
+  id: string;
+  conversationId: string;
+  content: string;
+  messageType: string;
+  createdAt: Date;
+}
+
+interface ConversationStatusPayload {
+  conversationId: string;
+  status: string;
+  updatedAt: Date;
+}
+
+interface TicketPayload {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  createdAt: Date;
+}
+
+interface TicketStatusPayload {
+  ticketId: string;
+  status: string;
+  updatedAt: Date;
+}
+
+interface NotificationPayload {
+  id: string;
+  title: string;
+  content: string;
+  notificationType: string;
+  createdAt: Date;
+}
+
+interface AITaskPayload {
+  id: string;
+  taskType: string;
+  status: string;
+  createdAt: Date;
+}
+
 @Injectable()
 @WebSocketGateway({
   cors: {
@@ -131,43 +174,43 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { success: true, ticketId };
   }
 
-  emitToUser(userId: string, event: string, data: any) {
+  emitToUser(userId: string, event: string, data: NotificationPayload | AITaskPayload): void {
     this.server.to(`user:${userId}`).emit(event, data);
   }
 
-  emitToOrg(orgId: string, event: string, data: any) {
+  emitToOrg(orgId: string, event: string, data: TicketPayload): void {
     this.server.to(`org:${orgId}`).emit(event, data);
   }
 
-  emitToConversation(conversationId: string, event: string, data: any) {
+  emitToConversation(conversationId: string, event: string, data: ConversationMessagePayload | ConversationStatusPayload): void {
     this.server.to(`conversation:${conversationId}`).emit(event, data);
   }
 
-  emitToTicket(ticketId: string, event: string, data: any) {
+  emitToTicket(ticketId: string, event: string, data: TicketStatusPayload): void {
     this.server.to(`ticket:${ticketId}`).emit(event, data);
   }
 
-  emitConversationMessage(conversationId: string, message: any) {
+  emitConversationMessage(conversationId: string, message: ConversationMessagePayload): void {
     this.emitToConversation(conversationId, 'conversation.message.created', message);
   }
 
-  emitConversationStatus(conversationId: string, status: any) {
+  emitConversationStatus(conversationId: string, status: ConversationStatusPayload): void {
     this.emitToConversation(conversationId, 'conversation.status.changed', status);
   }
 
-  emitTicketCreated(orgId: string, ticket: any) {
+  emitTicketCreated(orgId: string, ticket: TicketPayload): void {
     this.emitToOrg(orgId, 'ticket.created', ticket);
   }
 
-  emitTicketStatus(ticketId: string, status: any) {
+  emitTicketStatus(ticketId: string, status: TicketStatusPayload): void {
     this.emitToTicket(ticketId, 'ticket.status.changed', status);
   }
 
-  emitNotification(userId: string, notification: any) {
+  emitNotification(userId: string, notification: NotificationPayload): void {
     this.emitToUser(userId, 'notification.created', notification);
   }
 
-  emitAiTaskStatus(userId: string, task: any) {
+  emitAiTaskStatus(userId: string, task: AITaskPayload): void {
     this.emitToUser(userId, 'ai.task.status.changed', task);
   }
 }

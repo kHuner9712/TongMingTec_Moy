@@ -3,6 +3,28 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AITask, AITaskType, AITaskStatus } from './entities/ai-task.entity';
 
+interface SmartReplyOutput {
+  suggestions: Array<{
+    id: string;
+    content: string;
+    confidence: number;
+  }>;
+  processingTime: number;
+}
+
+interface SummaryOutput {
+  summary: string;
+  keyPoints: string[];
+}
+
+interface SentimentOutput {
+  sentiment: string;
+  score: number;
+  confidence: number;
+}
+
+type AITaskOutput = SmartReplyOutput | SummaryOutput | SentimentOutput | Record<string, never>;
+
 @Injectable()
 export class AiService {
   constructor(
@@ -60,12 +82,13 @@ export class AiService {
 
       await this.aiTaskRepository.update(taskId, {
         status: AITaskStatus.COMPLETED,
-        outputPayload: outputPayload as any,
+        outputPayload: outputPayload,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await this.aiTaskRepository.update(taskId, {
         status: AITaskStatus.FAILED,
-        errorMessage: error.message || 'Unknown error',
+        errorMessage,
       });
     }
   }
@@ -74,7 +97,7 @@ export class AiService {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 
-  private generateMockOutput(task: AITask): Record<string, unknown> {
+  private generateMockOutput(task: AITask): AITaskOutput {
     switch (task.taskType) {
       case AITaskType.SMART_REPLY:
         return {

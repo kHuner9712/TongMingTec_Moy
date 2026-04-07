@@ -118,8 +118,9 @@ export default function Conversations() {
         refetchMessages();
         queryClient.invalidateQueries(["conversations"]);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "发送失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "发送失败");
       },
     },
   );
@@ -134,8 +135,9 @@ export default function Conversations() {
         acceptForm.resetFields();
         queryClient.invalidateQueries(["conversations"]);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "接入失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "接入失败");
       },
     },
   );
@@ -160,8 +162,9 @@ export default function Conversations() {
         transferForm.resetFields();
         queryClient.invalidateQueries(["conversations"]);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "转接失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "转接失败");
       },
     },
   );
@@ -177,8 +180,9 @@ export default function Conversations() {
         queryClient.invalidateQueries(["conversations"]);
         setIsDetailDrawerOpen(false);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "关闭失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "关闭失败");
       },
     },
   );
@@ -284,7 +288,7 @@ export default function Conversations() {
       title: "操作",
       key: "action",
       width: 280,
-      render: (_: any, record: Conversation) => (
+      render: (_: unknown, record: Conversation) => (
         <Space size="small">
           <Button
             type="link"

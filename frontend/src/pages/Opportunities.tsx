@@ -35,6 +35,7 @@ import {
   OpportunityStage,
   OpportunityResult,
   CreateOpportunityDto,
+  OpportunityStageHistory,
 } from "../types";
 import CustomerSelect from "../components/CustomerSelect";
 import dayjs from "dayjs";
@@ -170,8 +171,9 @@ export default function Opportunities() {
       { enabled: !!selectedOpportunity && isDetailDrawerOpen },
     );
 
-  const handleVersionConflict = (error: any) => {
-    if (error?.code === "CONFLICT_VERSION" || error?.message?.includes("CONFLICT_VERSION")) {
+  const handleVersionConflict = (error: unknown) => {
+    const err = error as { code?: string; message?: string };
+    if (err?.code === "CONFLICT_VERSION" || err?.message?.includes("CONFLICT_VERSION")) {
       setVersionConflict("该商机已被他人修改，请刷新页面后重试");
       return true;
     }
@@ -186,9 +188,10 @@ export default function Opportunities() {
       queryClient.invalidateQueries(["opportunities"]);
       queryClient.invalidateQueries(["opportunity-summary"]);
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       if (!handleVersionConflict(error)) {
-        message.error(error?.message || "创建失败");
+        const err = error as { message?: string };
+        message.error(err?.message || "创建失败");
       }
     },
   });
@@ -217,9 +220,10 @@ export default function Opportunities() {
           refetchOpportunityDetail();
         }
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         if (!handleVersionConflict(error)) {
-          message.error(error?.message || "阶段推进失败");
+          const err = error as { message?: string };
+          message.error(err?.message || "阶段推进失败");
         }
       },
     },
@@ -246,9 +250,10 @@ export default function Opportunities() {
         queryClient.invalidateQueries(["opportunities"]);
         queryClient.invalidateQueries(["opportunity-summary"]);
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         if (!handleVersionConflict(error)) {
-          message.error(error?.message || "结果标记失败");
+          const err = error as { message?: string };
+          message.error(err?.message || "结果标记失败");
         }
       },
     },
@@ -361,7 +366,7 @@ export default function Opportunities() {
       title: "操作",
       key: "action",
       width: 250,
-      render: (_: any, record: Opportunity) => (
+      render: (_: unknown, record: Opportunity) => (
         <Space size="small">
           <Button
             type="link"
@@ -657,7 +662,7 @@ export default function Opportunities() {
               {opportunityDetail.stageHistory &&
               opportunityDetail.stageHistory.length > 0 ? (
                 <Timeline
-                  items={opportunityDetail.stageHistory.map((item: any) => ({
+                  items={opportunityDetail.stageHistory.map((item: OpportunityStageHistory) => ({
                     color: "blue",
                     children: (
                       <div>

@@ -77,8 +77,9 @@ export default function Leads() {
       createForm.resetFields();
       queryClient.invalidateQueries(["leads"]);
     },
-    onError: (error: any) => {
-      message.error(error?.message || "创建失败");
+    onError: (error: unknown) => {
+      const err = error as { message?: string };
+      message.error(err?.message || "创建失败");
     },
   });
 
@@ -92,8 +93,9 @@ export default function Leads() {
         assignForm.resetFields();
         queryClient.invalidateQueries(["leads"]);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "分配失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "分配失败");
       },
     },
   );
@@ -111,8 +113,9 @@ export default function Leads() {
           refetchLeadDetail();
         }
       },
-      onError: (error: any) => {
-        message.error(error?.message || "添加失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "添加失败");
       },
     },
   );
@@ -126,8 +129,9 @@ export default function Leads() {
         setIsConvertModalOpen(false);
         queryClient.invalidateQueries(["leads"]);
       },
-      onError: (error: any) => {
-        message.error(error?.message || "转化失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "转化失败");
       },
     },
   );
@@ -217,7 +221,7 @@ export default function Leads() {
       title: "操作",
       key: "action",
       width: 280,
-      render: (_: any, record: Lead) => (
+      render: (_: unknown, record: Lead) => (
         <Space size="small">
           <Button
             type="link"

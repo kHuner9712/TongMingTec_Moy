@@ -29,6 +29,7 @@ import {
   TicketStatus,
   TicketPriority,
   CreateTicketDto,
+  TicketLog,
 } from "../types";
 import UserSelect from "../components/UserSelect";
 import CustomerSelect from "../components/CustomerSelect";
@@ -94,8 +95,9 @@ export default function Tickets() {
       createForm.resetFields();
       queryClient.invalidateQueries(["tickets"]);
     },
-    onError: (error: any) => {
-      message.error(error?.message || "创建失败");
+    onError: (error: unknown) => {
+      const err = error as { message?: string };
+      message.error(err?.message || "创建失败");
     },
   });
 
@@ -112,8 +114,9 @@ export default function Tickets() {
           refetchTicketDetail();
         }
       },
-      onError: (error: any) => {
-        message.error(error?.message || "分配失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "分配失败");
       },
     },
   );
@@ -129,8 +132,9 @@ export default function Tickets() {
           refetchTicketDetail();
         }
       },
-      onError: (error: any) => {
-        message.error(error?.message || "操作失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "操作失败");
       },
     },
   );
@@ -148,8 +152,9 @@ export default function Tickets() {
           refetchTicketDetail();
         }
       },
-      onError: (error: any) => {
-        message.error(error?.message || "操作失败");
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "操作失败");
       },
     },
   );
@@ -273,7 +278,7 @@ export default function Tickets() {
       title: "操作",
       key: "action",
       width: 300,
-      render: (_: any, record: Ticket) => (
+      render: (_: unknown, record: Ticket) => (
         <Space size="small">
           <Button
             type="link"
@@ -539,7 +544,7 @@ export default function Tickets() {
             <Card title="处理记录">
               {ticketDetail.logs && ticketDetail.logs.length > 0 ? (
                 <Timeline
-                  items={ticketDetail.logs.map((item: any) => ({
+                  items={ticketDetail.logs.map((item: TicketLog) => ({
                     color: "blue",
                     children: (
                       <div>
