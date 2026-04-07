@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   render,
   screen,
@@ -10,7 +10,30 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import Opportunities from "../../pages/Opportunities";
 import * as opportunityApi from "../../services/opportunity";
 
-vi.mock("../../services/opportunity");
+vi.mock("../../services/opportunity", () => ({
+  opportunityApi: {
+    list: vi.fn(() => Promise.resolve({ items: [], meta: { total: 0 } })),
+    get: vi.fn(() => Promise.resolve({ stageHistory: [] })),
+    getSummary: vi.fn(() =>
+      Promise.resolve({
+        total: 0,
+        totalAmount: 0,
+        byStage: {
+          discovery: 0,
+          qualification: 0,
+          proposal: 0,
+          negotiation: 0,
+        },
+        byResult: { won: 0, lost: 0 },
+      }),
+    ),
+    create: vi.fn(),
+    update: vi.fn(),
+    changeStage: vi.fn(),
+    markResult: vi.fn(),
+  },
+}));
+
 vi.mock("../../components/CustomerSelect", () => ({
   default: ({ value, onChange, placeholder }: any) => (
     <select
@@ -68,25 +91,6 @@ afterEach(() => {
 });
 
 describe("Opportunities 页面 - 基础渲染", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (opportunityApi.opportunityApi.list as any).mockResolvedValue({
-      items: [],
-      meta: { total: 0 },
-    });
-    (opportunityApi.opportunityApi.getSummary as any).mockResolvedValue({
-      total: 0,
-      totalAmount: 0,
-      byStage: {
-        discovery: 0,
-        qualification: 0,
-        proposal: 0,
-        negotiation: 0,
-      },
-      byResult: { won: 0, lost: 0 },
-    });
-  });
-
   it("渲染页面标题和新建按钮", () => {
     render(<Opportunities />, { wrapper: createWrapper() });
     expect(
@@ -126,25 +130,6 @@ describe("Opportunities 页面 - 基础渲染", () => {
 });
 
 describe("Opportunities 页面 - 权限验证", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (opportunityApi.opportunityApi.list as any).mockResolvedValue({
-      items: [],
-      meta: { total: 0 },
-    });
-    (opportunityApi.opportunityApi.getSummary as any).mockResolvedValue({
-      total: 0,
-      totalAmount: 0,
-      byStage: {
-        discovery: 0,
-        qualification: 0,
-        proposal: 0,
-        negotiation: 0,
-      },
-      byResult: { won: 0, lost: 0 },
-    });
-  });
-
   it("有权限时显示新建按钮", () => {
     render(<Opportunities />, { wrapper: createWrapper() });
     expect(
@@ -154,25 +139,6 @@ describe("Opportunities 页面 - 权限验证", () => {
 });
 
 describe("Opportunities 页面 - WebSocket", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    (opportunityApi.opportunityApi.list as any).mockResolvedValue({
-      items: [],
-      meta: { total: 0 },
-    });
-    (opportunityApi.opportunityApi.getSummary as any).mockResolvedValue({
-      total: 0,
-      totalAmount: 0,
-      byStage: {
-        discovery: 0,
-        qualification: 0,
-        proposal: 0,
-        negotiation: 0,
-      },
-      byResult: { won: 0, lost: 0 },
-    });
-  });
-
   it("页面渲染成功", async () => {
     render(<Opportunities />, { wrapper: createWrapper() });
     await waitFor(() => {
