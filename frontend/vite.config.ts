@@ -18,4 +18,19 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    chunkSizeWarningLimit: 500,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          antd: ['antd', '@ant-design/icons', '@ant-design/pro-components'],
+          query: ['react-query', '@tanstack/react-query'],
+          state: ['zustand'],
+          utils: ['axios', 'dayjs'],
+        },
+      },
+    },
+    splitVendorChunkPlugin: true,
+  },
 });
