@@ -6,9 +6,7 @@ import { User } from '../../usr/entities/user.entity';
 
 export enum ConversationStatus {
   QUEUED = 'queued',
-  WAITING = 'waiting',
   ACTIVE = 'active',
-  PAUSED = 'paused',
   CLOSED = 'closed',
 }
 
@@ -22,9 +20,8 @@ export class Conversation extends BaseEntity {
   @Index()
   customerId: string | null;
 
-  @Column({ type: 'varchar', length: 128, nullable: true, name: 'external_id' })
-  @Index()
-  externalId: string | null;
+  @Column({ type: 'varchar', length: 128, nullable: true, name: 'subject' })
+  subject: string | null;
 
   @Column({ type: 'uuid', nullable: true, name: 'assignee_user_id' })
   @Index()
@@ -38,25 +35,19 @@ export class Conversation extends BaseEntity {
   @Index()
   status: ConversationStatus;
 
-  @Column({ type: 'timestamptz', nullable: true, name: 'waiting_since' })
-  waitingSince: Date | null;
-
   @Column({ type: 'timestamptz', nullable: true, name: 'first_response_at' })
   @Index()
   firstResponseAt: Date | null;
 
+  @Column({ type: 'timestamptz', nullable: true, name: 'last_message_at' })
+  @Index()
+  lastMessageAt: Date | null;
+
   @Column({ type: 'timestamptz', nullable: true, name: 'closed_at' })
   closedAt: Date | null;
 
-  @Column({ type: 'varchar', length: 32, nullable: true, name: 'close_reason' })
-  closeReason: string | null;
-
-  @Column({ type: 'int', nullable: true, name: 'rating_score' })
-  @Index()
-  ratingScore: number | null;
-
-  @Column({ type: 'text', nullable: true, name: 'rating_comment' })
-  ratingComment: string | null;
+  @Column({ type: 'varchar', length: 32, nullable: true, name: 'closed_reason' })
+  closedReason: string | null;
 
   @ManyToOne(() => Channel, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'channel_id' })

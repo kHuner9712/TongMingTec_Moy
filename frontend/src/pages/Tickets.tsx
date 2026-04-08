@@ -38,7 +38,7 @@ import dayjs from "dayjs";
 const STATUS_CONFIG: Record<TicketStatus, { color: string; text: string }> = {
   pending: { color: "default", text: "待处理" },
   assigned: { color: "blue", text: "已分配" },
-  in_progress: { color: "orange", text: "处理中" },
+  processing: { color: "orange", text: "处理中" },
   resolved: { color: "green", text: "已解决" },
   closed: { color: "red", text: "已关闭" },
 };
@@ -160,8 +160,8 @@ export default function Tickets() {
   );
 
   const closeMutation = useMutation(
-    (data: { id: string; closeReason?: string; version: number }) =>
-      ticketApi.close(data.id, data.closeReason, data.version),
+    (data: { id: string; closedReason?: string; version: number }) =>
+      ticketApi.close(data.id, data.closedReason, data.version),
     {
       onSuccess: () => {
         message.success("已关闭工单");
@@ -212,7 +212,7 @@ export default function Tickets() {
       if (selectedTicket) {
         closeMutation.mutate({
           id: selectedTicket.id,
-          closeReason: values.closeReason,
+          closedReason: values.closedReason,
           version: selectedTicket.version,
         });
       }
@@ -309,7 +309,7 @@ export default function Tickets() {
               开始
             </Button>
           )}
-          {record.status === "in_progress" && (
+          {record.status === "processing" && (
             <Button
               type="link"
               size="small"
@@ -475,7 +475,7 @@ export default function Tickets() {
         confirmLoading={closeMutation.isLoading}
       >
         <Form form={closeForm} layout="vertical">
-          <Form.Item name="closeReason" label="关闭原因">
+          <Form.Item name="closedReason" label="关闭原因">
             <Input.TextArea rows={2} />
           </Form.Item>
         </Form>

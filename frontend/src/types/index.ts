@@ -12,7 +12,7 @@ export interface User {
   displayName: string;
   email: string | null;
   mobile: string | null;
-  status: 'invited' | 'active' | 'disabled' | 'locked';
+  status: "invited" | "active" | "disabled" | "locked";
   orgId: string;
   departmentId: string | null;
   locale: string;
@@ -46,8 +46,8 @@ export interface PaginatedResponse<T> {
   };
 }
 
-export type CustomerStatus = 'potential' | 'active' | 'silent' | 'lost';
-export type CustomerLevel = 'L1' | 'L2' | 'L3' | 'VIP';
+export type CustomerStatus = "potential" | "active" | "silent" | "lost";
+export type CustomerLevel = "L1" | "L2" | "L3" | "VIP";
 
 export interface Customer extends BaseEntity {
   name: string;
@@ -61,6 +61,7 @@ export interface Customer extends BaseEntity {
   remark: string | null;
   lastContactAt: string | null;
   ownerUserName?: string;
+  riskLevel?: string | null;
 }
 
 export interface CustomerContact extends BaseEntity {
@@ -73,7 +74,12 @@ export interface CustomerContact extends BaseEntity {
   remark: string | null;
 }
 
-export type LeadStatus = 'new' | 'assigned' | 'following' | 'converted' | 'invalid';
+export type LeadStatus =
+  | "new"
+  | "assigned"
+  | "following"
+  | "converted"
+  | "invalid";
 
 export interface Lead extends BaseEntity {
   source: string;
@@ -98,8 +104,12 @@ export interface LeadFollowUp extends BaseEntity {
   createdBy: string;
 }
 
-export type OpportunityStage = 'discovery' | 'qualification' | 'proposal' | 'negotiation';
-export type OpportunityResult = 'won' | 'lost';
+export type OpportunityStage =
+  | "discovery"
+  | "qualification"
+  | "proposal"
+  | "negotiation";
+export type OpportunityResult = "won" | "lost";
 
 export interface Opportunity extends BaseEntity {
   customerId: string;
@@ -124,18 +134,18 @@ export interface OpportunityStageHistory extends BaseEntity {
   createdBy: string;
 }
 
-export type ConversationStatus = 'queued' | 'waiting' | 'active' | 'paused' | 'closed';
+export type ConversationStatus = "queued" | "active" | "closed";
 
 export interface Conversation extends BaseEntity {
   channelId: string;
   customerId: string | null;
-  externalId: string | null;
+  subject: string | null;
   assigneeUserId: string | null;
   status: ConversationStatus;
-  waitingSince: string | null;
   firstResponseAt: string | null;
+  lastMessageAt: string | null;
   closedAt: string | null;
-  closeReason: string | null;
+  closedReason: string | null;
   ratingScore: number | null;
   ratingComment: string | null;
   channelName?: string;
@@ -143,8 +153,8 @@ export interface Conversation extends BaseEntity {
   assigneeUserName?: string;
 }
 
-export type MessageDirection = 'inbound' | 'outbound';
-export type MessageSenderType = 'customer' | 'agent' | 'ai' | 'system';
+export type MessageDirection = "inbound" | "outbound";
+export type MessageSenderType = "customer" | "agent" | "ai" | "system";
 
 export interface ConversationMessage extends BaseEntity {
   conversationId: string;
@@ -160,21 +170,25 @@ export interface ConversationMessage extends BaseEntity {
   readAt: string | null;
 }
 
-export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
-export type TicketStatus = 'pending' | 'assigned' | 'in_progress' | 'resolved' | 'closed';
+export type TicketPriority = "low" | "normal" | "high" | "urgent";
+export type TicketStatus =
+  | "pending"
+  | "assigned"
+  | "processing"
+  | "resolved"
+  | "closed";
 
 export interface Ticket extends BaseEntity {
   conversationId: string | null;
   customerId: string | null;
+  ticketNo: string;
   title: string;
-  description: string | null;
   priority: TicketPriority;
   status: TicketStatus;
   assigneeUserId: string | null;
   solution: string | null;
-  closeReason: string | null;
-  slaResponseAt: string | null;
-  slaResolveAt: string | null;
+  closedReason: string | null;
+  slaDueAt: string | null;
   firstResponseAt: string | null;
   resolvedAt: string | null;
   closedAt: string | null;
@@ -193,7 +207,7 @@ export interface TicketLog extends BaseEntity {
   createdBy: string;
 }
 
-export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+export type TaskStatus = "pending" | "in_progress" | "completed" | "cancelled";
 
 export interface Task extends BaseEntity {
   title: string;
@@ -226,7 +240,7 @@ export interface Channel extends BaseEntity {
   isActive: boolean;
 }
 
-export type AiTaskStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type AiTaskStatus = "pending" | "running" | "completed" | "failed";
 
 export interface AiTask extends BaseEntity {
   type: string;
@@ -266,7 +280,7 @@ export interface ApiResponse<T = unknown> {
   message?: string;
   data?: T;
   items?: T[];
-  meta?: PaginatedResponse<T>['meta'];
+  meta?: PaginatedResponse<T>["meta"];
 }
 
 export interface CreateCustomerDto {
@@ -338,7 +352,7 @@ export interface UpdateTicketDto {
   version: number;
 }
 
-export type TimelineActorType = 'customer' | 'user' | 'ai' | 'system';
+export type TimelineActorType = "customer" | "user" | "ai" | "system";
 
 export interface CustomerTimelineEvent {
   id: string;
@@ -392,7 +406,7 @@ export interface CustomerIntent extends BaseEntity {
   detectedAt: string;
 }
 
-export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type RiskLevel = "low" | "medium" | "high" | "critical";
 
 export interface CustomerRisk extends BaseEntity {
   customerId: string;
@@ -401,7 +415,7 @@ export interface CustomerRisk extends BaseEntity {
   assessedAt: string;
 }
 
-export type NextActionStatus = 'pending' | 'accepted' | 'dismissed' | 'expired';
+export type NextActionStatus = "pending" | "accepted" | "dismissed" | "expired";
 
 export interface CustomerNextAction extends BaseEntity {
   customerId: string;
@@ -413,8 +427,8 @@ export interface CustomerNextAction extends BaseEntity {
   status: NextActionStatus;
 }
 
-export type AgentExecutionMode = 'suggest' | 'assist' | 'auto' | 'approval';
-export type AgentStatus = 'draft' | 'active' | 'paused' | 'archived';
+export type AgentExecutionMode = "suggest" | "assist" | "auto" | "approval";
+export type AgentStatus = "draft" | "active" | "paused" | "archived";
 
 export interface AiAgent extends BaseEntity {
   code: string;
@@ -432,7 +446,15 @@ export interface AiAgent extends BaseEntity {
   status: AgentStatus;
 }
 
-export type AgentRunStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'awaiting_approval' | 'rolled_back' | 'taken_over';
+export type AgentRunStatus =
+  | "pending"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "cancelled"
+  | "awaiting_approval"
+  | "rolled_back"
+  | "taken_over";
 
 export interface AiAgentRun {
   id: string;
@@ -450,7 +472,7 @@ export interface AiAgentRun {
   createdAt: string;
 }
 
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+export type ApprovalStatus = "pending" | "approved" | "rejected" | "expired";
 
 export interface AiApprovalRequest extends BaseEntity {
   agentRunId: string;
@@ -499,7 +521,7 @@ export interface AiTakeover {
 export interface AiPromptTemplate extends BaseEntity {
   templateCode: string;
   agentCode: string;
-  version: number;
+  templateVersion: number;
   systemPrompt: string;
   userPromptPattern: string;
   inputSchema: Record<string, unknown> | null;
@@ -508,7 +530,14 @@ export interface AiPromptTemplate extends BaseEntity {
   enabled: boolean;
 }
 
-export type ToolType = 'read_api' | 'write_api' | 'kb_search' | 'workflow_execute' | 'integration_execute' | 'notification_send' | 'report_export';
+export type ToolType =
+  | "read_api"
+  | "write_api"
+  | "kb_search"
+  | "workflow_execute"
+  | "integration_execute"
+  | "notification_send"
+  | "report_export";
 
 export interface AiTool extends BaseEntity {
   code: string;
@@ -521,10 +550,15 @@ export interface AiTool extends BaseEntity {
 
 export interface WorkbenchTodoItem {
   id: string;
-  type: 'ai_suggestion' | 'pending_approval' | 'pending_conversation' | 'pending_ticket' | 'pending_task';
+  type:
+    | "ai_suggestion"
+    | "pending_approval"
+    | "pending_conversation"
+    | "pending_ticket"
+    | "pending_task";
   title: string;
   description?: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  priority: "low" | "medium" | "high" | "urgent";
   relatedType?: string;
   relatedId?: string;
   createdAt: string;
@@ -532,15 +566,23 @@ export interface WorkbenchTodoItem {
 
 export interface WorkbenchAiInsight {
   id: string;
-  type: 'risk_alert' | 'opportunity_hint' | 'followup_reminder' | 'churn_warning';
+  type:
+    | "risk_alert"
+    | "opportunity_hint"
+    | "followup_reminder"
+    | "churn_warning";
   title: string;
   description: string;
-  severity: 'info' | 'warning' | 'error';
+  severity: "info" | "warning" | "error";
   relatedType?: string;
   relatedId?: string;
 }
 
-export type SnapshotType = 'pre_execution' | 'post_execution' | 'manual' | 'scheduled';
+export type SnapshotType =
+  | "pre_execution"
+  | "post_execution"
+  | "manual"
+  | "scheduled";
 
 export interface CustomerStateSnapshot {
   id: string;

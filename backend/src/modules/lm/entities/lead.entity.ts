@@ -31,6 +31,10 @@ export class Lead extends BaseEntity {
   @Index()
   companyName: string | null;
 
+  @Column({ type: 'uuid', nullable: true, name: 'customer_id' })
+  @Index()
+  customerId: string | null;
+
   @Column({ type: 'uuid', nullable: true, name: 'owner_user_id' })
   @Index()
   ownerUserId: string | null;

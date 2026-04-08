@@ -3,7 +3,7 @@ import { TkService } from './tk.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Ticket, TicketStatus, TicketPriority } from './entities/ticket.entity';
 import { TicketLog } from './entities/ticket-log.entity';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 describe('TkService', () => {
@@ -16,8 +16,8 @@ describe('TkService', () => {
     orgId: 'org-uuid-123',
     conversationId: 'conv-uuid-123',
     customerId: 'customer-uuid-123',
+    ticketNo: 'TK-001',
     title: '产品咨询工单',
-    description: '客户咨询产品功能',
     status: TicketStatus.PENDING,
     priority: TicketPriority.NORMAL,
     assigneeUserId: null,
@@ -139,7 +139,6 @@ describe('TkService', () => {
         conversationId: 'conv-uuid-123',
         customerId: 'customer-uuid-123',
         title: '产品咨询工单',
-        description: '客户咨询产品功能',
         priority: TicketPriority.NORMAL,
       }, 'user-uuid-123');
 
@@ -186,7 +185,7 @@ describe('TkService', () => {
     it('should resolve ticket', async () => {
       ticketRepository.findOne.mockResolvedValue({
         ...mockTicket,
-        status: TicketStatus.IN_PROGRESS,
+        status: TicketStatus.PROCESSING,
         assigneeUserId: 'agent-uuid-123',
       });
       ticketRepository.update.mockResolvedValue({ affected: 1 });
@@ -207,7 +206,7 @@ describe('TkService', () => {
       );
     });
 
-    it('should throw BadRequestException if not in progress', async () => {
+    it('should throw ConflictException if not in progress', async () => {
       ticketRepository.findOne.mockResolvedValue(mockTicket);
 
       await expect(
@@ -218,7 +217,7 @@ describe('TkService', () => {
     it('should throw ConflictException for version mismatch', async () => {
       ticketRepository.findOne.mockResolvedValue({
         ...mockTicket,
-        status: TicketStatus.IN_PROGRESS,
+        status: TicketStatus.PROCESSING,
         assigneeUserId: 'agent-uuid-123',
         version: 2,
       });
@@ -317,7 +316,7 @@ describe('TkService', () => {
     it('should allow transition from in_progress to resolved', async () => {
       ticketRepository.findOne.mockResolvedValue({
         ...mockTicket,
-        status: TicketStatus.IN_PROGRESS,
+        status: TicketStatus.PROCESSING,
         assigneeUserId: 'agent-uuid-123',
         version: 1,
       });

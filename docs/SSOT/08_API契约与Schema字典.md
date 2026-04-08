@@ -19,7 +19,7 @@
 ## 2. 全局强约束
 - 统一前缀：`/api/v1`
 - 路径参数统一 `{id}`，禁止 `:id`
-- `/` 仅重定向到 `/dashboard`
+- `/` 仅重定向到 `/cockpit`
 - 写接口默认写审计日志
 - 多租户隔离必须基于 `org_id`
 - 乐观锁实体默认要求 `version`
@@ -172,6 +172,7 @@
 | API-ID | Method / Path | introduced_in | Path / Query / Body / Header | Response | 成功 / 失败 | 权限 | 数据范围 | 事务 | 幂等 | 并发 | 审计动作 | 示例 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-AI-001~010 | `POST /ai/smart-reply` `GET /ai/tasks/{id}` `GET/POST /ai/agents` `POST /ai/agents/{id}/run` `GET /ai/approval-requests` `POST /ai/approval-requests/{id}/decision` `GET/PUT /ai/quality-rules` `GET /ai/quality-reports` `POST /ai/rollbacks` `POST /ai/takeovers` | S1/S2 | `SCH-PATH-ID / SCH-AI-* / SCH-AI-* / SCH-HEADER-AUTH` | `SCH-AI-*` | `200/201/202/400/403/409/429` | `PERM-AI-*` | SELF/TEAM/ORG | 运行/审批/回滚是 | 任务/执行是 | `version` | `AI_*` | `EX-AI-001` |
+| API-AIRT-001~013 | `GET /ai-runtime/cockpit` `GET /ai-runtime/customers/{id}/360` `GET /ai-runtime/customers/{id}/timeline` `GET /ai-runtime/customers/{id}/next-actions` `GET /ai-runtime/customers/{id}/snapshots` `GET /ai-runtime/agent-runs` `GET /ai-runtime/agent-runs/{id}` `POST /ai-runtime/agent-runs` `GET /ai-runtime/approvals/pending` `POST /ai-runtime/approvals/{id}/approve` `POST /ai-runtime/approvals/{id}/reject` `POST /ai-runtime/takeovers` `POST /ai-runtime/rollbacks` | S1 | `SCH-PATH-ID / SCH-AIRT-* / SCH-AIRT-* / SCH-HEADER-AUTH` | `SCH-AIRT-*` | `200/201/400/403/409` | `PERM-CM-VIEW / PERM-AI-EXECUTE / PERM-AI-APPROVE / PERM-AI-TAKEOVER / PERM-AI-ROLLBACK` | SELF/TEAM/ORG | 执行/审批/回滚/接管是 | 创建/执行是 | `version` | `AIRT_COCKPIT_VIEW / AIRT_CUSTOMER_360 / AIRT_TIMELINE / AIRT_NEXT_ACTIONS / AIRT_SNAPSHOTS / AIRT_AGENT_RUN_LIST / AIRT_AGENT_RUN_DETAIL / AIRT_AGENT_EXECUTE / AIRT_APPROVAL_LIST / AIRT_APPROVAL_APPROVE / AIRT_APPROVAL_REJECT / AIRT_TAKEOVER / AIRT_ROLLBACK` | `EX-AIRT-001` |
 | API-PLAN-001~003 | `GET/POST /plans` `GET/POST /add-ons` `GET/PUT /quota-policies/{id}` | S3 | `SCH-PATH-ID / SCH-PLAN-* / SCH-PLAN-* / SCH-HEADER-AUTH` | `SCH-PLAN-*` | `200/201/400/403/409` | `PERM-PLAN-MANAGE` | ORG | 是 | 创建是 | `version` | `PLAN_* / QUOTA_POLICY_*` | `EX-PLAN-001` |
 | API-SUB-001~004 | `GET/POST /subscriptions` `GET/PUT /subscriptions/{id}` `POST /subscriptions/{id}/renew` `POST /subscriptions/{id}/suspend` | S3 | `SCH-PATH-ID / SCH-SUB-* / SCH-SUB-* / SCH-HEADER-AUTH` | `SCH-SUB-*` | `200/201/400/403/409` | `PERM-SUB-*` | ORG | 是 | 创建/续费/暂停是 | `version` | `SUBSCRIPTION_*` | `EX-SUB-001` |
 | API-BILL-001~004 | `GET/POST /bills` `GET /bills/{id}` `GET /bills/{id}/export` `POST /bills/{id}/collect` | S3 | `SCH-PATH-ID / SCH-BILL-* / SCH-BILL-* / SCH-HEADER-AUTH` | `SCH-BILL-*` | `200/201/400/403/409` | `PERM-BILL-*` | ORG | 是 | 生成/催缴是 | `version` | `BILL_*` | `EX-BILL-001` |
@@ -207,6 +208,7 @@
 | CM / LM / OM | `SCH-CM-LIST`, `SCH-LM-LIST`, `SCH-OM-LIST` | `SCH-CM-CREATE`, `SCH-LM-CREATE`, `SCH-OM-CREATE` | `SCH-CM-UPDATE`, `SCH-OM-UPDATE` | `SCH-CM-DETAIL`, `SCH-LM-DETAIL`, `SCH-OM-DETAIL` | `SCH-CM-LIST-RESP`, `SCH-LM-LIST-RESP`, `SCH-OM-LIST-RESP` |
 | CNV / TK / TSK / NTF | `SCH-CNV-LIST`, `SCH-TK-LIST`, `SCH-TSK-LIST`, `SCH-NTF-LIST` | `SCH-CNV-SEND`, `SCH-TK-CREATE`, `SCH-TSK-CREATE` | `SCH-TSK-UPDATE`, `SCH-NTF-PREFERENCE` | `SCH-CNV-DETAIL`, `SCH-TK-DETAIL`, `SCH-TSK-DETAIL` | `SCH-CNV-LIST-RESP`, `SCH-TK-LIST-RESP`, `SCH-TSK-LIST-RESP`, `SCH-NTF-LIST-RESP` |
 | KB / DASH / AUTO | `SCH-KB-LIST`, `SCH-DASH-QUERY`, `SCH-AUTO-LIST` | `SCH-KB-CREATE`, `SCH-AUTO-CREATE` | `SCH-KB-UPDATE`, `SCH-AUTO-UPDATE` | `SCH-KB-DETAIL`, `SCH-AUTO-DETAIL` | `SCH-KB-LIST-RESP`, `SCH-AUTO-LIST-RESP` |
+| AI / AIRT | `SCH-AI-*`, `SCH-AIRT-*` | `SCH-AI-CREATE`, `SCH-AIRT-EXECUTE` | `SCH-AI-UPDATE`, `SCH-AIRT-UPDATE` | `SCH-AI-DETAIL`, `SCH-AIRT-DETAIL` | `SCH-AI-LIST-RESP`, `SCH-AIRT-LIST-RESP` |
 | QT / CT / ORD | `SCH-QT-LIST`, `SCH-CT-LIST`, `SCH-ORD-LIST` | `SCH-QT-CREATE`, `SCH-CT-CREATE`, `SCH-ORD-CREATE` | `SCH-QT-UPDATE`, `SCH-CT-UPDATE`, `SCH-ORD-UPDATE` | `SCH-QT-DETAIL`, `SCH-CT-DETAIL`, `SCH-ORD-DETAIL` | `SCH-QT-LIST-RESP`, `SCH-CT-LIST-RESP`, `SCH-ORD-LIST-RESP` |
 | PLAN / SUB / BILL / PAY / INV | `SCH-PLAN-LIST`, `SCH-SUB-LIST`, `SCH-BILL-LIST`, `SCH-PAY-LIST`, `SCH-INV-LIST` | `SCH-PLAN-CREATE`, `SCH-SUB-CREATE`, `SCH-BILL-CREATE`, `SCH-PAY-CREATE`, `SCH-INV-CREATE` | `SCH-PLAN-UPDATE`, `SCH-SUB-UPDATE` | `SCH-PLAN-DETAIL`, `SCH-SUB-DETAIL`, `SCH-BILL-DETAIL`, `SCH-PAY-DETAIL`, `SCH-INV-DETAIL` | `SCH-PLAN-LIST-RESP`, `SCH-SUB-LIST-RESP`, `SCH-BILL-LIST-RESP`, `SCH-PAY-LIST-RESP`, `SCH-INV-LIST-RESP` |
 | CSM / INT / PLT / I18N / DEPLOY | `SCH-CSM-*`, `SCH-INT-*`, `SCH-PLT-*`, `SCH-I18N-*`, `SCH-DEPLOY-*` | 同模块 `CREATE` | 同模块 `UPDATE` | 同模块 `DETAIL` | 同模块 `LIST-RESP` |

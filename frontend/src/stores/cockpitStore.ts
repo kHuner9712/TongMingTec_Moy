@@ -1,7 +1,6 @@
-import { create } from 'zustand';
-import { aiRuntimeApi } from '../services/ai-runtime';
-import { customerApi } from '../services/customer';
-import { WorkbenchAiInsight, AiAgentRun } from '../types';
+import { create } from "zustand";
+import { aiRuntimeApi } from "../services/ai-runtime";
+import { WorkbenchAiInsight, AiAgentRun } from "../types";
 
 interface KeyMetrics {
   totalCustomers: number;
@@ -9,11 +8,22 @@ interface KeyMetrics {
   pendingFollowups: number;
 }
 
+interface RecommendedTodo {
+  id: string;
+  title: string;
+  description: string;
+  actionType: string;
+  relatedId?: string;
+  relatedType?: string;
+  priority: number;
+}
+
 interface CockpitState {
   aiInsights: WorkbenchAiInsight[];
   riskSignals: WorkbenchAiInsight[];
   keyMetrics: KeyMetrics;
   recentAgentRuns: AiAgentRun[];
+  recommendedTodos: RecommendedTodo[];
   loading: boolean;
   fetchCockpitData: () => Promise<void>;
 }
@@ -23,25 +33,23 @@ export const useCockpitStore = create<CockpitState>((set) => ({
   riskSignals: [],
   keyMetrics: { totalCustomers: 0, activeCustomers: 0, pendingFollowups: 0 },
   recentAgentRuns: [],
+  recommendedTodos: [],
   loading: false,
 
   fetchCockpitData: async () => {
     set({ loading: true });
     try {
-      const [customersRes, runsRes] = await Promise.all([
-        customerApi.list().catch(() => ({ items: [], total: 0 })),
-        aiRuntimeApi.listAgentRuns().catch(() => []),
-      ]);
-
-      const customers = (customersRes as any)?.items || [];
-      const totalCustomers = (customersRes as any)?.total || customers.length;
-      const activeCustomers = customers.filter((c: any) => c.status === 'active').length;
-
-      const runs = (runsRes as any)?.items || runsRes || [];
-
+      const data = await aiRuntimeApi.getCockpitData<any>();
       set({
-        keyMetrics: { totalCustomers, activeCustomers, pendingFollowups: 0 },
-        recentAgentRuns: runs,
+        aiInsights: data.aiInsights || [],
+        riskSignals: data.riskSignals || [],
+        keyMetrics: data.keyMetrics || {
+          totalCustomers: 0,
+          activeCustomers: 0,
+          pendingFollowups: 0,
+        },
+        recentAgentRuns: data.recentAgentRuns || [],
+        recommendedTodos: data.recommendedTodos || [],
         loading: false,
       });
     } catch {

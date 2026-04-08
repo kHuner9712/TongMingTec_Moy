@@ -23,8 +23,7 @@ export const useAiStore = create<AiState>((set) => ({
 
   executeAgent: async (code, input, customerId) => {
     try {
-      const result = await aiRuntimeApi.executeAgent({ agentCode: code, input, customerId });
-      const run = result as any;
+      const run = await aiRuntimeApi.executeAgent<AiAgentRun>({ agentCode: code, input, customerId });
       set((state) => ({ agentRuns: [run, ...state.agentRuns], currentAgentRun: run }));
       return run;
     } catch {
@@ -34,8 +33,8 @@ export const useAiStore = create<AiState>((set) => ({
 
   fetchAgentRuns: async (filters) => {
     try {
-      const result = await aiRuntimeApi.listAgentRuns(filters);
-      set({ agentRuns: (result as any)?.items || result || [] });
+      const data = await aiRuntimeApi.listAgentRuns<AiAgentRun[]>(filters);
+      set({ agentRuns: Array.isArray(data) ? data : [] });
     } catch {}
   },
 

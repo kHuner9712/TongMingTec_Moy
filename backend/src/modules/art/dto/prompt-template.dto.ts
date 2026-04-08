@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, MaxLength, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsInt,
+  MaxLength,
+  Min,
+} from "class-validator";
 
 export class CreatePromptTemplateDto {
   @IsString()
@@ -13,7 +20,7 @@ export class CreatePromptTemplateDto {
 
   @IsInt()
   @Min(1)
-  version: number;
+  templateVersion: number;
 
   @IsString()
   @IsNotEmpty()

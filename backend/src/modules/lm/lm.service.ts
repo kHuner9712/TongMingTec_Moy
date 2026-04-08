@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Lead, LeadStatus } from './entities/lead.entity';
 import { LeadFollowUp, FollowType } from './entities/lead-follow-up.entity';
+import { Customer, CustomerStatus } from '../cm/entities/customer.entity';
+import { Opportunity, OpportunityStage } from '../om/entities/opportunity.entity';
 import { leadStateMachine } from '../../common/statemachine/definitions/lead.sm';
 import { EventBusService } from '../../common/events/event-bus.service';
 import { leadStatusChanged } from '../../common/events/lead-events';
@@ -14,6 +16,10 @@ export class LmService {
     private leadRepository: Repository<Lead>,
     @InjectRepository(LeadFollowUp)
     private followUpRepository: Repository<LeadFollowUp>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
+    @InjectRepository(Opportunity)
+    private opportunityRepository: Repository<Opportunity>,
     private dataSource: DataSource,
     private readonly eventBus: EventBusService,
   ) {}
@@ -62,12 +68,14 @@ export class LmService {
   async createLead(
     orgId: string,
     data: Partial<Lead>,
-    _userId: string,
+    userId: string,
   ): Promise<Lead> {
     const lead = this.leadRepository.create({
       ...data,
       orgId,
+      ownerUserId: userId,
       status: LeadStatus.NEW,
+      createdBy: userId,
     });
 
     return this.leadRepository.save(lead);
@@ -89,11 +97,20 @@ export class LmService {
     const fromStatus = lead.status;
     leadStateMachine.validateTransition(lead.status, LeadStatus.ASSIGNED);
 
-    await this.leadRepository.update(id, {
-      ownerUserId,
-      status: LeadStatus.ASSIGNED,
-      version: () => 'version + 1',
-    });
+    const result = await this.leadRepository
+      .createQueryBuilder()
+      .update(Lead)
+      .set({
+        ownerUserId,
+        status: LeadStatus.ASSIGNED,
+        version: () => 'version + 1',
+      })
+      .where('id = :id AND version = :version', { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException('CONFLICT_VERSION');
+    }
 
     this.eventBus.publish(
       leadStatusChanged({
@@ -138,11 +155,16 @@ export class LmService {
 
     await this.followUpRepository.save(followUp);
 
-    await this.leadRepository.update(id, {
-      status: LeadStatus.FOLLOWING,
-      lastFollowUpAt: new Date(),
-      version: () => 'version + 1',
-    });
+    await this.leadRepository
+      .createQueryBuilder()
+      .update(Lead)
+      .set({
+        status: LeadStatus.FOLLOWING,
+        lastFollowUpAt: new Date(),
+        version: () => 'version + 1',
+      })
+      .where('id = :id AND version = :version', { id, version })
+      .execute();
 
     this.eventBus.publish(
       leadStatusChanged({
@@ -173,27 +195,63 @@ export class LmService {
     const fromStatus = lead.status;
     leadStateMachine.validateTransition(lead.status, LeadStatus.CONVERTED);
 
-    await this.leadRepository.update(id, {
-      status: LeadStatus.CONVERTED,
-      version: () => 'version + 1',
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    this.eventBus.publish(
-      leadStatusChanged({
+    try {
+      const customer = queryRunner.manager.create(Customer, {
         orgId,
-        leadId: id,
-        fromStatus,
-        toStatus: LeadStatus.CONVERTED,
-        actorType: 'user',
-        actorId: userId,
-      }),
-    );
+        name: lead.companyName || lead.name,
+        phone: lead.mobile,
+        email: lead.email,
+        ownerUserId: lead.ownerUserId || userId,
+        status: CustomerStatus.ACTIVE,
+        createdBy: userId,
+      });
+      await queryRunner.manager.save(customer);
 
-    return {
-      leadId: id,
-      customerId: 'placeholder-customer-id',
-      opportunityId: 'placeholder-opportunity-id',
-    };
+      const opportunity = queryRunner.manager.create(Opportunity, {
+        orgId,
+        customerId: customer.id,
+        leadId: lead.id,
+        name: `${lead.name} - 商机`,
+        ownerUserId: lead.ownerUserId || userId,
+        stage: OpportunityStage.DISCOVERY,
+        createdBy: userId,
+      });
+      await queryRunner.manager.save(opportunity);
+
+      await queryRunner.manager.update(Lead, id, {
+        status: LeadStatus.CONVERTED,
+        customerId: customer.id,
+        version: () => 'version + 1',
+      });
+
+      await queryRunner.commitTransaction();
+
+      this.eventBus.publish(
+        leadStatusChanged({
+          orgId,
+          leadId: id,
+          fromStatus,
+          toStatus: LeadStatus.CONVERTED,
+          actorType: 'user',
+          actorId: userId,
+        }),
+      );
+
+      return {
+        leadId: id,
+        customerId: customer.id,
+        opportunityId: opportunity.id,
+      };
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
   }
 
   async markInvalid(
@@ -212,10 +270,19 @@ export class LmService {
     const fromStatus = lead.status;
     leadStateMachine.validateTransition(lead.status, LeadStatus.INVALID);
 
-    await this.leadRepository.update(id, {
-      status: LeadStatus.INVALID,
-      version: () => 'version + 1',
-    });
+    const result = await this.leadRepository
+      .createQueryBuilder()
+      .update(Lead)
+      .set({
+        status: LeadStatus.INVALID,
+        version: () => 'version + 1',
+      })
+      .where('id = :id AND version = :version', { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException('CONFLICT_VERSION');
+    }
 
     this.eventBus.publish(
       leadStatusChanged({

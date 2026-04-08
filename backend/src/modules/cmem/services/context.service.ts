@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CustomerContext } from '../entities/customer-context.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { CustomerContext } from "../entities/customer-context.entity";
 
 @Injectable()
 export class ContextService {
@@ -26,7 +26,9 @@ export class ContextService {
         contextData: { ...existing.contextData, ...contextData } as any,
         lastUpdatedFrom: source || null,
       });
-      return this.contextRepo.findOne({ where: { id: existing.id } }) as Promise<CustomerContext>;
+      return this.contextRepo.findOne({
+        where: { id: existing.id },
+      }) as Promise<CustomerContext>;
     }
 
     const context = this.contextRepo.create({
@@ -39,20 +41,26 @@ export class ContextService {
     return this.contextRepo.save(context);
   }
 
-  async getContext(customerId: string, orgId: string): Promise<CustomerContext[]> {
+  async getContext(
+    customerId: string,
+    orgId: string,
+  ): Promise<CustomerContext[]> {
     return this.contextRepo.find({
       where: { customerId, orgId },
-      order: { updatedAt: 'DESC' },
+      order: { updatedAt: "DESC" },
     });
   }
 
-  async getLatestContext(customerId: string, orgId: string): Promise<Record<string, unknown> | null> {
+  async getLatestContext(
+    customerId: string,
+    orgId: string,
+  ): Promise<CustomerContext | null> {
     const contexts = await this.contextRepo.find({
       where: { customerId, orgId },
-      order: { updatedAt: 'DESC' },
+      order: { updatedAt: "DESC" },
       take: 1,
     });
     if (contexts.length === 0) return null;
-    return contexts[0].contextData;
+    return contexts[0];
   }
 }

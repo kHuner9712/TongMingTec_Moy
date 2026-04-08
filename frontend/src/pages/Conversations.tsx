@@ -41,9 +41,7 @@ const STATUS_CONFIG: Record<
   { color: string; text: string }
 > = {
   queued: { color: "default", text: "排队中" },
-  waiting: { color: "orange", text: "等待中" },
   active: { color: "green", text: "进行中" },
-  paused: { color: "blue", text: "暂停" },
   closed: { color: "red", text: "已关闭" },
 };
 
@@ -170,8 +168,8 @@ export default function Conversations() {
   );
 
   const closeMutation = useMutation(
-    (data: { id: string; closeReason?: string; version: number }) =>
-      conversationApi.close(data.id, data.closeReason, data.version),
+    (data: { id: string; closedReason?: string; version: number }) =>
+      conversationApi.close(data.id, data.closedReason, data.version),
     {
       onSuccess: () => {
         message.success("关闭成功");
@@ -229,7 +227,7 @@ export default function Conversations() {
       if (selectedConversation) {
         closeMutation.mutate({
           id: selectedConversation.id,
-          closeReason: values.closeReason,
+          closedReason: values.closedReason,
           version: selectedConversation.version,
         });
       }
@@ -424,7 +422,7 @@ export default function Conversations() {
         confirmLoading={closeMutation.isLoading}
       >
         <Form form={closeForm} layout="vertical">
-          <Form.Item name="closeReason" label="关闭原因">
+          <Form.Item name="closedReason" label="关闭原因">
             <Input.TextArea rows={2} />
           </Form.Item>
         </Form>

@@ -14,7 +14,7 @@ export enum TicketPriority {
 export enum TicketStatus {
   PENDING = 'pending',
   ASSIGNED = 'assigned',
-  IN_PROGRESS = 'in_progress',
+  PROCESSING = 'processing',
   RESOLVED = 'resolved',
   CLOSED = 'closed',
 }
@@ -29,12 +29,13 @@ export class Ticket extends BaseEntity {
   @Index()
   customerId: string | null;
 
+  @Column({ type: 'varchar', length: 64, name: 'ticket_no' })
+  @Index()
+  ticketNo: string;
+
   @Column({ type: 'varchar', length: 255 })
   @Index()
   title: string;
-
-  @Column({ type: 'text', nullable: true })
-  description: string | null;
 
   @Column({
     type: 'varchar',
@@ -59,16 +60,12 @@ export class Ticket extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   solution: string | null;
 
-  @Column({ type: 'varchar', length: 32, nullable: true, name: 'close_reason' })
-  closeReason: string | null;
+  @Column({ type: 'varchar', length: 32, nullable: true, name: 'closed_reason' })
+  closedReason: string | null;
 
-  @Column({ type: 'timestamptz', nullable: true, name: 'sla_response_at' })
+  @Column({ type: 'timestamptz', nullable: true, name: 'sla_due_at' })
   @Index()
-  slaResponseAt: Date | null;
-
-  @Column({ type: 'timestamptz', nullable: true, name: 'sla_resolve_at' })
-  @Index()
-  slaResolveAt: Date | null;
+  slaDueAt: Date | null;
 
   @Column({ type: 'timestamptz', nullable: true, name: 'first_response_at' })
   @Index()

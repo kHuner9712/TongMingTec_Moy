@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { Ticket, TicketStatus, TicketPriority } from './entities/ticket.entity';
-import { TicketLog } from './entities/ticket-log.entity';
-import { ticketStateMachine } from '../../common/statemachine/definitions/ticket.sm';
-import { EventBusService } from '../../common/events/event-bus.service';
-import { ticketStatusChanged } from '../../common/events/ticket-events';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
+import { Ticket, TicketStatus, TicketPriority } from "./entities/ticket.entity";
+import { TicketLog } from "./entities/ticket-log.entity";
+import { ticketStateMachine } from "../../common/statemachine/definitions/ticket.sm";
+import { EventBusService } from "../../common/events/event-bus.service";
+import { ticketStatusChanged } from "../../common/events/ticket-events";
 
 @Injectable()
 export class TkService {
@@ -27,24 +31,24 @@ export class TkService {
     pageSize: number,
   ): Promise<{ items: Ticket[]; total: number }> {
     const qb = this.ticketRepository
-      .createQueryBuilder('ticket')
-      .where('ticket.orgId = :orgId', { orgId });
+      .createQueryBuilder("ticket")
+      .where("ticket.orgId = :orgId", { orgId });
 
-    if (dataScope === 'self') {
-      qb.andWhere('ticket.assigneeUserId = :userId', { userId });
+    if (dataScope === "self") {
+      qb.andWhere("ticket.assigneeUserId = :userId", { userId });
     }
 
     if (filters.status) {
-      qb.andWhere('ticket.status = :status', { status: filters.status });
+      qb.andWhere("ticket.status = :status", { status: filters.status });
     }
 
     if (filters.priority) {
-      qb.andWhere('ticket.priority = :priority', {
+      qb.andWhere("ticket.priority = :priority", {
         priority: filters.priority,
       });
     }
 
-    qb.orderBy('ticket.updatedAt', 'DESC');
+    qb.orderBy("ticket.updatedAt", "DESC");
     qb.skip((page - 1) * pageSize).take(pageSize);
 
     const [items, total] = await qb.getManyAndCount();
@@ -57,7 +61,7 @@ export class TkService {
     });
 
     if (!ticket) {
-      throw new NotFoundException('RESOURCE_NOT_FOUND');
+      throw new NotFoundException("RESOURCE_NOT_FOUND");
     }
 
     return ticket;
@@ -68,11 +72,15 @@ export class TkService {
     data: Partial<Ticket>,
     userId: string,
   ): Promise<Ticket> {
+    const ticketNo = `TK-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
     const ticket = this.ticketRepository.create({
       ...data,
       orgId,
+      ticketNo,
       status: TicketStatus.PENDING,
       priority: data.priority || TicketPriority.NORMAL,
+      createdBy: userId,
     });
 
     const saved = await this.ticketRepository.save(ticket);
@@ -80,7 +88,7 @@ export class TkService {
     const log = this.logRepository.create({
       ticketId: saved.id,
       orgId,
-      action: 'created',
+      action: "created",
       toStatus: TicketStatus.PENDING,
       operatorUserId: userId,
       createdBy: userId,
@@ -101,26 +109,33 @@ export class TkService {
     const ticket = await this.findTicketById(id, orgId);
 
     if (ticket.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     const fromStatus = ticket.status;
     const toStatus = TicketStatus.ASSIGNED;
 
-    if (fromStatus !== toStatus) {
-      ticketStateMachine.validateTransition(fromStatus, toStatus);
-    }
+    ticketStateMachine.validateTransition(fromStatus, toStatus);
 
-    await this.ticketRepository.update(id, {
-      assigneeUserId,
-      status: toStatus,
-      version: () => 'version + 1',
-    });
+    const result = await this.ticketRepository
+      .createQueryBuilder()
+      .update(Ticket)
+      .set({
+        assigneeUserId,
+        status: toStatus,
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     const log = this.logRepository.create({
       ticketId: id,
       orgId,
-      action: 'assigned',
+      action: "assigned",
       fromStatus,
       toStatus,
       operatorUserId: userId,
@@ -130,18 +145,16 @@ export class TkService {
 
     await this.logRepository.save(log);
 
-    if (fromStatus !== toStatus) {
-      this.eventBus.publish(
-        ticketStatusChanged({
-          orgId,
-          ticketId: id,
-          fromStatus,
-          toStatus,
-          actorType: 'user',
-          actorId: userId,
-        }),
-      );
-    }
+    this.eventBus.publish(
+      ticketStatusChanged({
+        orgId,
+        ticketId: id,
+        fromStatus,
+        toStatus,
+        actorType: "user",
+        actorId: userId,
+      }),
+    );
 
     return this.findTicketById(id, orgId);
   }
@@ -155,25 +168,34 @@ export class TkService {
     const ticket = await this.findTicketById(id, orgId);
 
     if (ticket.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     const fromStatus = ticket.status;
-    const toStatus = TicketStatus.IN_PROGRESS;
+    const toStatus = TicketStatus.PROCESSING;
     ticketStateMachine.validateTransition(fromStatus, toStatus);
 
     const now = new Date();
 
-    await this.ticketRepository.update(id, {
-      status: toStatus,
-      firstResponseAt: ticket.firstResponseAt || now,
-      version: () => 'version + 1',
-    });
+    const result = await this.ticketRepository
+      .createQueryBuilder()
+      .update(Ticket)
+      .set({
+        status: toStatus,
+        firstResponseAt: ticket.firstResponseAt || now,
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     const log = this.logRepository.create({
       ticketId: id,
       orgId,
-      action: 'started',
+      action: "started",
       fromStatus,
       toStatus,
       operatorUserId: userId,
@@ -188,7 +210,7 @@ export class TkService {
         ticketId: id,
         fromStatus,
         toStatus,
-        actorType: 'user',
+        actorType: "user",
         actorId: userId,
       }),
     );
@@ -206,7 +228,7 @@ export class TkService {
     const ticket = await this.findTicketById(id, orgId);
 
     if (ticket.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     const fromStatus = ticket.status;
@@ -215,17 +237,26 @@ export class TkService {
 
     const now = new Date();
 
-    await this.ticketRepository.update(id, {
-      status: toStatus,
-      solution,
-      resolvedAt: now,
-      version: () => 'version + 1',
-    });
+    const result = await this.ticketRepository
+      .createQueryBuilder()
+      .update(Ticket)
+      .set({
+        status: toStatus,
+        solution,
+        resolvedAt: now,
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     const log = this.logRepository.create({
       ticketId: id,
       orgId,
-      action: 'resolved',
+      action: "resolved",
       fromStatus,
       toStatus,
       operatorUserId: userId,
@@ -241,7 +272,7 @@ export class TkService {
         ticketId: id,
         fromStatus,
         toStatus,
-        actorType: 'user',
+        actorType: "user",
         actorId: userId,
       }),
     );
@@ -252,14 +283,14 @@ export class TkService {
   async close(
     id: string,
     orgId: string,
-    closeReason: string,
+    closedReason: string,
     userId: string,
     version: number,
   ): Promise<Ticket> {
     const ticket = await this.findTicketById(id, orgId);
 
     if (ticket.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     const fromStatus = ticket.status;
@@ -268,21 +299,30 @@ export class TkService {
 
     const now = new Date();
 
-    await this.ticketRepository.update(id, {
-      status: toStatus,
-      closeReason,
-      closedAt: now,
-      version: () => 'version + 1',
-    });
+    const result = await this.ticketRepository
+      .createQueryBuilder()
+      .update(Ticket)
+      .set({
+        status: toStatus,
+        closedReason,
+        closedAt: now,
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     const log = this.logRepository.create({
       ticketId: id,
       orgId,
-      action: 'closed',
+      action: "closed",
       fromStatus,
       toStatus,
       operatorUserId: userId,
-      remark: closeReason,
+      remark: closedReason,
       createdBy: userId,
     });
 
@@ -294,8 +334,8 @@ export class TkService {
         ticketId: id,
         fromStatus,
         toStatus,
-        reason: closeReason,
-        actorType: 'user',
+        reason: closedReason,
+        actorType: "user",
         actorId: userId,
       }),
     );
@@ -306,7 +346,7 @@ export class TkService {
   async findLogs(id: string, orgId: string): Promise<TicketLog[]> {
     return this.logRepository.find({
       where: { ticketId: id, orgId },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
   }
 }

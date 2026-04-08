@@ -1,7 +1,15 @@
-import { create } from 'zustand';
-import { aiRuntimeApi } from '../services/ai-runtime';
-import { customerMemoryApi } from '../services/customer-memory';
-import { CustomerContext, CustomerIntent, CustomerRisk, CustomerNextAction, CustomerTimelineEvent } from '../types';
+import { create } from "zustand";
+import { aiRuntimeApi } from "../services/ai-runtime";
+import { customerMemoryApi } from "../services/customer-memory";
+import {
+  CustomerContext,
+  CustomerIntent,
+  CustomerRisk,
+  CustomerNextAction,
+  CustomerTimelineEvent,
+  AiAgentRun,
+  CustomerStateSnapshot,
+} from "../types";
 
 interface CustomerContextState {
   context: CustomerContext | null;
@@ -9,7 +17,8 @@ interface CustomerContextState {
   risk: CustomerRisk | null;
   nextActions: CustomerNextAction[];
   timeline: CustomerTimelineEvent[];
-  aiRuns: any[];
+  aiRuns: AiAgentRun[];
+  snapshots: CustomerStateSnapshot[];
   loading: boolean;
   loadCustomerContext: (customerId: string) => Promise<void>;
 }
@@ -21,27 +30,46 @@ export const useCustomerContextStore = create<CustomerContextState>((set) => ({
   nextActions: [],
   timeline: [],
   aiRuns: [],
+  snapshots: [],
   loading: false,
 
   loadCustomerContext: async (customerId) => {
     set({ loading: true });
     try {
-      const [contextRes, intentRes, riskRes, actionsRes, timelineRes, runsRes] = await Promise.all([
+      const [
+        contextRes,
+        intentRes,
+        riskRes,
+        actionsRes,
+        timelineRes,
+        runsRes,
+        snapsRes,
+      ] = await Promise.all([
         customerMemoryApi.getContext(customerId).catch(() => null),
         customerMemoryApi.getIntent(customerId).catch(() => null),
         customerMemoryApi.getRisk(customerId).catch(() => null),
-        aiRuntimeApi.getNextActions(customerId).catch(() => []),
-        aiRuntimeApi.getCustomerTimeline(customerId).catch(() => []),
-        aiRuntimeApi.listAgentRuns({ customerId }).catch(() => []),
+        aiRuntimeApi
+          .getNextActions<CustomerNextAction[]>(customerId)
+          .catch(() => []),
+        aiRuntimeApi
+          .getCustomerTimeline<CustomerTimelineEvent[]>(customerId)
+          .catch(() => []),
+        aiRuntimeApi
+          .listAgentRuns<AiAgentRun[]>({ customerId })
+          .catch(() => []),
+        aiRuntimeApi
+          .getCustomerSnapshots<CustomerStateSnapshot[]>(customerId)
+          .catch(() => []),
       ]);
 
       set({
         context: contextRes as CustomerContext | null,
         intent: intentRes as CustomerIntent | null,
         risk: riskRes as CustomerRisk | null,
-        nextActions: (actionsRes as any)?.items || actionsRes || [],
-        timeline: (timelineRes as any)?.items || timelineRes || [],
-        aiRuns: (runsRes as any)?.items || runsRes || [],
+        nextActions: Array.isArray(actionsRes) ? actionsRes : [],
+        timeline: Array.isArray(timelineRes) ? timelineRes : [],
+        aiRuns: Array.isArray(runsRes) ? runsRes : [],
+        snapshots: Array.isArray(snapsRes) ? snapsRes : [],
         loading: false,
       });
     } catch {

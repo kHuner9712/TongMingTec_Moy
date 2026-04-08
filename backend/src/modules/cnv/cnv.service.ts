@@ -1,11 +1,23 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { Conversation, ConversationStatus } from './entities/conversation.entity';
-import { ConversationMessage, MessageType, MessageDirection, SenderType } from './entities/conversation-message.entity';
-import { conversationStateMachine } from '../../common/statemachine/definitions/conversation.sm';
-import { EventBusService } from '../../common/events/event-bus.service';
-import { conversationMessageCreated } from '../../common/events/conversation-events';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, DataSource } from "typeorm";
+import {
+  Conversation,
+  ConversationStatus,
+} from "./entities/conversation.entity";
+import {
+  ConversationMessage,
+  MessageType,
+  MessageDirection,
+  SenderType,
+} from "./entities/conversation-message.entity";
+import { conversationStateMachine } from "../../common/statemachine/definitions/conversation.sm";
+import { EventBusService } from "../../common/events/event-bus.service";
+import { conversationMessageCreated } from "../../common/events/conversation-events";
 
 @Injectable()
 export class CnvService {
@@ -27,22 +39,24 @@ export class CnvService {
     pageSize: number,
   ): Promise<{ items: Conversation[]; total: number }> {
     const qb = this.conversationRepository
-      .createQueryBuilder('conv')
-      .where('conv.orgId = :orgId', { orgId });
+      .createQueryBuilder("conv")
+      .where("conv.orgId = :orgId", { orgId });
 
-    if (dataScope === 'self') {
-      qb.andWhere('conv.assigneeUserId = :userId', { userId });
+    if (dataScope === "self") {
+      qb.andWhere("conv.assigneeUserId = :userId", { userId });
     }
 
     if (filters.status) {
-      qb.andWhere('conv.status = :status', { status: filters.status });
+      qb.andWhere("conv.status = :status", { status: filters.status });
     }
 
     if (filters.channelId) {
-      qb.andWhere('conv.channelId = :channelId', { channelId: filters.channelId });
+      qb.andWhere("conv.channelId = :channelId", {
+        channelId: filters.channelId,
+      });
     }
 
-    qb.orderBy('conv.updatedAt', 'DESC');
+    qb.orderBy("conv.updatedAt", "DESC");
     qb.skip((page - 1) * pageSize).take(pageSize);
 
     const [items, total] = await qb.getManyAndCount();
@@ -55,7 +69,7 @@ export class CnvService {
     });
 
     if (!conv) {
-      throw new NotFoundException('RESOURCE_NOT_FOUND');
+      throw new NotFoundException("RESOURCE_NOT_FOUND");
     }
 
     return conv;
@@ -71,34 +85,41 @@ export class CnvService {
     const conv = await this.findConversationById(id, orgId);
 
     if (conv.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     const fromStatus = conv.status;
-    conversationStateMachine.validateTransition(conv.status, ConversationStatus.ACTIVE);
+    conversationStateMachine.validateTransition(
+      conv.status,
+      ConversationStatus.ACTIVE,
+    );
 
     const now = new Date();
 
-    await this.conversationRepository
+    const result = await this.conversationRepository
       .createQueryBuilder()
       .update(Conversation)
       .set({
         assigneeUserId,
         status: ConversationStatus.ACTIVE,
         firstResponseAt: conv.firstResponseAt || now,
-        version: () => 'version + 1',
+        version: () => "version + 1",
       })
-      .where('id = :id', { id })
+      .where("id = :id AND version = :version", { id, version })
       .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     this.eventBus.publish(
       conversationMessageCreated({
         orgId,
         conversationId: id,
         messageId: `status-change-${fromStatus}-to-active`,
-        senderType: 'system',
+        senderType: "system",
         senderId: userId,
-        contentType: 'status_change',
+        contentType: "status_change",
       }),
     );
 
@@ -109,29 +130,45 @@ export class CnvService {
     id: string,
     orgId: string,
     targetUserId: string,
-    reason: string,
+    _reason: string,
     userId: string,
     version: number,
   ): Promise<Conversation> {
     const conv = await this.findConversationById(id, orgId);
 
     if (conv.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
-    if (conv.status !== ConversationStatus.ACTIVE && conv.status !== ConversationStatus.PAUSED) {
-      throw new ConflictException('STATUS_TRANSITION_INVALID');
-    }
+    conversationStateMachine.validateTransition(
+      conv.status,
+      ConversationStatus.ACTIVE,
+    );
 
-    await this.conversationRepository
+    const result = await this.conversationRepository
       .createQueryBuilder()
       .update(Conversation)
       .set({
         assigneeUserId: targetUserId,
-        version: () => 'version + 1',
+        version: () => "version + 1",
       })
-      .where('id = :id', { id })
+      .where("id = :id AND version = :version", { id, version })
       .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    this.eventBus.publish(
+      conversationMessageCreated({
+        orgId,
+        conversationId: id,
+        messageId: `transfer-to-${targetUserId}`,
+        senderType: "system",
+        senderId: userId,
+        contentType: "transfer",
+      }),
+    );
 
     return this.findConversationById(id, orgId);
   }
@@ -139,39 +176,46 @@ export class CnvService {
   async close(
     id: string,
     orgId: string,
-    closeReason: string,
+    closedReason: string,
     userId: string,
     version: number,
   ): Promise<Conversation> {
     const conv = await this.findConversationById(id, orgId);
 
     if (conv.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     const fromStatus = conv.status;
-    conversationStateMachine.validateTransition(conv.status, ConversationStatus.CLOSED);
+    conversationStateMachine.validateTransition(
+      conv.status,
+      ConversationStatus.CLOSED,
+    );
 
-    await this.conversationRepository
+    const result = await this.conversationRepository
       .createQueryBuilder()
       .update(Conversation)
       .set({
         status: ConversationStatus.CLOSED,
-        closeReason,
+        closedReason,
         closedAt: new Date(),
-        version: () => 'version + 1',
+        version: () => "version + 1",
       })
-      .where('id = :id', { id })
+      .where("id = :id AND version = :version", { id, version })
       .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     this.eventBus.publish(
       conversationMessageCreated({
         orgId,
         conversationId: id,
         messageId: `status-change-${fromStatus}-to-closed`,
-        senderType: 'system',
+        senderType: "system",
         senderId: userId,
-        contentType: 'status_change',
+        contentType: "status_change",
       }),
     );
 
@@ -187,11 +231,11 @@ export class CnvService {
     const conv = await this.findConversationById(conversationId, orgId);
 
     const qb = this.messageRepository
-      .createQueryBuilder('msg')
-      .where('msg.conversationId = :conversationId', {
+      .createQueryBuilder("msg")
+      .where("msg.conversationId = :conversationId", {
         conversationId: conv.id,
       })
-      .orderBy('msg.sentAt', 'ASC')
+      .orderBy("msg.sentAt", "ASC")
       .skip((page - 1) * pageSize)
       .take(pageSize);
 
@@ -211,11 +255,11 @@ export class CnvService {
     const conv = await this.findConversationById(conversationId, orgId);
 
     if (conv.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     if (conv.status === ConversationStatus.CLOSED) {
-      throw new ConflictException('STATUS_TRANSITION_INVALID');
+      throw new ConflictException("STATUS_TRANSITION_INVALID");
     }
 
     const message = this.messageRepository.create({
@@ -233,31 +277,44 @@ export class CnvService {
 
     await this.messageRepository.save(message);
 
-    if (conv.status === ConversationStatus.QUEUED || conv.status === ConversationStatus.WAITING) {
-      const fromStatus = conv.status;
-      conversationStateMachine.validateTransition(conv.status, ConversationStatus.ACTIVE);
+    if (conv.status === ConversationStatus.QUEUED) {
+      conversationStateMachine.validateTransition(
+        conv.status,
+        ConversationStatus.ACTIVE,
+      );
 
       await this.conversationRepository
         .createQueryBuilder()
         .update(Conversation)
         .set({
           status: ConversationStatus.ACTIVE,
+          assigneeUserId: userId,
           firstResponseAt: conv.firstResponseAt || new Date(),
-          version: () => 'version + 1',
+          version: () => "version + 1",
         })
-        .where('id = :id', { id: conv.id })
+        .where("id = :id AND version = :version", { id: conv.id, version })
         .execute();
 
       this.eventBus.publish(
         conversationMessageCreated({
           orgId,
           conversationId: conv.id,
-          messageId: `status-change-${fromStatus}-to-active`,
-          senderType: 'system',
+          messageId: `status-change-queued-to-active`,
+          senderType: "system",
           senderId: userId,
-          contentType: 'status_change',
+          contentType: "status_change",
         }),
       );
+    } else {
+      await this.conversationRepository
+        .createQueryBuilder()
+        .update(Conversation)
+        .set({
+          lastMessageAt: new Date(),
+          version: () => "version + 1",
+        })
+        .where("id = :id", { id: conv.id })
+        .execute();
     }
 
     this.eventBus.publish(
@@ -283,12 +340,13 @@ export class CnvService {
     const conv = await this.findConversationById(id, orgId);
 
     if (conv.status !== ConversationStatus.CLOSED) {
-      throw new ConflictException('STATUS_TRANSITION_INVALID');
+      throw new ConflictException("STATUS_TRANSITION_INVALID");
     }
 
     await this.conversationRepository.update(id, {
       ratingScore: score,
       ratingComment: comment,
+      version: () => "version + 1",
     });
 
     return this.findConversationById(id, orgId);

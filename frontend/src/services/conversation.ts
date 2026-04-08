@@ -64,9 +64,9 @@ export const conversationApi = {
 
   close: async (
     id: string,
-    closeReason?: string,
+    closedReason?: string,
     version?: number,
   ): Promise<Conversation> => {
-    return api.post(`/conversations/${id}/close`, { closeReason, version });
+    return api.post(`/conversations/${id}/close`, { closedReason, version });
   },
 };

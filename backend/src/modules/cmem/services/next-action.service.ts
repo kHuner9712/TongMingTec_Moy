@@ -1,8 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CustomerNextAction, NextActionStatus } from '../entities/customer-next-action.entity';
-import { NextActionQueryDto } from '../dto/next-action.dto';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import {
+  CustomerNextAction,
+  NextActionStatus,
+} from "../entities/customer-next-action.entity";
+import { NextActionQueryDto } from "../dto/next-action.dto";
 
 const ACTION_RULES: Array<{
   condition: (intent: string, risk: string) => boolean;
@@ -11,34 +14,34 @@ const ACTION_RULES: Array<{
   reasoning: string;
 }> = [
   {
-    condition: (i, r) => i === 'churn_risk' && r === 'high',
-    actionType: 'churn_recovery',
+    condition: (i, r) => i === "churn_risk" && r === "high",
+    actionType: "churn_recovery",
     priority: 1,
-    reasoning: '客户存在高流失风险，建议立即安排流失挽回跟进',
+    reasoning: "客户存在高流失风险，建议立即安排流失挽回跟进",
   },
   {
-    condition: (i, r) => i === 'complaint' && r !== 'low',
-    actionType: 'escalate_complaint',
+    condition: (i, r) => i === "complaint" && r !== "low",
+    actionType: "escalate_complaint",
     priority: 1,
-    reasoning: '客户投诉且风险较高，建议主管介入处理',
+    reasoning: "客户投诉且风险较高，建议主管介入处理",
   },
   {
-    condition: (i, _r) => i === 'purchase',
-    actionType: 'send_quote',
+    condition: (i, _r) => i === "purchase",
+    actionType: "send_quote",
     priority: 2,
-    reasoning: '客户有购买意向，建议发送报价单',
+    reasoning: "客户有购买意向，建议发送报价单",
   },
   {
-    condition: (i, _r) => i === 'renewal',
-    actionType: 'renewal_reminder',
+    condition: (i, _r) => i === "renewal",
+    actionType: "renewal_reminder",
     priority: 2,
-    reasoning: '客户有续费意向，建议发送续费提醒',
+    reasoning: "客户有续费意向，建议发送续费提醒",
   },
   {
-    condition: (_i, r) => r === 'medium',
-    actionType: 'proactive_followup',
+    condition: (_i, r) => r === "medium",
+    actionType: "proactive_followup",
     priority: 3,
-    reasoning: '客户风险中等，建议主动跟进',
+    reasoning: "客户风险中等，建议主动跟进",
   },
 ];
 
@@ -62,9 +65,9 @@ export class NextActionService {
     if (matchedActions.length === 0) {
       matchedActions.push({
         condition: () => true,
-        actionType: 'routine_followup',
+        actionType: "routine_followup",
         priority: 5,
-        reasoning: '建议进行常规跟进沟通',
+        reasoning: "建议进行常规跟进沟通",
       });
     }
 
@@ -76,7 +79,7 @@ export class NextActionService {
         actionType: rule.actionType,
         priority: rule.priority,
         reasoning: rule.reasoning,
-        suggestedBy: 'ai',
+        suggestedBy: "ai",
         suggestedAt: new Date(),
         status: NextActionStatus.PENDING,
       });
@@ -92,15 +95,18 @@ export class NextActionService {
     query?: NextActionQueryDto,
   ): Promise<{ items: CustomerNextAction[]; total: number }> {
     const qb = this.actionRepo
-      .createQueryBuilder('action')
-      .where('action.orgId = :orgId', { orgId })
-      .andWhere('action.customerId = :customerId', { customerId });
+      .createQueryBuilder("action")
+      .where("action.orgId = :orgId", { orgId })
+      .andWhere("action.customerId = :customerId", { customerId });
 
     if (query?.status) {
-      qb.andWhere('action.status = :status', { status: query.status });
+      qb.andWhere("action.status = :status", { status: query.status });
     }
 
-    qb.orderBy('action.priority', 'ASC').addOrderBy('action.suggestedAt', 'DESC');
+    qb.orderBy("action.priority", "ASC").addOrderBy(
+      "action.suggestedAt",
+      "DESC",
+    );
 
     const page = query?.page || 1;
     const pageSize = query?.pageSize || 20;
@@ -110,23 +116,39 @@ export class NextActionService {
     return { items, total };
   }
 
-  async acceptAction(actionId: string, orgId: string): Promise<CustomerNextAction> {
+  async acceptAction(
+    actionId: string,
+    orgId: string,
+  ): Promise<CustomerNextAction> {
     const action = await this.actionRepo.findOne({
       where: { id: actionId, orgId },
     });
-    if (!action) throw new NotFoundException('RESOURCE_NOT_FOUND');
+    if (!action) throw new NotFoundException("RESOURCE_NOT_FOUND");
 
     action.status = NextActionStatus.ACCEPTED;
     return this.actionRepo.save(action);
   }
 
-  async dismissAction(actionId: string, orgId: string): Promise<CustomerNextAction> {
+  async dismissAction(
+    actionId: string,
+    orgId: string,
+  ): Promise<CustomerNextAction> {
     const action = await this.actionRepo.findOne({
       where: { id: actionId, orgId },
     });
-    if (!action) throw new NotFoundException('RESOURCE_NOT_FOUND');
+    if (!action) throw new NotFoundException("RESOURCE_NOT_FOUND");
 
     action.status = NextActionStatus.DISMISSED;
     return this.actionRepo.save(action);
+  }
+
+  async getPendingActions(
+    customerId: string,
+    orgId: string,
+  ): Promise<CustomerNextAction[]> {
+    return this.actionRepo.find({
+      where: { customerId, orgId, status: NextActionStatus.PENDING },
+      order: { priority: "ASC", suggestedAt: "DESC" },
+    });
   }
 }

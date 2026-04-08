@@ -48,9 +48,9 @@ export const ticketApi = {
 
   close: async (
     id: string,
-    closeReason?: string,
+    closedReason?: string,
     version?: number,
   ): Promise<Ticket> => {
-    return api.post(`/tickets/${id}/close`, { closeReason, version });
+    return api.post(`/tickets/${id}/close`, { closedReason, version });
   },
 };

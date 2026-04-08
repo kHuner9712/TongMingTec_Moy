@@ -4,7 +4,6 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   Column,
-  BeforeUpdate,
 } from 'typeorm';
 
 export abstract class BaseEntity {
@@ -13,6 +12,12 @@ export abstract class BaseEntity {
 
   @Column({ type: 'uuid', name: 'org_id' })
   orgId: string;
+
+  @Column({ type: 'uuid', name: 'created_by', nullable: true })
+  createdBy: string;
+
+  @Column({ type: 'uuid', name: 'updated_by', nullable: true })
+  updatedBy: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
@@ -25,11 +30,6 @@ export abstract class BaseEntity {
 
   @Column({ type: 'int', default: 1 })
   version: number;
-
-  @BeforeUpdate()
-  updateVersion() {
-    this.version += 1;
-  }
 }
 
 export abstract class AppendOnlyEntity {

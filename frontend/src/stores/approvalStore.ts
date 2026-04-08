@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { aiRuntimeApi } from '../services/ai-runtime';
-import { AiApprovalRequest } from '../types';
+import { create } from "zustand";
+import { aiRuntimeApi } from "../services/ai-runtime";
+import { AiApprovalRequest } from "../types";
 
 interface ApprovalState {
   pendingApprovals: AiApprovalRequest[];
@@ -17,22 +17,29 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
 
   fetchPending: async () => {
     try {
-      const result = await aiRuntimeApi.getPendingApprovals();
-      set({ pendingApprovals: (result as any)?.items || result || [] });
+      const data =
+        await aiRuntimeApi.getPendingApprovals<AiApprovalRequest[]>();
+      set({ pendingApprovals: Array.isArray(data) ? data : [] });
     } catch {}
   },
 
   approve: async (id) => {
     try {
       await aiRuntimeApi.approveRequest(id);
-      set({ pendingApprovals: get().pendingApprovals.filter((a) => a.id !== id), currentApproval: null });
+      set({
+        pendingApprovals: get().pendingApprovals.filter((a) => a.id !== id),
+        currentApproval: null,
+      });
     } catch {}
   },
 
   reject: async (id, reason) => {
     try {
       await aiRuntimeApi.rejectRequest(id, reason);
-      set({ pendingApprovals: get().pendingApprovals.filter((a) => a.id !== id), currentApproval: null });
+      set({
+        pendingApprovals: get().pendingApprovals.filter((a) => a.id !== id),
+        currentApproval: null,
+      });
     } catch {}
   },
 

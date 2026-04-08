@@ -1,51 +1,105 @@
-import api from '../utils/api';
+import api from "../utils/api";
+
+function unwrap<T>(response: any): T {
+  if (response && response.code === "OK" && response.data !== undefined) {
+    return response.data as T;
+  }
+  return response as T;
+}
 
 export const aiRuntimeApi = {
-  getCustomer360: async (customerId: string) => {
-    return api.get(`/ai-runtime/customers/${customerId}/360`);
+  getCustomer360: async <T>(customerId: string): Promise<T> => {
+    const res = await api.get(`/ai-runtime/customers/${customerId}/360`);
+    return unwrap<T>(res);
   },
 
-  getCustomerTimeline: async (customerId: string, params?: { eventType?: string; actorType?: string; page?: number; pageSize?: number }) => {
-    return api.get(`/ai-runtime/customers/${customerId}/timeline`, { params });
+  getCustomerTimeline: async <T>(
+    customerId: string,
+    params?: {
+      eventType?: string;
+      actorType?: string;
+      page?: number;
+      pageSize?: number;
+    },
+  ): Promise<T> => {
+    const res = await api.get(`/ai-runtime/customers/${customerId}/timeline`, {
+      params,
+    });
+    return unwrap<T>(res);
   },
 
-  getNextActions: async (customerId: string) => {
-    return api.get(`/ai-runtime/customers/${customerId}/next-actions`);
+  getNextActions: async <T>(customerId: string): Promise<T> => {
+    const res = await api.get(
+      `/ai-runtime/customers/${customerId}/next-actions`,
+    );
+    return unwrap<T>(res);
   },
 
-  getCustomerSnapshots: async (customerId: string, params?: { page?: number; pageSize?: number }) => {
-    return api.get(`/ai-runtime/customers/${customerId}/snapshots`, { params });
+  getCustomerSnapshots: async <T>(
+    customerId: string,
+    params?: { page?: number; pageSize?: number },
+  ): Promise<T> => {
+    const res = await api.get(`/ai-runtime/customers/${customerId}/snapshots`, {
+      params,
+    });
+    return unwrap<T>(res);
   },
 
-  listAgentRuns: async (params?: { agentId?: string; status?: string; customerId?: string }) => {
-    return api.get('/ai-runtime/agent-runs', { params });
+  listAgentRuns: async <T>(params?: {
+    agentId?: string;
+    status?: string;
+    customerId?: string;
+  }): Promise<T> => {
+    const res = await api.get("/ai-runtime/agent-runs", { params });
+    return unwrap<T>(res);
   },
 
-  getAgentRun: async (id: string) => {
-    return api.get(`/ai-runtime/agent-runs/${id}`);
+  getAgentRun: async <T>(id: string): Promise<T> => {
+    const res = await api.get(`/ai-runtime/agent-runs/${id}`);
+    return unwrap<T>(res);
   },
 
-  executeAgent: async (data: { agentCode: string; input: Record<string, unknown>; customerId?: string }) => {
-    return api.post('/ai-runtime/agent-runs', data);
+  executeAgent: async <T>(data: {
+    agentCode: string;
+    input: Record<string, unknown>;
+    customerId?: string;
+  }): Promise<T> => {
+    const res = await api.post("/ai-runtime/agent-runs", data);
+    return unwrap<T>(res);
   },
 
-  getPendingApprovals: async () => {
-    return api.get('/ai-runtime/approvals/pending');
+  getPendingApprovals: async <T>(): Promise<T> => {
+    const res = await api.get("/ai-runtime/approvals/pending");
+    return unwrap<T>(res);
   },
 
-  approveRequest: async (id: string) => {
-    return api.post(`/ai-runtime/approvals/${id}/approve`);
+  approveRequest: async <T>(id: string): Promise<T> => {
+    const res = await api.post(`/ai-runtime/approvals/${id}/approve`);
+    return unwrap<T>(res);
   },
 
-  rejectRequest: async (id: string, reason?: string) => {
-    return api.post(`/ai-runtime/approvals/${id}/reject`, { reason });
+  rejectRequest: async <T>(id: string, reason?: string): Promise<T> => {
+    const res = await api.post(`/ai-runtime/approvals/${id}/reject`, {
+      reason,
+    });
+    return unwrap<T>(res);
   },
 
-  executeTakeover: async (data: { agentRunId: string; reason: string }) => {
-    return api.post('/ai-runtime/takeovers', data);
+  executeTakeover: async <T>(data: {
+    agentRunId: string;
+    reason: string;
+  }): Promise<T> => {
+    const res = await api.post("/ai-runtime/takeovers", data);
+    return unwrap<T>(res);
   },
 
-  executeRollback: async (data: { agentRunId: string }) => {
-    return api.post('/ai-runtime/rollbacks', data);
+  executeRollback: async <T>(data: { agentRunId: string }): Promise<T> => {
+    const res = await api.post("/ai-runtime/rollbacks", data);
+    return unwrap<T>(res);
+  },
+
+  getCockpitData: async <T>(): Promise<T> => {
+    const res = await api.get("/ai-runtime/cockpit");
+    return unwrap<T>(res);
   },
 };

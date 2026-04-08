@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Conversation, ConversationStatus } from './entities/conversation.entity';
 import { ConversationMessage, MessageDirection, MessageType, SenderType } from './entities/conversation-message.entity';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('CnvService', () => {
   let service: CnvService;
@@ -15,13 +15,14 @@ describe('CnvService', () => {
     id: 'conv-uuid-123',
     orgId: 'org-uuid-123',
     channelId: 'channel-uuid-123',
-    externalId: 'ext-123',
+    subject: null,
     status: ConversationStatus.QUEUED,
     assigneeUserId: null,
     customerId: null,
     firstResponseAt: null,
+    lastMessageAt: null,
     closedAt: null,
-    closeReason: null,
+    closedReason: null,
     version: 1,
   };
 
@@ -143,7 +144,7 @@ describe('CnvService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should throw BadRequestException for invalid status transition', async () => {
+    it('should throw ConflictException for invalid status transition', async () => {
       conversationRepository.findOne.mockResolvedValue({
         ...mockConversation,
         status: ConversationStatus.CLOSED,
@@ -176,7 +177,7 @@ describe('CnvService', () => {
       conversationRepository.findOne.mockResolvedValueOnce({
         ...mockConversation,
         status: ConversationStatus.CLOSED,
-        closeReason: '问题已解决',
+        closedReason: '问题已解决',
       });
 
       const result = await service.close(
@@ -307,32 +308,6 @@ describe('CnvService', () => {
       conversationRepository.findOne.mockResolvedValueOnce({
         ...mockConversation,
         status: ConversationStatus.ACTIVE,
-        version: 1,
-      });
-      conversationRepository.findOne.mockResolvedValueOnce({
-        ...mockConversation,
-        status: ConversationStatus.CLOSED,
-      });
-
-      await expect(
-        service.close('conv-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).resolves.not.toThrow();
-    });
-
-    it('should allow transition from paused to closed', async () => {
-      conversationRepository.findOne.mockResolvedValue({
-        ...mockConversation,
-        status: ConversationStatus.PAUSED,
-        version: 1,
-      });
-      
-      const mockQb = createMockQueryBuilder();
-      mockQb.execute.mockResolvedValue({ affected: 1 });
-      conversationRepository.createQueryBuilder.mockReturnValue(mockQb);
-      
-      conversationRepository.findOne.mockResolvedValueOnce({
-        ...mockConversation,
-        status: ConversationStatus.PAUSED,
         version: 1,
       });
       conversationRepository.findOne.mockResolvedValueOnce({

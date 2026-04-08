@@ -54,4 +54,17 @@ export class RiskService {
     });
     return risks.length > 0 ? risks[0] : null;
   }
+
+  async getRisksByOrg(orgId: string): Promise<CustomerRisk[]> {
+    return this.riskRepo.find({
+      where: { orgId },
+      order: { assessedAt: 'DESC' },
+      take: 50,
+    });
+  }
+
+  async getLatestRiskLevel(customerId: string, orgId: string): Promise<string | null> {
+    const risk = await this.getRisk(customerId, orgId);
+    return risk ? risk.riskLevel : null;
+  }
 }

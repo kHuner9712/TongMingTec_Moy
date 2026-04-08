@@ -1,13 +1,33 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CustomerIntent } from '../entities/customer-intent.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { CustomerIntent } from "../entities/customer-intent.entity";
 
-const INTENT_RULES: Array<{ keywords: string[]; intentType: string; confidence: number }> = [
-  { keywords: ['投诉', '退款', '取消', '差评', '不满'], intentType: 'complaint', confidence: 0.85 },
-  { keywords: ['价格', '购买', '下单', '报价', '多少钱'], intentType: 'purchase', confidence: 0.80 },
-  { keywords: ['续费', '到期', '续约', '续订'], intentType: 'renewal', confidence: 0.85 },
-  { keywords: ['沉默', '无响应', '失联', '不回复'], intentType: 'churn_risk', confidence: 0.75 },
+const INTENT_RULES: Array<{
+  keywords: string[];
+  intentType: string;
+  confidence: number;
+}> = [
+  {
+    keywords: ["投诉", "退款", "取消", "差评", "不满"],
+    intentType: "complaint",
+    confidence: 0.85,
+  },
+  {
+    keywords: ["价格", "购买", "下单", "报价", "多少钱"],
+    intentType: "purchase",
+    confidence: 0.8,
+  },
+  {
+    keywords: ["续费", "到期", "续约", "续订"],
+    intentType: "renewal",
+    confidence: 0.85,
+  },
+  {
+    keywords: ["沉默", "无响应", "失联", "不回复"],
+    intentType: "churn_risk",
+    confidence: 0.75,
+  },
 ];
 
 @Injectable()
@@ -22,7 +42,7 @@ export class IntentService {
     orgId: string,
     input: { content: string; sourceType: string },
   ): Promise<CustomerIntent> {
-    let matchedIntent = 'inquiry';
+    let matchedIntent = "inquiry";
     let matchedConfidence = 0.6;
     const matchedKeywords: string[] = [];
 
@@ -35,7 +55,7 @@ export class IntentService {
           break;
         }
       }
-      if (matchedIntent !== 'inquiry') break;
+      if (matchedIntent !== "inquiry") break;
     }
 
     const intent = this.intentRepo.create({
@@ -54,12 +74,22 @@ export class IntentService {
     return this.intentRepo.save(intent);
   }
 
-  async getIntent(customerId: string, orgId: string): Promise<CustomerIntent | null> {
+  async getIntent(
+    customerId: string,
+    orgId: string,
+  ): Promise<CustomerIntent | null> {
     const intents = await this.intentRepo.find({
       where: { customerId, orgId },
-      order: { detectedAt: 'DESC' },
+      order: { detectedAt: "DESC" },
       take: 1,
     });
     return intents.length > 0 ? intents[0] : null;
+  }
+
+  async getLatestIntent(
+    customerId: string,
+    orgId: string,
+  ): Promise<CustomerIntent | null> {
+    return this.getIntent(customerId, orgId);
   }
 }
