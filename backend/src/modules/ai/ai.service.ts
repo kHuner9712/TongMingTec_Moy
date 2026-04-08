@@ -2,34 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AITask, AITaskType, AITaskStatus } from './entities/ai-task.entity';
-
-interface SmartReplyOutput {
-  suggestions: Array<{
-    id: string;
-    content: string;
-    confidence: number;
-  }>;
-  processingTime: number;
-}
-
-interface SummaryOutput {
-  summary: string;
-  keyPoints: string[];
-}
-
-interface SentimentOutput {
-  sentiment: string;
-  score: number;
-  confidence: number;
-}
-
-type AITaskOutput = SmartReplyOutput | SummaryOutput | SentimentOutput | Record<string, never>;
+import { ExecutionEngineService } from '../art/services/execution-engine.service';
 
 @Injectable()
 export class AiService {
   constructor(
     @InjectRepository(AITask)
     private aiTaskRepository: Repository<AITask>,
+    private readonly executionEngine: ExecutionEngineService,
   ) {}
 
   async findTaskById(id: string, orgId: string): Promise<AITask> {
@@ -48,7 +28,7 @@ export class AiService {
     orgId: string,
     conversationId: string,
     prompt: string,
-    _userId: string,
+    userId: string,
   ): Promise<AITask> {
     const task = this.aiTaskRepository.create({
       orgId,
@@ -63,12 +43,12 @@ export class AiService {
 
     const saved = await this.aiTaskRepository.save(task);
 
-    this.executeTask(saved.id, orgId);
+    this.executeTask(saved.id, orgId, userId);
 
     return saved;
   }
 
-  async executeTask(taskId: string, orgId: string): Promise<void> {
+  async executeTask(taskId: string, orgId: string, userId?: string): Promise<void> {
     const task = await this.findTaskById(taskId, orgId);
 
     await this.aiTaskRepository.update(taskId, {
@@ -76,13 +56,22 @@ export class AiService {
     });
 
     try {
-      await this.simulateAIProcessing(task);
+      const run = await this.executionEngine.execute(
+        'AGENT-AI-003',
+        {
+          ...task.inputPayload,
+          requestId: taskId,
+        },
+        orgId,
+        userId || 'system',
+      );
 
-      const outputPayload = this.generateMockOutput(task);
+      const outputPayload = run.outputPayload || {};
 
       await this.aiTaskRepository.update(taskId, {
         status: AITaskStatus.COMPLETED,
         outputPayload: outputPayload as any,
+        agentRunId: run.id,
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -90,49 +79,6 @@ export class AiService {
         status: AITaskStatus.FAILED,
         errorMessage,
       });
-    }
-  }
-
-  private async simulateAIProcessing(_task: AITask): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
-
-  private generateMockOutput(task: AITask): AITaskOutput {
-    switch (task.taskType) {
-      case AITaskType.SMART_REPLY:
-        return {
-          suggestions: [
-            {
-              id: '1',
-              content: '感谢您的咨询，我来为您详细解答。',
-              confidence: 0.92,
-            },
-            {
-              id: '2',
-              content: '您好，请问有什么可以帮助您的？',
-              confidence: 0.88,
-            },
-            {
-              id: '3',
-              content: '好的，我马上为您处理这个问题。',
-              confidence: 0.85,
-            },
-          ],
-          processingTime: 1200,
-        };
-      case AITaskType.SUMMARY:
-        return {
-          summary: '客户咨询产品功能问题，已解答。',
-          keyPoints: ['产品功能', '使用方法', '注意事项'],
-        };
-      case AITaskType.SENTIMENT:
-        return {
-          sentiment: 'neutral',
-          score: 0.15,
-          confidence: 0.89,
-        };
-      default:
-        return {};
     }
   }
 

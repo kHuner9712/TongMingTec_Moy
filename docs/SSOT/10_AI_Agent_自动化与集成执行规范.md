@@ -24,6 +24,18 @@
   - Provider 抽象
   - 超时 / 重试 / 熔断 / 限流
   - 人工编辑后发送
+- 已实现能力（S1 代码已落地）：
+  - Agent Registry（AiAgent 实体 + AgentRegistryService）
+  - Agent Execution Engine（4 种执行模式：suggest / assist / auto / approval）
+  - Approval Engine（AiApprovalRequest + ApprovalEngineService + ApprovalCenterService）
+  - Rollback Engine（AiRollback + RollbackEngineService + RollbackCenterService）
+  - Takeover Engine（AiTakeover + TakeoverEngineService + TakeoverCenterService）
+  - Prompt Template（AiPromptTemplate + PromptTemplateService）
+  - Tool Calling（AiTool + ToolCallingService）
+  - Customer Operating Record（COR 模块：CustomerOperatingRecord + CustomerTimelineEvent + Customer360Service）
+  - Customer Memory（CMEM 模块：CustomerContext + CustomerIntent + CustomerRisk + CustomerNextAction）
+  - Domain Event System（EventBusService + 领域事件定义）
+  - State Machine Enforcement（StateMachine<S> + 9 个状态机定义）
 - 终局扩展能力：
   - Agent registry
   - 审批驱动的自动执行
@@ -34,19 +46,19 @@
 
 ## 3. Agent Registry
 ### 3.1 统一注册表
-| Agent Code | 名称 | 主要职责 | introduced_in | required_in | 默认模式 |
-| --- | --- | --- | --- | --- | --- |
-| AGENT-AI-001 | Acquisition Agent | 渠道线索吸收、首轮清洗 | S2 | S4 | assist |
-| AGENT-AI-002 | Lead Clean Agent | 去重、标准化、评分建议 | S2 | S3 | assist |
-| AGENT-AI-003 | Conversation Agent | 智能回复、摘要、意图识别 | S1 | S1 | suggest |
-| AGENT-AI-004 | Sales Follow Agent | 跟进建议、下一步动作建议 | S2 | S3 | suggest |
-| AGENT-AI-005 | Opportunity Agent | 商机风险与赢单建议 | S2 | S4 | suggest |
-| AGENT-AI-006 | Ticket Agent | 工单摘要、分流建议、解决建议 | S2 | S3 | assist |
-| AGENT-AI-007 | Knowledge Agent | 知识检索与答案合成 | S2 | S2 | assist |
-| AGENT-AI-008 | Quality Agent | 会话/工单质检、敏感词、情绪分析 | S2 | S3 | auto |
-| AGENT-AI-009 | Insight Agent | 数据洞察、异常解释、趋势归因 | S3 | S4 | assist |
-| AGENT-AI-010 | Orchestrate Agent | 自动化流程编排与跨工具协调 | S3 | S4 | approval |
-| AGENT-AI-011 | Dashboard Agent | 驾驶舱摘要与管理层日报 | S3 | S4 | suggest |
+| Agent Code | 名称 | 主要职责 | introduced_in | required_in | 默认模式 | 实现状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| AGENT-AI-001 | Acquisition Agent | 渠道线索吸收、首轮清洗 | S2 | S4 | assist | specified |
+| AGENT-AI-002 | Lead Clean Agent | 去重、标准化、评分建议 | S2 | S3 | assist | specified |
+| AGENT-AI-003 | Conversation Agent | 智能回复、摘要、意图识别 | S1 | S1 | suggest | implemented |
+| AGENT-AI-004 | Sales Follow Agent | 跟进建议、下一步动作建议 | S2 | S3 | suggest | specified |
+| AGENT-AI-005 | Opportunity Agent | 商机风险与赢单建议 | S2 | S4 | suggest | specified |
+| AGENT-AI-006 | Ticket Agent | 工单摘要、分流建议、解决建议 | S2 | S3 | assist | specified |
+| AGENT-AI-007 | Knowledge Agent | 知识检索与答案合成 | S2 | S2 | assist | specified |
+| AGENT-AI-008 | Quality Agent | 会话/工单质检、敏感词、情绪分析 | S2 | S3 | auto | specified |
+| AGENT-AI-009 | Insight Agent | 数据洞察、异常解释、趋势归因 | S3 | S4 | assist | specified |
+| AGENT-AI-010 | Orchestrate Agent | 自动化流程编排与跨工具协调 | S3 | S4 | approval | specified |
+| AGENT-AI-011 | Dashboard Agent | 驾驶舱摘要与管理层日报 | S3 | S4 | suggest | specified |
 
 ### 3.2 capability contract
 每个 Agent 必须声明：

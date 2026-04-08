@@ -19,6 +19,14 @@ import { ChnModule } from './modules/chn/chn.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AudModule } from './modules/aud/aud.module';
 import { SysModule } from './modules/sys/sys.module';
+import { EventsModule } from './common/events/events.module';
+import { CorModule } from './modules/cor/cor.module';
+import { CmemModule } from './modules/cmem/cmem.module';
+import { ArtModule } from './modules/art/art.module';
+import { ApprovalCenterModule } from './modules/approval-center/approval-center.module';
+import { TakeoverCenterModule } from './modules/takeover-center/takeover-center.module';
+import { RollbackCenterModule } from './modules/rollback-center/rollback-center.module';
+import { AiRuntimeModule } from './modules/ai-runtime/ai-runtime.module';
 
 import { WebSocketModule } from './common/gateway/websocket.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -78,6 +86,14 @@ import jwtConfig from './config/jwt.config';
     AiModule,
     AudModule,
     SysModule,
+    EventsModule,
+    CorModule,
+    CmemModule,
+    ArtModule,
+    ApprovalCenterModule,
+    TakeoverCenterModule,
+    RollbackCenterModule,
+    AiRuntimeModule,
     WebSocketModule,
   ],
   providers: [

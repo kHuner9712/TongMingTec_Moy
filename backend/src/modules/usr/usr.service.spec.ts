@@ -7,6 +7,7 @@ import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
 import { UserRole, UserRoleSource } from './entities/user-role.entity';
 import { RolePermission } from './entities/role-permission.entity';
+import { EventBusService } from '../../common/events/event-bus.service';
 import * as bcrypt from 'bcrypt';
 
 describe('UsrService', () => {
@@ -101,6 +102,12 @@ describe('UsrService', () => {
             delete: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
+          },
+        },
+        {
+          provide: EventBusService,
+          useValue: {
+            publish: jest.fn(),
           },
         },
       ],
@@ -226,6 +233,7 @@ describe('UsrService', () => {
         'user-uuid-123',
         'org-uuid-123',
         UserStatus.DISABLED,
+        'operator-uuid-123',
         1,
       );
 

@@ -3,6 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Customer, CustomerStatus } from './entities/customer.entity';
 import { CustomerContact } from './entities/customer-contact.entity';
+import { customerStateMachine } from '../../common/statemachine/definitions/customer.sm';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { customerStatusChanged } from '../../common/events/customer-events';
 
 @Injectable()
 export class CmService {
@@ -11,6 +14,7 @@ export class CmService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerContact)
     private contactRepository: Repository<CustomerContact>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findCustomers(
@@ -85,7 +89,7 @@ export class CmService {
     await this.customerRepository.update(id, {
       ...data,
       version: () => 'version + 1',
-    });
+    } as any);
 
     return this.findCustomerById(id, orgId);
   }
@@ -97,7 +101,25 @@ export class CmService {
     reason: string,
     version: number,
   ): Promise<Customer> {
-    return this.updateCustomer(id, orgId, { status }, version);
+    const customer = await this.findCustomerById(id, orgId);
+
+    customerStateMachine.validateTransition(customer.status, status);
+
+    const updated = await this.updateCustomer(id, orgId, { status }, version);
+
+    this.eventBus.publish(
+      customerStatusChanged({
+        orgId,
+        customerId: id,
+        fromStatus: customer.status,
+        toStatus: status,
+        reason,
+        actorType: 'user',
+        actorId: customer.ownerUserId,
+      }),
+    );
+
+    return updated;
   }
 
   async findContacts(customerId: string, orgId: string): Promise<CustomerContact[]> {

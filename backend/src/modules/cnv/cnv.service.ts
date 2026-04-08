@@ -1,16 +1,11 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Conversation, ConversationStatus } from './entities/conversation.entity';
 import { ConversationMessage, MessageType, MessageDirection, SenderType } from './entities/conversation-message.entity';
-
-const VALID_TRANSITIONS: Record<ConversationStatus, ConversationStatus[]> = {
-  [ConversationStatus.QUEUED]: [ConversationStatus.WAITING, ConversationStatus.ACTIVE, ConversationStatus.CLOSED],
-  [ConversationStatus.WAITING]: [ConversationStatus.ACTIVE, ConversationStatus.CLOSED],
-  [ConversationStatus.ACTIVE]: [ConversationStatus.PAUSED, ConversationStatus.CLOSED],
-  [ConversationStatus.PAUSED]: [ConversationStatus.ACTIVE, ConversationStatus.CLOSED],
-  [ConversationStatus.CLOSED]: [],
-};
+import { conversationStateMachine } from '../../common/statemachine/definitions/conversation.sm';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { conversationMessageCreated } from '../../common/events/conversation-events';
 
 @Injectable()
 export class CnvService {
@@ -20,6 +15,7 @@ export class CnvService {
     @InjectRepository(ConversationMessage)
     private messageRepository: Repository<ConversationMessage>,
     private dataSource: DataSource,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findConversations(
@@ -78,9 +74,8 @@ export class CnvService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[conv.status].includes(ConversationStatus.ACTIVE)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStatus = conv.status;
+    conversationStateMachine.validateTransition(conv.status, ConversationStatus.ACTIVE);
 
     const now = new Date();
 
@@ -95,6 +90,17 @@ export class CnvService {
       })
       .where('id = :id', { id })
       .execute();
+
+    this.eventBus.publish(
+      conversationMessageCreated({
+        orgId,
+        conversationId: id,
+        messageId: `status-change-${fromStatus}-to-active`,
+        senderType: 'system',
+        senderId: userId,
+        contentType: 'status_change',
+      }),
+    );
 
     return this.findConversationById(id, orgId);
   }
@@ -114,7 +120,7 @@ export class CnvService {
     }
 
     if (conv.status !== ConversationStatus.ACTIVE && conv.status !== ConversationStatus.PAUSED) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
+      throw new ConflictException('STATUS_TRANSITION_INVALID');
     }
 
     await this.conversationRepository
@@ -143,9 +149,8 @@ export class CnvService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[conv.status].includes(ConversationStatus.CLOSED)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStatus = conv.status;
+    conversationStateMachine.validateTransition(conv.status, ConversationStatus.CLOSED);
 
     await this.conversationRepository
       .createQueryBuilder()
@@ -158,6 +163,17 @@ export class CnvService {
       })
       .where('id = :id', { id })
       .execute();
+
+    this.eventBus.publish(
+      conversationMessageCreated({
+        orgId,
+        conversationId: id,
+        messageId: `status-change-${fromStatus}-to-closed`,
+        senderType: 'system',
+        senderId: userId,
+        contentType: 'status_change',
+      }),
+    );
 
     return this.findConversationById(id, orgId);
   }
@@ -199,7 +215,7 @@ export class CnvService {
     }
 
     if (conv.status === ConversationStatus.CLOSED) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
+      throw new ConflictException('STATUS_TRANSITION_INVALID');
     }
 
     const message = this.messageRepository.create({
@@ -218,6 +234,9 @@ export class CnvService {
     await this.messageRepository.save(message);
 
     if (conv.status === ConversationStatus.QUEUED || conv.status === ConversationStatus.WAITING) {
+      const fromStatus = conv.status;
+      conversationStateMachine.validateTransition(conv.status, ConversationStatus.ACTIVE);
+
       await this.conversationRepository
         .createQueryBuilder()
         .update(Conversation)
@@ -228,7 +247,29 @@ export class CnvService {
         })
         .where('id = :id', { id: conv.id })
         .execute();
+
+      this.eventBus.publish(
+        conversationMessageCreated({
+          orgId,
+          conversationId: conv.id,
+          messageId: `status-change-${fromStatus}-to-active`,
+          senderType: 'system',
+          senderId: userId,
+          contentType: 'status_change',
+        }),
+      );
     }
+
+    this.eventBus.publish(
+      conversationMessageCreated({
+        orgId,
+        conversationId: conv.id,
+        messageId: message.id,
+        senderType: SenderType.AGENT,
+        senderId: userId,
+        contentType: messageType,
+      }),
+    );
 
     return message;
   }
@@ -242,7 +283,7 @@ export class CnvService {
     const conv = await this.findConversationById(id, orgId);
 
     if (conv.status !== ConversationStatus.CLOSED) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
+      throw new ConflictException('STATUS_TRANSITION_INVALID');
     }
 
     await this.conversationRepository.update(id, {

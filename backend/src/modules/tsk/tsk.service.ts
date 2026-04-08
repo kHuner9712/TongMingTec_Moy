@@ -1,20 +1,17 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task, TaskStatus, TaskSourceType } from './entities/task.entity';
-
-const VALID_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
-  [TaskStatus.PENDING]: [TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.CANCELLED],
-  [TaskStatus.IN_PROGRESS]: [TaskStatus.COMPLETED, TaskStatus.PENDING, TaskStatus.CANCELLED],
-  [TaskStatus.COMPLETED]: [],
-  [TaskStatus.CANCELLED]: [],
-};
+import { taskStateMachine } from '../../common/statemachine/definitions/task.sm';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { taskStatusChanged } from '../../common/events/task-events';
 
 @Injectable()
 export class TskService {
   constructor(
     @InjectRepository(Task)
     private taskRepository: Repository<Task>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findTasks(
@@ -102,7 +99,7 @@ export class TskService {
     id: string,
     orgId: string,
     status: TaskStatus,
-    _userId: string,
+    userId: string,
     version: number,
   ): Promise<Task> {
     const task = await this.findTaskById(id, orgId);
@@ -111,14 +108,24 @@ export class TskService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[task.status].includes(status)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStatus = task.status;
+    taskStateMachine.validateTransition(task.status, status);
 
     await this.taskRepository.update(id, {
       status,
       version: () => 'version + 1',
     });
+
+    this.eventBus.publish(
+      taskStatusChanged({
+        orgId,
+        taskId: id,
+        fromStatus,
+        toStatus: status,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
 
     return this.findTaskById(id, orgId);
   }

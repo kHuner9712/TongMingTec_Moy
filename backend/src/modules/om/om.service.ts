@@ -1,15 +1,11 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Opportunity, OpportunityStage, OpportunityResult } from './entities/opportunity.entity';
 import { OpportunityStageHistory } from './entities/opportunity-stage-history.entity';
-
-const STAGE_ORDER = [
-  OpportunityStage.DISCOVERY,
-  OpportunityStage.QUALIFICATION,
-  OpportunityStage.PROPOSAL,
-  OpportunityStage.NEGOTIATION,
-];
+import { opportunityStateMachine } from '../../common/statemachine/definitions/opportunity.sm';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { opportunityStageChanged, opportunityResultSet } from '../../common/events/opportunity-events';
 
 @Injectable()
 export class OmService {
@@ -18,6 +14,7 @@ export class OmService {
     private opportunityRepository: Repository<Opportunity>,
     @InjectRepository(OpportunityStageHistory)
     private historyRepository: Repository<OpportunityStageHistory>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findOpportunities(
@@ -110,12 +107,8 @@ export class OmService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    const currentIndex = STAGE_ORDER.indexOf(opp.stage);
-    const targetIndex = STAGE_ORDER.indexOf(toStage);
-
-    if (targetIndex < currentIndex - 1 || targetIndex > currentIndex + 1) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStage = opp.stage;
+    opportunityStateMachine.validateTransition(opp.stage, toStage);
 
     const history = this.historyRepository.create({
       opportunityId: opp.id,
@@ -132,6 +125,18 @@ export class OmService {
       stage: toStage,
       version: () => 'version + 1',
     });
+
+    this.eventBus.publish(
+      opportunityStageChanged({
+        orgId,
+        opportunityId: id,
+        fromStage,
+        toStage,
+        reason,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
 
     return this.findOpportunityById(id, orgId);
   }
@@ -151,7 +156,7 @@ export class OmService {
     }
 
     if (opp.stage !== OpportunityStage.NEGOTIATION) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
+      throw new ConflictException('STATUS_TRANSITION_INVALID');
     }
 
     const history = this.historyRepository.create({
@@ -170,6 +175,17 @@ export class OmService {
       result,
       version: () => 'version + 1',
     });
+
+    this.eventBus.publish(
+      opportunityResultSet({
+        orgId,
+        opportunityId: id,
+        result: result === OpportunityResult.WON ? 'won' : 'lost',
+        reason,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
 
     return this.findOpportunityById(id, orgId);
   }

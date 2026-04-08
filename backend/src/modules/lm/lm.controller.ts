@@ -140,9 +140,10 @@ export class LmController {
   async assignLead(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
     @Body() dto: AssignDto,
   ) {
-    return this.lmService.assignLead(id, orgId, dto.ownerUserId, dto.version);
+    return this.lmService.assignLead(id, orgId, dto.ownerUserId, userId, dto.version);
   }
 
   @Post(':id/follow-ups')

@@ -337,3 +337,219 @@ export interface UpdateTicketDto {
   priority?: TicketPriority;
   version: number;
 }
+
+export type TimelineActorType = 'customer' | 'user' | 'ai' | 'system';
+
+export interface CustomerTimelineEvent {
+  id: string;
+  orgId: string;
+  customerId: string;
+  eventType: string;
+  eventSource: string;
+  eventPayload: Record<string, unknown>;
+  occurredAt: string;
+  actorType: TimelineActorType;
+  actorId: string | null;
+  createdAt: string;
+}
+
+export interface CustomerOperatingRecord extends BaseEntity {
+  customerId: string;
+  recordType: string;
+  content: string;
+  aiSuggestion: Record<string, unknown> | null;
+  humanDecision: string | null;
+  sourceType: string;
+  sourceId: string | null;
+}
+
+export interface Customer360View {
+  customer: Customer;
+  contacts: CustomerContact[];
+  leads: Lead[];
+  opportunities: Opportunity[];
+  conversations: Conversation[];
+  tickets: Ticket[];
+  latestContext: Record<string, unknown> | null;
+  currentIntent: { intentType: string; confidence: number } | null;
+  riskLevel: string | null;
+  nextActions: CustomerNextAction[];
+}
+
+export interface CustomerContext extends BaseEntity {
+  customerId: string;
+  contextType: string;
+  contextData: Record<string, unknown>;
+  lastUpdatedFrom: string | null;
+  expiresAt: string | null;
+}
+
+export interface CustomerIntent extends BaseEntity {
+  customerId: string;
+  intentType: string;
+  confidence: number;
+  evidence: Record<string, unknown>;
+  detectedAt: string;
+}
+
+export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
+export interface CustomerRisk extends BaseEntity {
+  customerId: string;
+  riskLevel: RiskLevel;
+  riskFactors: Record<string, unknown>;
+  assessedAt: string;
+}
+
+export type NextActionStatus = 'pending' | 'accepted' | 'dismissed' | 'expired';
+
+export interface CustomerNextAction extends BaseEntity {
+  customerId: string;
+  actionType: string;
+  priority: number;
+  reasoning: string;
+  suggestedBy: string;
+  suggestedAt: string;
+  status: NextActionStatus;
+}
+
+export type AgentExecutionMode = 'suggest' | 'assist' | 'auto' | 'approval';
+export type AgentStatus = 'draft' | 'active' | 'paused' | 'archived';
+
+export interface AiAgent extends BaseEntity {
+  code: string;
+  name: string;
+  agentType: string;
+  executionMode: AgentExecutionMode;
+  resourceScope: Record<string, unknown>;
+  toolScope: Record<string, unknown>;
+  riskLevel: string;
+  inputSchema: Record<string, unknown>;
+  outputSchema: Record<string, unknown>;
+  requiresApproval: boolean;
+  rollbackStrategy: Record<string, unknown> | null;
+  takeoverStrategy: Record<string, unknown> | null;
+  status: AgentStatus;
+}
+
+export type AgentRunStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'awaiting_approval' | 'rolled_back' | 'taken_over';
+
+export interface AiAgentRun {
+  id: string;
+  orgId: string;
+  agentId: string;
+  customerId: string | null;
+  requestId: string | null;
+  status: AgentRunStatus;
+  inputPayload: Record<string, unknown>;
+  outputPayload: Record<string, unknown> | null;
+  executionMode: string;
+  latencyMs: number | null;
+  tokenCost: number | null;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'expired';
+
+export interface AiApprovalRequest extends BaseEntity {
+  agentRunId: string;
+  customerId: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  requestedAction: string;
+  riskLevel: string;
+  status: ApprovalStatus;
+  beforeSnapshot: Record<string, unknown> | null;
+  proposedAfterSnapshot: Record<string, unknown> | null;
+  explanation: string;
+  approverUserId: string | null;
+  approvedAt: string | null;
+  expiresAt: string | null;
+}
+
+export interface AiRollback {
+  id: string;
+  orgId: string;
+  agentRunId: string;
+  customerId: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  rollbackScope: Record<string, unknown>;
+  beforeSnapshot: Record<string, unknown> | null;
+  result: string;
+  rolledBackBy: string | null;
+  rolledBackAt: string;
+  createdAt: string;
+}
+
+export interface AiTakeover {
+  id: string;
+  orgId: string;
+  agentRunId: string;
+  customerId: string | null;
+  resourceType: string;
+  resourceId: string | null;
+  takeoverUserId: string;
+  reason: string;
+  takeoverAt: string;
+  createdAt: string;
+}
+
+export interface AiPromptTemplate extends BaseEntity {
+  templateCode: string;
+  agentCode: string;
+  version: number;
+  systemPrompt: string;
+  userPromptPattern: string;
+  inputSchema: Record<string, unknown> | null;
+  outputSchema: Record<string, unknown> | null;
+  safetyRules: Record<string, unknown> | null;
+  enabled: boolean;
+}
+
+export type ToolType = 'read_api' | 'write_api' | 'kb_search' | 'workflow_execute' | 'integration_execute' | 'notification_send' | 'report_export';
+
+export interface AiTool extends BaseEntity {
+  code: string;
+  name: string;
+  toolType: ToolType;
+  config: Record<string, unknown>;
+  riskLevel: string;
+  enabled: boolean;
+}
+
+export interface WorkbenchTodoItem {
+  id: string;
+  type: 'ai_suggestion' | 'pending_approval' | 'pending_conversation' | 'pending_ticket' | 'pending_task';
+  title: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  relatedType?: string;
+  relatedId?: string;
+  createdAt: string;
+}
+
+export interface WorkbenchAiInsight {
+  id: string;
+  type: 'risk_alert' | 'opportunity_hint' | 'followup_reminder' | 'churn_warning';
+  title: string;
+  description: string;
+  severity: 'info' | 'warning' | 'error';
+  relatedType?: string;
+  relatedId?: string;
+}
+
+export type SnapshotType = 'pre_execution' | 'post_execution' | 'manual' | 'scheduled';
+
+export interface CustomerStateSnapshot {
+  id: string;
+  orgId: string;
+  customerId: string;
+  snapshotType: SnapshotType;
+  stateData: Record<string, unknown>;
+  agentRunId: string | null;
+  triggerEvent: string | null;
+  createdAt: string;
+  createdBy: string | null;
+}

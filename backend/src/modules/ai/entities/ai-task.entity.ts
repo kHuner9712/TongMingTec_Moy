@@ -53,6 +53,10 @@ export class AITask extends BaseEntity {
   @Index()
   messageId: string | null;
 
+  @Column({ type: 'uuid', nullable: true, name: 'agent_run_id' })
+  @Index()
+  agentRunId: string | null;
+
   @ManyToOne(() => Conversation, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'conversation_id' })
   conversation: Conversation;

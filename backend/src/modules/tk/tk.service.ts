@@ -1,16 +1,11 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Ticket, TicketStatus, TicketPriority } from './entities/ticket.entity';
 import { TicketLog } from './entities/ticket-log.entity';
-
-const VALID_TRANSITIONS: Record<TicketStatus, TicketStatus[]> = {
-  [TicketStatus.PENDING]: [TicketStatus.ASSIGNED, TicketStatus.CLOSED],
-  [TicketStatus.ASSIGNED]: [TicketStatus.IN_PROGRESS, TicketStatus.PENDING, TicketStatus.CLOSED],
-  [TicketStatus.IN_PROGRESS]: [TicketStatus.RESOLVED, TicketStatus.ASSIGNED],
-  [TicketStatus.RESOLVED]: [TicketStatus.CLOSED, TicketStatus.IN_PROGRESS],
-  [TicketStatus.CLOSED]: [],
-};
+import { ticketStateMachine } from '../../common/statemachine/definitions/ticket.sm';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { ticketStatusChanged } from '../../common/events/ticket-events';
 
 @Injectable()
 export class TkService {
@@ -20,6 +15,7 @@ export class TkService {
     @InjectRepository(TicketLog)
     private logRepository: Repository<TicketLog>,
     private dataSource: DataSource,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findTickets(
@@ -108,13 +104,12 @@ export class TkService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[ticket.status].includes(TicketStatus.ASSIGNED) &&
-        ticket.status !== TicketStatus.ASSIGNED) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
-
     const fromStatus = ticket.status;
     const toStatus = TicketStatus.ASSIGNED;
+
+    if (fromStatus !== toStatus) {
+      ticketStateMachine.validateTransition(fromStatus, toStatus);
+    }
 
     await this.ticketRepository.update(id, {
       assigneeUserId,
@@ -135,6 +130,19 @@ export class TkService {
 
     await this.logRepository.save(log);
 
+    if (fromStatus !== toStatus) {
+      this.eventBus.publish(
+        ticketStatusChanged({
+          orgId,
+          ticketId: id,
+          fromStatus,
+          toStatus,
+          actorType: 'user',
+          actorId: userId,
+        }),
+      );
+    }
+
     return this.findTicketById(id, orgId);
   }
 
@@ -150,12 +158,10 @@ export class TkService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[ticket.status].includes(TicketStatus.IN_PROGRESS)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
-
     const fromStatus = ticket.status;
     const toStatus = TicketStatus.IN_PROGRESS;
+    ticketStateMachine.validateTransition(fromStatus, toStatus);
+
     const now = new Date();
 
     await this.ticketRepository.update(id, {
@@ -176,6 +182,17 @@ export class TkService {
 
     await this.logRepository.save(log);
 
+    this.eventBus.publish(
+      ticketStatusChanged({
+        orgId,
+        ticketId: id,
+        fromStatus,
+        toStatus,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
+
     return this.findTicketById(id, orgId);
   }
 
@@ -192,12 +209,10 @@ export class TkService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[ticket.status].includes(TicketStatus.RESOLVED)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
-
     const fromStatus = ticket.status;
     const toStatus = TicketStatus.RESOLVED;
+    ticketStateMachine.validateTransition(fromStatus, toStatus);
+
     const now = new Date();
 
     await this.ticketRepository.update(id, {
@@ -220,6 +235,17 @@ export class TkService {
 
     await this.logRepository.save(log);
 
+    this.eventBus.publish(
+      ticketStatusChanged({
+        orgId,
+        ticketId: id,
+        fromStatus,
+        toStatus,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
+
     return this.findTicketById(id, orgId);
   }
 
@@ -236,12 +262,10 @@ export class TkService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[ticket.status].includes(TicketStatus.CLOSED)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
-
     const fromStatus = ticket.status;
     const toStatus = TicketStatus.CLOSED;
+    ticketStateMachine.validateTransition(fromStatus, toStatus);
+
     const now = new Date();
 
     await this.ticketRepository.update(id, {
@@ -263,6 +287,18 @@ export class TkService {
     });
 
     await this.logRepository.save(log);
+
+    this.eventBus.publish(
+      ticketStatusChanged({
+        orgId,
+        ticketId: id,
+        fromStatus,
+        toStatus,
+        reason: closeReason,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
 
     return this.findTicketById(id, orgId);
   }

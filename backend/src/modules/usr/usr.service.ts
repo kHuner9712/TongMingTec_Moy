@@ -7,6 +7,9 @@ import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
 import { UserRole, UserRoleSource } from './entities/user-role.entity';
 import { RolePermission } from './entities/role-permission.entity';
+import { userStateMachine } from '../../common/statemachine/definitions/user.sm';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { userStatusChanged } from '../../common/events/user-events';
 
 @Injectable()
 export class UsrService {
@@ -21,6 +24,7 @@ export class UsrService {
     private userRoleRepository: Repository<UserRole>,
     @InjectRepository(RolePermission)
     private rolePermissionRepository: Repository<RolePermission>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findUsers(
@@ -117,9 +121,35 @@ export class UsrService {
     id: string,
     orgId: string,
     status: UserStatus,
+    userId: string,
     version: number,
   ): Promise<User> {
-    return this.updateUser(id, orgId, { status }, version);
+    const user = await this.findUserById(id, orgId);
+
+    if (user.version !== version) {
+      throw new ConflictException('CONFLICT_VERSION');
+    }
+
+    const fromStatus = user.status;
+    userStateMachine.validateTransition(user.status, status);
+
+    await this.userRepository.update(id, {
+      status,
+      version: () => 'version + 1',
+    });
+
+    this.eventBus.publish(
+      userStatusChanged({
+        orgId,
+        userId: id,
+        fromStatus,
+        toStatus: status,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
+
+    return this.findUserById(id, orgId);
   }
 
   async resetPassword(

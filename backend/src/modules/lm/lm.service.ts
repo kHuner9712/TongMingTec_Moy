@@ -1,16 +1,11 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Lead, LeadStatus } from './entities/lead.entity';
 import { LeadFollowUp, FollowType } from './entities/lead-follow-up.entity';
-
-const VALID_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  [LeadStatus.NEW]: [LeadStatus.ASSIGNED, LeadStatus.INVALID],
-  [LeadStatus.ASSIGNED]: [LeadStatus.FOLLOWING, LeadStatus.INVALID],
-  [LeadStatus.FOLLOWING]: [LeadStatus.CONVERTED, LeadStatus.INVALID],
-  [LeadStatus.CONVERTED]: [],
-  [LeadStatus.INVALID]: [],
-};
+import { leadStateMachine } from '../../common/statemachine/definitions/lead.sm';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { leadStatusChanged } from '../../common/events/lead-events';
 
 @Injectable()
 export class LmService {
@@ -20,6 +15,7 @@ export class LmService {
     @InjectRepository(LeadFollowUp)
     private followUpRepository: Repository<LeadFollowUp>,
     private dataSource: DataSource,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async findLeads(
@@ -81,6 +77,7 @@ export class LmService {
     id: string,
     orgId: string,
     ownerUserId: string,
+    userId: string,
     version: number,
   ): Promise<Lead> {
     const lead = await this.findLeadById(id, orgId);
@@ -89,15 +86,25 @@ export class LmService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.ASSIGNED)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStatus = lead.status;
+    leadStateMachine.validateTransition(lead.status, LeadStatus.ASSIGNED);
 
     await this.leadRepository.update(id, {
       ownerUserId,
       status: LeadStatus.ASSIGNED,
       version: () => 'version + 1',
     });
+
+    this.eventBus.publish(
+      leadStatusChanged({
+        orgId,
+        leadId: id,
+        fromStatus,
+        toStatus: LeadStatus.ASSIGNED,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
 
     return this.findLeadById(id, orgId);
   }
@@ -117,9 +124,8 @@ export class LmService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.FOLLOWING)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStatus = lead.status;
+    leadStateMachine.validateTransition(lead.status, LeadStatus.FOLLOWING);
 
     const followUp = this.followUpRepository.create({
       leadId: lead.id,
@@ -138,6 +144,17 @@ export class LmService {
       version: () => 'version + 1',
     });
 
+    this.eventBus.publish(
+      leadStatusChanged({
+        orgId,
+        leadId: id,
+        fromStatus,
+        toStatus: LeadStatus.FOLLOWING,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
+
     return followUp;
   }
 
@@ -153,14 +170,24 @@ export class LmService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.CONVERTED)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStatus = lead.status;
+    leadStateMachine.validateTransition(lead.status, LeadStatus.CONVERTED);
 
     await this.leadRepository.update(id, {
       status: LeadStatus.CONVERTED,
       version: () => 'version + 1',
     });
+
+    this.eventBus.publish(
+      leadStatusChanged({
+        orgId,
+        leadId: id,
+        fromStatus,
+        toStatus: LeadStatus.CONVERTED,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
 
     return {
       leadId: id,
@@ -182,14 +209,25 @@ export class LmService {
       throw new ConflictException('CONFLICT_VERSION');
     }
 
-    if (!VALID_TRANSITIONS[lead.status].includes(LeadStatus.INVALID)) {
-      throw new BadRequestException('STATUS_TRANSITION_INVALID');
-    }
+    const fromStatus = lead.status;
+    leadStateMachine.validateTransition(lead.status, LeadStatus.INVALID);
 
     await this.leadRepository.update(id, {
       status: LeadStatus.INVALID,
       version: () => 'version + 1',
     });
+
+    this.eventBus.publish(
+      leadStatusChanged({
+        orgId,
+        leadId: id,
+        fromStatus,
+        toStatus: LeadStatus.INVALID,
+        reason,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
 
     return this.findLeadById(id, orgId);
   }

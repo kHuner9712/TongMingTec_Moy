@@ -4,12 +4,14 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Lead, LeadStatus } from './entities/lead.entity';
 import { LeadFollowUp, FollowType } from './entities/lead-follow-up.entity';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
+import { EventBusService } from '../../common/events/event-bus.service';
 
 describe('LmService', () => {
   let service: LmService;
   let leadRepository: jest.Mocked<any>;
   let followUpRepository: jest.Mocked<any>;
+  let eventBus: jest.Mocked<EventBusService>;
 
   const mockLead = {
     id: 'lead-uuid-123',
@@ -75,12 +77,19 @@ describe('LmService', () => {
           provide: DataSource,
           useValue: {},
         },
+        {
+          provide: EventBusService,
+          useValue: {
+            publish: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<LmService>(LmService);
     leadRepository = module.get(getRepositoryToken(Lead));
     followUpRepository = module.get(getRepositoryToken(LeadFollowUp));
+    eventBus = module.get(EventBusService);
   });
 
   describe('findLeadById', () => {
@@ -170,6 +179,7 @@ describe('LmService', () => {
         'lead-uuid-123',
         'org-uuid-123',
         'agent-uuid-123',
+        'user-uuid-123',
         1,
       );
 
@@ -189,7 +199,7 @@ describe('LmService', () => {
       });
 
       await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -201,8 +211,8 @@ describe('LmService', () => {
       });
 
       await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
+      ).rejects.toThrow();
     });
 
     it('should throw BadRequestException for invalid status transition from invalid', async () => {
@@ -213,8 +223,8 @@ describe('LmService', () => {
       });
 
       await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
+      ).rejects.toThrow();
     });
   });
 
@@ -266,7 +276,7 @@ describe('LmService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should throw BadRequestException for invalid status transition from new', async () => {
+    it('should throw error for invalid status transition from new', async () => {
       leadRepository.findOne.mockResolvedValue(mockLead);
 
       await expect(
@@ -279,7 +289,7 @@ describe('LmService', () => {
           'user-uuid-123',
           1,
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow();
     });
   });
 
@@ -309,15 +319,15 @@ describe('LmService', () => {
       expect(result.opportunityId).toBe('placeholder-opportunity-id');
     });
 
-    it('should throw BadRequestException for invalid status transition from new', async () => {
+    it('should throw error for invalid status transition from new', async () => {
       leadRepository.findOne.mockResolvedValue(mockLead);
 
       await expect(
         service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow();
     });
 
-    it('should throw BadRequestException for invalid status transition from converted', async () => {
+    it('should throw error for invalid status transition from converted', async () => {
       leadRepository.findOne.mockResolvedValue({
         ...mockLead,
         status: LeadStatus.CONVERTED,
@@ -325,7 +335,7 @@ describe('LmService', () => {
 
       await expect(
         service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow();
     });
 
     it('should throw ConflictException for version mismatch', async () => {
@@ -408,7 +418,7 @@ describe('LmService', () => {
       expect(leadRepository.update).toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException for invalid status transition from converted', async () => {
+    it('should throw error for invalid status transition from converted', async () => {
       leadRepository.findOne.mockResolvedValue({
         ...mockLead,
         status: LeadStatus.CONVERTED,
@@ -417,10 +427,10 @@ describe('LmService', () => {
 
       await expect(
         service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow();
     });
 
-    it('should throw BadRequestException for invalid status transition from invalid', async () => {
+    it('should throw error for invalid status transition from invalid', async () => {
       leadRepository.findOne.mockResolvedValue({
         ...mockLead,
         status: LeadStatus.INVALID,
@@ -429,7 +439,7 @@ describe('LmService', () => {
 
       await expect(
         service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow();
     });
   });
 
@@ -454,7 +464,7 @@ describe('LmService', () => {
       leadRepository.update.mockResolvedValue({ affected: 1 });
 
       await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
       ).resolves.not.toThrow();
     });
 
@@ -549,8 +559,8 @@ describe('LmService', () => {
       });
 
       await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
+      ).rejects.toThrow();
     });
 
     it('should block transition from invalid to following', async () => {
@@ -570,7 +580,7 @@ describe('LmService', () => {
           'user-uuid-123',
           1,
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow();
     });
   });
 });

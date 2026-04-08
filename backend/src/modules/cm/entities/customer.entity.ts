@@ -58,4 +58,17 @@ export class Customer extends BaseEntity {
   @Column({ type: 'timestamptz', nullable: true, name: 'last_contact_at' })
   @Index()
   lastContactAt: Date | null;
+
+  @Column({ type: 'jsonb', name: 'context_snapshot', nullable: true })
+  contextSnapshot: Record<string, unknown> | null;
+
+  @Column({ type: 'varchar', length: 255, name: 'intent_summary', nullable: true })
+  intentSummary: string | null;
+
+  @Column({ type: 'varchar', length: 16, name: 'risk_level', nullable: true })
+  @Index()
+  riskLevel: string | null;
+
+  @Column({ type: 'jsonb', name: 'next_action_suggestion', nullable: true })
+  nextActionSuggestion: Record<string, unknown> | null;
 }

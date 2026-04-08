@@ -161,9 +161,10 @@ export class UsrController {
   async changeStatus(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
     @Body() dto: StatusActionDto,
   ) {
-    return this.usrService.changeUserStatus(id, orgId, dto.status, dto.version);
+    return this.usrService.changeUserStatus(id, orgId, dto.status, userId, dto.version);
   }
 
   @Post(':id/reset-password')
