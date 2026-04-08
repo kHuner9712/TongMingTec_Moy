@@ -5,6 +5,7 @@ import { DataSource } from 'typeorm';
 import { Conversation, ConversationStatus } from './entities/conversation.entity';
 import { ConversationMessage, MessageDirection, MessageType, SenderType } from './entities/conversation-message.entity';
 import { NotFoundException, ConflictException } from '@nestjs/common';
+import { EventBusService } from '../../common/events/event-bus.service';
 
 describe('CnvService', () => {
   let service: CnvService;
@@ -78,6 +79,10 @@ describe('CnvService', () => {
         {
           provide: DataSource,
           useValue: {},
+        },
+        {
+          provide: EventBusService,
+          useValue: { publish: jest.fn() },
         },
       ],
     }).compile();
@@ -153,7 +158,7 @@ describe('CnvService', () => {
 
       await expect(
         service.accept('conv-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -208,7 +213,7 @@ describe('CnvService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should throw BadRequestException for invalid status transition', async () => {
+    it('should throw ConflictException for invalid status transition', async () => {
       conversationRepository.findOne.mockResolvedValue({
         ...mockConversation,
         status: ConversationStatus.CLOSED,
@@ -217,7 +222,7 @@ describe('CnvService', () => {
 
       await expect(
         service.close('conv-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -329,7 +334,7 @@ describe('CnvService', () => {
 
       await expect(
         service.accept('conv-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
   });
 

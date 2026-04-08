@@ -523,8 +523,8 @@ export default function Tickets() {
                     {STATUS_CONFIG[ticketDetail.status as TicketStatus]?.text}
                   </Tag>
                 </Descriptions.Item>
-                <Descriptions.Item label="描述" span={2}>
-                  {ticketDetail.description || "-"}
+                <Descriptions.Item label="工单编号" span={2}>
+                  {ticketDetail.ticketNo || "-"}
                 </Descriptions.Item>
                 <Descriptions.Item label="解决方案" span={2}>
                   {ticketDetail.solution || "-"}

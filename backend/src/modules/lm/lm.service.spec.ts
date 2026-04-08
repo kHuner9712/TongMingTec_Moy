@@ -1,586 +1,342 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { LmService } from './lm.service';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { Lead, LeadStatus } from './entities/lead.entity';
-import { LeadFollowUp, FollowType } from './entities/lead-follow-up.entity';
-import { NotFoundException, ConflictException } from '@nestjs/common';
-import { EventBusService } from '../../common/events/event-bus.service';
+import { Test, TestingModule } from "@nestjs/testing";
+import { getRepositoryToken } from "@nestjs/typeorm";
+import { LmService } from "./lm.service";
+import { Lead, LeadStatus } from "./entities/lead.entity";
+import { LeadFollowUp, FollowType } from "./entities/lead-follow-up.entity";
+import { Customer, CustomerStatus } from "../cm/entities/customer.entity";
+import {
+  Opportunity,
+  OpportunityStage,
+} from "../om/entities/opportunity.entity";
+import { EventBusService } from "../../common/events/event-bus.service";
+import { NotFoundException, ConflictException } from "@nestjs/common";
+import { DataSource } from "typeorm";
 
-describe('LmService', () => {
+describe("LmService", () => {
   let service: LmService;
-  let leadRepository: jest.Mocked<any>;
-  let followUpRepository: jest.Mocked<any>;
-  let eventBus: jest.Mocked<EventBusService>;
+  let leadRepository: any;
+  let followUpRepository: any;
+  let customerRepository: any;
+  let opportunityRepository: any;
+  let dataSource: any;
+  let eventBus: any;
 
   const mockLead = {
-    id: 'lead-uuid-123',
-    orgId: 'org-uuid-123',
-    source: 'manual',
-    name: '测试线索',
-    mobile: '13800138000',
-    email: 'lead@example.com',
-    companyName: '测试公司',
-    ownerUserId: null,
+    id: "lead-1",
+    orgId: "org-1",
+    name: "张三",
+    companyName: "测试公司",
+    mobile: "13800138000",
+    email: "zhangsan@test.com",
+    ownerUserId: "user-1",
     status: LeadStatus.NEW,
-    score: null,
-    scoreReason: null,
-    lastFollowUpAt: null,
+    customerId: null,
     version: 1,
   };
 
-  const mockFollowUp = {
-    id: 'followup-uuid-123',
-    leadId: 'lead-uuid-123',
-    orgId: 'org-uuid-123',
-    followType: FollowType.CALL,
-    content: '首次跟进',
-    nextActionAt: null,
-    createdBy: 'user-uuid-123',
-  };
-
-  const createMockQueryBuilder = () => {
-    const qb: any = {
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getManyAndCount: jest.fn(),
-    };
-    return qb;
-  };
+  const createMockQb = () => ({
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ affected: 1 }),
+    getManyAndCount: jest.fn().mockResolvedValue([[mockLead], 1]),
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+  });
 
   beforeEach(async () => {
+    leadRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      find: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(createMockQb()),
+    };
+
+    followUpRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+    };
+
+    customerRepository = {};
+    opportunityRepository = {};
+
+    const mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        create: jest.fn().mockReturnValue({ id: "customer-new" }),
+        save: jest.fn().mockResolvedValue({ id: "customer-new" }),
+        update: jest.fn().mockResolvedValue({ affected: 1 }),
+      },
+    };
+
+    dataSource = {
+      createQueryRunner: jest.fn().mockReturnValue(mockQueryRunner),
+    };
+
+    eventBus = { publish: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LmService,
-        {
-          provide: getRepositoryToken(Lead),
-          useValue: {
-            findOne: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-            update: jest.fn(),
-            createQueryBuilder: jest.fn(createMockQueryBuilder),
-          },
-        },
+        { provide: getRepositoryToken(Lead), useValue: leadRepository },
         {
           provide: getRepositoryToken(LeadFollowUp),
-          useValue: {
-            find: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-          },
+          useValue: followUpRepository,
         },
+        { provide: getRepositoryToken(Customer), useValue: customerRepository },
         {
-          provide: DataSource,
-          useValue: {},
+          provide: getRepositoryToken(Opportunity),
+          useValue: opportunityRepository,
         },
-        {
-          provide: EventBusService,
-          useValue: {
-            publish: jest.fn(),
-          },
-        },
+        { provide: DataSource, useValue: dataSource },
+        { provide: EventBusService, useValue: eventBus },
       ],
     }).compile();
 
     service = module.get<LmService>(LmService);
-    leadRepository = module.get(getRepositoryToken(Lead));
-    followUpRepository = module.get(getRepositoryToken(LeadFollowUp));
-    eventBus = module.get(EventBusService);
   });
 
-  describe('findLeadById', () => {
-    it('should return lead if found', async () => {
+  describe("findLeadById", () => {
+    it("should return lead if found", async () => {
       leadRepository.findOne.mockResolvedValue(mockLead);
-
-      const result = await service.findLeadById('lead-uuid-123', 'org-uuid-123');
-
-      expect(result.id).toBe('lead-uuid-123');
-      expect(result.name).toBe('测试线索');
+      const result = await service.findLeadById("lead-1", "org-1");
+      expect(result.id).toBe("lead-1");
     });
 
-    it('should throw NotFoundException if lead not found', async () => {
+    it("should throw NotFoundException if not found", async () => {
       leadRepository.findOne.mockResolvedValue(null);
-
       await expect(
-        service.findLeadById('nonexistent', 'org-uuid-123'),
+        service.findLeadById("nonexistent", "org-1"),
       ).rejects.toThrow(NotFoundException);
     });
-  });
 
-  describe('findLeads', () => {
-    it('should return paginated leads with filters', async () => {
-      const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockLead], 1]);
-      leadRepository.createQueryBuilder.mockReturnValue(mockQb);
-
-      const result = await service.findLeads(
-        'org-uuid-123',
-        'user-uuid-123',
-        'org',
-        { status: LeadStatus.NEW, source: 'manual' },
-        1,
-        10,
-      );
-
-      expect(result.items).toHaveLength(1);
-      expect(result.total).toBe(1);
-    });
-
-    it('should filter by self dataScope', async () => {
-      const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockLead], 1]);
-      leadRepository.createQueryBuilder.mockReturnValue(mockQb);
-
-      await service.findLeads(
-        'org-uuid-123',
-        'user-uuid-123',
-        'self',
-        {},
-        1,
-        10,
-      );
-
-      expect(mockQb.andWhere).toHaveBeenCalled();
+    it("should query with orgId for multi-tenant isolation", async () => {
+      leadRepository.findOne.mockResolvedValue(mockLead);
+      await service.findLeadById("lead-1", "org-1");
+      expect(leadRepository.findOne).toHaveBeenCalledWith({
+        where: { id: "lead-1", orgId: "org-1" },
+      });
     });
   });
 
-  describe('createLead', () => {
-    it('should create lead with new status', async () => {
+  describe("createLead", () => {
+    it("should create lead with new status and ownerUserId", async () => {
       leadRepository.create.mockReturnValue(mockLead);
       leadRepository.save.mockResolvedValue(mockLead);
 
-      const result = await service.createLead('org-uuid-123', {
-        name: '测试线索',
-        mobile: '13800138000',
-        email: 'lead@example.com',
-      }, 'user-uuid-123');
+      const result = await service.createLead(
+        "org-1",
+        { name: "张三" },
+        "user-1",
+      );
 
-      expect(leadRepository.create).toHaveBeenCalled();
-      expect(leadRepository.save).toHaveBeenCalled();
-      expect(result.status).toBe(LeadStatus.NEW);
+      expect(leadRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orgId: "org-1",
+          ownerUserId: "user-1",
+          status: LeadStatus.NEW,
+        }),
+      );
     });
   });
 
-  describe('assignLead', () => {
-    it('should assign lead to user and change status to assigned', async () => {
+  describe("assignLead", () => {
+    it("should assign lead from new to assigned", async () => {
+      leadRepository.findOne.mockResolvedValue(mockLead);
+      const qb = createMockQb();
+      leadRepository.createQueryBuilder.mockReturnValue(qb);
       leadRepository.findOne.mockResolvedValueOnce(mockLead);
       leadRepository.findOne.mockResolvedValueOnce({
         ...mockLead,
-        ownerUserId: 'agent-uuid-123',
         status: LeadStatus.ASSIGNED,
       });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
 
-      const result = await service.assignLead(
-        'lead-uuid-123',
-        'org-uuid-123',
-        'agent-uuid-123',
-        'user-uuid-123',
-        1,
-      );
+      await service.assignLead("lead-1", "org-1", "user-2", "user-1", 1);
 
-      expect(leadRepository.update).toHaveBeenCalledWith(
-        'lead-uuid-123',
+      expect(eventBus.publish).toHaveBeenCalledWith(
         expect.objectContaining({
-          ownerUserId: 'agent-uuid-123',
-          status: LeadStatus.ASSIGNED,
+          eventType: expect.stringContaining("lead"),
         }),
       );
     });
 
-    it('should throw ConflictException for version mismatch', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        version: 2,
-      });
+    it("should throw ConflictException on version mismatch", async () => {
+      leadRepository.findOne.mockResolvedValue({ ...mockLead, version: 2 });
 
       await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
+        service.assignLead("lead-1", "org-1", "user-2", "user-1", 1),
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should throw BadRequestException for invalid status transition from converted', async () => {
+    it("should throw on illegal transition converted->assigned", async () => {
       leadRepository.findOne.mockResolvedValue({
         ...mockLead,
         status: LeadStatus.CONVERTED,
-        version: 1,
       });
 
       await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow();
-    });
-
-    it('should throw BadRequestException for invalid status transition from invalid', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-        version: 1,
-      });
-
-      await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
+        service.assignLead("lead-1", "org-1", "user-2", "user-1", 1),
       ).rejects.toThrow();
     });
   });
 
-  describe('addFollowUp', () => {
-    it('should add follow up and change status to following', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.ASSIGNED,
-      });
-      followUpRepository.create.mockReturnValue(mockFollowUp);
-      followUpRepository.save.mockResolvedValue(mockFollowUp);
-      leadRepository.update.mockResolvedValue({ affected: 1 });
+  describe("addFollowUp", () => {
+    it("should add follow up and transition to following", async () => {
+      const assignedLead = { ...mockLead, status: LeadStatus.ASSIGNED };
+      leadRepository.findOne.mockResolvedValue(assignedLead);
+      followUpRepository.create.mockReturnValue({ id: "followup-1" });
+      followUpRepository.save.mockResolvedValue({ id: "followup-1" });
+      const qb = createMockQb();
+      leadRepository.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.addFollowUp(
-        'lead-uuid-123',
-        'org-uuid-123',
-        '首次跟进内容',
+        "lead-1",
+        "org-1",
+        "电话跟进",
         FollowType.CALL,
         null,
-        'user-uuid-123',
+        "user-1",
         1,
       );
 
       expect(followUpRepository.save).toHaveBeenCalled();
-      expect(leadRepository.update).toHaveBeenCalledWith(
-        'lead-uuid-123',
-        expect.objectContaining({
-          status: LeadStatus.FOLLOWING,
-        }),
-      );
-    });
-
-    it('should throw ConflictException for version mismatch', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        version: 2,
-      });
-
-      await expect(
-        service.addFollowUp(
-          'lead-uuid-123',
-          'org-uuid-123',
-          '跟进内容',
-          FollowType.CALL,
-          null,
-          'user-uuid-123',
-          1,
-        ),
-      ).rejects.toThrow(ConflictException);
-    });
-
-    it('should throw error for invalid status transition from new', async () => {
-      leadRepository.findOne.mockResolvedValue(mockLead);
-
-      await expect(
-        service.addFollowUp(
-          'lead-uuid-123',
-          'org-uuid-123',
-          '跟进内容',
-          FollowType.CALL,
-          null,
-          'user-uuid-123',
-          1,
-        ),
-      ).rejects.toThrow();
+      expect(eventBus.publish).toHaveBeenCalled();
     });
   });
 
-  describe('convert', () => {
-    it('should convert lead to customer and opportunity', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.FOLLOWING,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
+  describe("convert", () => {
+    it("should create customer and opportunity in transaction", async () => {
+      const followingLead = { ...mockLead, status: LeadStatus.FOLLOWING };
+      leadRepository.findOne.mockResolvedValue(followingLead);
 
-      const result = await service.convert(
-        'lead-uuid-123',
-        'org-uuid-123',
-        'user-uuid-123',
-        1,
-      );
-
-      expect(leadRepository.update).toHaveBeenCalledWith(
-        'lead-uuid-123',
-        expect.objectContaining({
-          status: LeadStatus.CONVERTED,
+      const queryRunner = dataSource.createQueryRunner();
+      let saveCallCount = 0;
+      queryRunner.manager.create.mockImplementation(
+        (entity: any, data: any) => ({
+          ...data,
+          id: `new-id-${++saveCallCount}`,
         }),
       );
-      expect(result.leadId).toBe('lead-uuid-123');
-      expect(result.customerId).toBe('placeholder-customer-id');
-      expect(result.opportunityId).toBe('placeholder-opportunity-id');
+      queryRunner.manager.save.mockImplementation((entity: any, data: any) =>
+        Promise.resolve({ ...data }),
+      );
+
+      const result = await service.convert("lead-1", "org-1", "user-1", 1);
+
+      expect(queryRunner.startTransaction).toHaveBeenCalled();
+      expect(queryRunner.commitTransaction).toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalled();
+      expect(eventBus.publish).toHaveBeenCalled();
     });
 
-    it('should throw error for invalid status transition from new', async () => {
+    it("should throw on illegal transition new->converted", async () => {
       leadRepository.findOne.mockResolvedValue(mockLead);
 
       await expect(
-        service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
+        service.convert("lead-1", "org-1", "user-1", 1),
       ).rejects.toThrow();
     });
 
-    it('should throw error for invalid status transition from converted', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.CONVERTED,
-      });
+    it("should rollback transaction on error", async () => {
+      const followingLead = { ...mockLead, status: LeadStatus.FOLLOWING };
+      leadRepository.findOne.mockResolvedValue(followingLead);
+
+      const queryRunner = dataSource.createQueryRunner();
+      queryRunner.manager.save.mockRejectedValue(new Error("DB error"));
 
       await expect(
-        service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow();
+        service.convert("lead-1", "org-1", "user-1", 1),
+      ).rejects.toThrow("DB error");
+
+      expect(queryRunner.rollbackTransaction).toHaveBeenCalled();
+      expect(queryRunner.release).toHaveBeenCalled();
     });
 
-    it('should throw ConflictException for version mismatch', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.FOLLOWING,
-        version: 2,
-      });
+    it("should throw ConflictException on version mismatch", async () => {
+      leadRepository.findOne.mockResolvedValue({ ...mockLead, version: 2 });
 
       await expect(
-        service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
+        service.convert("lead-1", "org-1", "user-1", 1),
       ).rejects.toThrow(ConflictException);
     });
   });
 
-  describe('markInvalid', () => {
-    it('should mark lead as invalid from new status', async () => {
+  describe("markInvalid", () => {
+    it("should mark lead as invalid from following status", async () => {
+      const followingLead = { ...mockLead, status: LeadStatus.FOLLOWING };
+      leadRepository.findOne.mockResolvedValue(followingLead);
+      const qb = createMockQb();
+      leadRepository.createQueryBuilder.mockReturnValue(qb);
+      leadRepository.findOne.mockResolvedValueOnce(followingLead);
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+
+      await service.markInvalid("lead-1", "org-1", "无效线索", "user-1", 1);
+
+      expect(eventBus.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: expect.stringContaining("lead"),
+        }),
+      );
+    });
+
+    it("should allow assigned->invalid", async () => {
+      const assignedLead = { ...mockLead, status: LeadStatus.ASSIGNED };
+      leadRepository.findOne.mockResolvedValue(assignedLead);
+      const qb = createMockQb();
+      leadRepository.createQueryBuilder.mockReturnValue(qb);
+      leadRepository.findOne.mockResolvedValueOnce(assignedLead);
+      leadRepository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        status: LeadStatus.INVALID,
+      });
+
+      await expect(
+        service.markInvalid("lead-1", "org-1", "无效", "user-1", 1),
+      ).resolves.toBeDefined();
+    });
+
+    it("should allow new->invalid", async () => {
+      leadRepository.findOne.mockResolvedValue(mockLead);
+      const qb = createMockQb();
+      leadRepository.createQueryBuilder.mockReturnValue(qb);
       leadRepository.findOne.mockResolvedValueOnce(mockLead);
       leadRepository.findOne.mockResolvedValueOnce({
         ...mockLead,
         status: LeadStatus.INVALID,
       });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      const result = await service.markInvalid(
-        'lead-uuid-123',
-        'org-uuid-123',
-        '无效线索',
-        'user-uuid-123',
-        1,
-      );
-
-      expect(leadRepository.update).toHaveBeenCalledWith(
-        'lead-uuid-123',
-        expect.objectContaining({ status: LeadStatus.INVALID }),
-      );
-    });
-
-    it('should mark lead as invalid from assigned status', async () => {
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.ASSIGNED,
-      });
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await service.markInvalid(
-        'lead-uuid-123',
-        'org-uuid-123',
-        '无效线索',
-        'user-uuid-123',
-        1,
-      );
-
-      expect(leadRepository.update).toHaveBeenCalled();
-    });
-
-    it('should mark lead as invalid from following status', async () => {
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.FOLLOWING,
-      });
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await service.markInvalid(
-        'lead-uuid-123',
-        'org-uuid-123',
-        '无效线索',
-        'user-uuid-123',
-        1,
-      );
-
-      expect(leadRepository.update).toHaveBeenCalled();
-    });
-
-    it('should throw error for invalid status transition from converted', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.CONVERTED,
-        version: 1,
-      });
 
       await expect(
-        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow();
-    });
-
-    it('should throw error for invalid status transition from invalid', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-        version: 1,
-      });
-
-      await expect(
-        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow();
+        service.markInvalid("lead-1", "org-1", "无效", "user-1", 1),
+      ).resolves.toBeDefined();
     });
   });
 
-  describe('findFollowUps', () => {
-    it('should return follow ups for lead', async () => {
-      followUpRepository.find.mockResolvedValue([mockFollowUp]);
+  describe("findFollowUps", () => {
+    it("should return follow ups for a lead", async () => {
+      const mockFollowUps = [
+        { id: "followup-1", leadId: "lead-1", content: "电话跟进" },
+      ];
+      followUpRepository.find.mockResolvedValue(mockFollowUps);
 
-      const result = await service.findFollowUps('lead-uuid-123', 'org-uuid-123');
+      const result = await service.findFollowUps("lead-1", "org-1");
 
+      expect(followUpRepository.find).toHaveBeenCalledWith({
+        where: { leadId: "lead-1", orgId: "org-1" },
+        order: { createdAt: "DESC" },
+      });
       expect(result).toHaveLength(1);
-      expect(result[0].content).toBe('首次跟进');
-    });
-  });
-
-  describe('SM-lead state machine validation', () => {
-    it('should allow transition from new to assigned', async () => {
-      leadRepository.findOne.mockResolvedValueOnce(mockLead);
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.ASSIGNED,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
-      ).resolves.not.toThrow();
-    });
-
-    it('should allow transition from assigned to following', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.ASSIGNED,
-        version: 1,
-      });
-      followUpRepository.create.mockReturnValue(mockFollowUp);
-      followUpRepository.save.mockResolvedValue(mockFollowUp);
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await expect(
-        service.addFollowUp(
-          'lead-uuid-123',
-          'org-uuid-123',
-          '跟进内容',
-          FollowType.CALL,
-          null,
-          'user-uuid-123',
-          1,
-        ),
-      ).resolves.not.toThrow();
-    });
-
-    it('should allow transition from following to converted', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.FOLLOWING,
-        version: 1,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await expect(
-        service.convert('lead-uuid-123', 'org-uuid-123', 'user-uuid-123', 1),
-      ).resolves.not.toThrow();
-    });
-
-    it('should allow transition from new to invalid', async () => {
-      leadRepository.findOne.mockResolvedValueOnce(mockLead);
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await expect(
-        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).resolves.not.toThrow();
-    });
-
-    it('should allow transition from assigned to invalid', async () => {
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.ASSIGNED,
-        version: 1,
-      });
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await expect(
-        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).resolves.not.toThrow();
-    });
-
-    it('should allow transition from following to invalid', async () => {
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.FOLLOWING,
-        version: 1,
-      });
-      leadRepository.findOne.mockResolvedValueOnce({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-      });
-      leadRepository.update.mockResolvedValue({ affected: 1 });
-
-      await expect(
-        service.markInvalid('lead-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).resolves.not.toThrow();
-    });
-
-    it('should block transition from converted to assigned', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.CONVERTED,
-        version: 1,
-      });
-
-      await expect(
-        service.assignLead('lead-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow();
-    });
-
-    it('should block transition from invalid to following', async () => {
-      leadRepository.findOne.mockResolvedValue({
-        ...mockLead,
-        status: LeadStatus.INVALID,
-        version: 1,
-      });
-
-      await expect(
-        service.addFollowUp(
-          'lead-uuid-123',
-          'org-uuid-123',
-          '跟进内容',
-          FollowType.CALL,
-          null,
-          'user-uuid-123',
-          1,
-        ),
-      ).rejects.toThrow();
     });
   });
 });

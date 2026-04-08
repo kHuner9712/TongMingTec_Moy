@@ -5,6 +5,7 @@ import { Ticket, TicketStatus, TicketPriority } from './entities/ticket.entity';
 import { TicketLog } from './entities/ticket-log.entity';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { EventBusService } from '../../common/events/event-bus.service';
 
 describe('TkService', () => {
   let service: TkService;
@@ -63,6 +64,10 @@ describe('TkService', () => {
         {
           provide: DataSource,
           useValue: {},
+        },
+        {
+          provide: EventBusService,
+          useValue: { publish: jest.fn() },
         },
       ],
     }).compile();
@@ -211,7 +216,7 @@ describe('TkService', () => {
 
       await expect(
         service.resolve('ticket-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should throw ConflictException for version mismatch', async () => {
@@ -353,7 +358,7 @@ describe('TkService', () => {
 
       await expect(
         service.resolve('ticket-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
   });
 

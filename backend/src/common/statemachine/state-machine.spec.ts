@@ -8,6 +8,8 @@ import { taskStateMachine } from './definitions/task.sm';
 import { organizationStateMachine } from './definitions/organization.sm';
 import { userStateMachine } from './definitions/user.sm';
 import { aiTaskStateMachine } from './definitions/ai-task.sm';
+import { aiAgentStateMachine } from './definitions/ai-agent.sm';
+import { approvalRequestStateMachine } from './definitions/approval-request.sm';
 
 describe('StateMachine', () => {
   describe('base functionality', () => {
@@ -240,6 +242,73 @@ describe('StateMachine', () => {
       expect(aiTaskStateMachine.isTerminal('succeeded')).toBe(true);
       expect(aiTaskStateMachine.isTerminal('failed')).toBe(true);
       expect(aiTaskStateMachine.isTerminal('cancelled')).toBe(true);
+    });
+  });
+
+  describe('SM-ai_agent (S2)', () => {
+    it('should follow draft->active', () => {
+      expect(() => aiAgentStateMachine.validateTransition('draft', 'active')).not.toThrow();
+    });
+
+    it('should allow active->paused', () => {
+      expect(() => aiAgentStateMachine.validateTransition('active', 'paused')).not.toThrow();
+    });
+
+    it('should allow paused->active', () => {
+      expect(() => aiAgentStateMachine.validateTransition('paused', 'active')).not.toThrow();
+    });
+
+    it('should allow active->archived', () => {
+      expect(() => aiAgentStateMachine.validateTransition('active', 'archived')).not.toThrow();
+    });
+
+    it('should allow paused->archived', () => {
+      expect(() => aiAgentStateMachine.validateTransition('paused', 'archived')).not.toThrow();
+    });
+
+    it('should disallow draft->paused', () => {
+      expect(() => aiAgentStateMachine.validateTransition('draft', 'paused')).toThrow();
+    });
+
+    it('should disallow archived->active', () => {
+      expect(() => aiAgentStateMachine.validateTransition('archived', 'active')).toThrow();
+    });
+
+    it('should have archived as terminal', () => {
+      expect(aiAgentStateMachine.isTerminal('archived')).toBe(true);
+    });
+  });
+
+  describe('SM-approval_request (S2)', () => {
+    it('should follow pending->approved', () => {
+      expect(() => approvalRequestStateMachine.validateTransition('pending', 'approved')).not.toThrow();
+    });
+
+    it('should allow pending->rejected', () => {
+      expect(() => approvalRequestStateMachine.validateTransition('pending', 'rejected')).not.toThrow();
+    });
+
+    it('should allow pending->expired', () => {
+      expect(() => approvalRequestStateMachine.validateTransition('pending', 'expired')).not.toThrow();
+    });
+
+    it('should allow pending->cancelled', () => {
+      expect(() => approvalRequestStateMachine.validateTransition('pending', 'cancelled')).not.toThrow();
+    });
+
+    it('should disallow approved->pending', () => {
+      expect(() => approvalRequestStateMachine.validateTransition('approved', 'pending')).toThrow();
+    });
+
+    it('should disallow rejected->approved', () => {
+      expect(() => approvalRequestStateMachine.validateTransition('rejected', 'approved')).toThrow();
+    });
+
+    it('should have approved/rejected/expired/cancelled as terminal', () => {
+      expect(approvalRequestStateMachine.isTerminal('approved')).toBe(true);
+      expect(approvalRequestStateMachine.isTerminal('rejected')).toBe(true);
+      expect(approvalRequestStateMachine.isTerminal('expired')).toBe(true);
+      expect(approvalRequestStateMachine.isTerminal('cancelled')).toBe(true);
     });
   });
 });

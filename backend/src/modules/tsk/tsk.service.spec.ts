@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { TskService } from './tsk.service';
 import { Task, TaskStatus, TaskSourceType } from './entities/task.entity';
+import { EventBusService } from '../../common/events/event-bus.service';
 
 describe('TskService', () => {
   let service: TskService;
@@ -46,6 +47,10 @@ describe('TskService', () => {
             save: jest.fn(),
             update: jest.fn(),
           },
+        },
+        {
+          provide: EventBusService,
+          useValue: { publish: jest.fn() },
         },
       ],
     }).compile();
@@ -223,7 +228,7 @@ describe('TskService', () => {
       expect(taskRepository.update).toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException on invalid transition', async () => {
+    it('should throw ConflictException on invalid transition', async () => {
       taskRepository.findOne.mockResolvedValue({
         ...mockTask,
         status: TaskStatus.COMPLETED,
@@ -237,7 +242,7 @@ describe('TskService', () => {
           'user-uuid-123',
           1,
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
 
     it('should throw ConflictException on version mismatch', async () => {

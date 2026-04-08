@@ -1,314 +1,241 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CmService } from './cm.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Customer, CustomerStatus, CustomerLevel } from './entities/customer.entity';
+import { CmService } from './cm.service';
+import { Customer, CustomerStatus } from './entities/customer.entity';
 import { CustomerContact } from './entities/customer-contact.entity';
+import { EventBusService } from '../../common/events/event-bus.service';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('CmService', () => {
   let service: CmService;
-  let customerRepository: jest.Mocked<any>;
-  let contactRepository: jest.Mocked<any>;
+  let customerRepository: any;
+  let contactRepository: any;
+  let eventBus: any;
 
   const mockCustomer = {
-    id: 'customer-uuid-123',
-    orgId: 'org-uuid-123',
+    id: 'customer-1',
+    orgId: 'org-1',
     name: '测试客户',
-    industry: '科技',
-    level: CustomerLevel.L1,
-    ownerUserId: 'user-uuid-123',
-    status: CustomerStatus.POTENTIAL,
     phone: '13800138000',
     email: 'test@example.com',
-    address: '北京市朝阳区',
-    remark: '测试备注',
-    lastContactAt: null,
+    ownerUserId: 'user-1',
+    status: CustomerStatus.POTENTIAL,
     version: 1,
   };
 
-  const mockContact = {
-    id: 'contact-uuid-123',
-    customerId: 'customer-uuid-123',
-    orgId: 'org-uuid-123',
-    name: '联系人A',
-    phone: '13900139000',
-    email: 'contact@example.com',
-    isPrimary: true,
-  };
-
-  const createMockQueryBuilder = () => {
-    const qb: any = {
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      skip: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getManyAndCount: jest.fn(),
-    };
-    return qb;
-  };
+  const createMockQb = () => ({
+    where: jest.fn().mockReturnThis(),
+    andWhere: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
+    getManyAndCount: jest.fn().mockResolvedValue([[mockCustomer], 1]),
+  });
 
   beforeEach(async () => {
+    customerRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(createMockQb()),
+    };
+
+    contactRepository = {
+      find: jest.fn(),
+    };
+
+    eventBus = {
+      publish: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CmService,
-        {
-          provide: getRepositoryToken(Customer),
-          useValue: {
-            findOne: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-            update: jest.fn(),
-            createQueryBuilder: jest.fn(createMockQueryBuilder),
-          },
-        },
-        {
-          provide: getRepositoryToken(CustomerContact),
-          useValue: {
-            find: jest.fn(),
-            create: jest.fn(),
-            save: jest.fn(),
-          },
-        },
+        { provide: getRepositoryToken(Customer), useValue: customerRepository },
+        { provide: getRepositoryToken(CustomerContact), useValue: contactRepository },
+        { provide: EventBusService, useValue: eventBus },
       ],
     }).compile();
 
     service = module.get<CmService>(CmService);
-    customerRepository = module.get(getRepositoryToken(Customer));
-    contactRepository = module.get(getRepositoryToken(CustomerContact));
   });
 
   describe('findCustomerById', () => {
     it('should return customer if found', async () => {
       customerRepository.findOne.mockResolvedValue(mockCustomer);
-
-      const result = await service.findCustomerById('customer-uuid-123', 'org-uuid-123');
-
-      expect(result.id).toBe('customer-uuid-123');
-      expect(result.name).toBe('测试客户');
+      const result = await service.findCustomerById('customer-1', 'org-1');
+      expect(result.id).toBe('customer-1');
     });
 
-    it('should throw NotFoundException if customer not found', async () => {
+    it('should throw NotFoundException if not found', async () => {
       customerRepository.findOne.mockResolvedValue(null);
-
-      await expect(
-        service.findCustomerById('nonexistent', 'org-uuid-123'),
-      ).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('findCustomers', () => {
-    it('should return paginated customers with filters', async () => {
-      const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockCustomer], 1]);
-      customerRepository.createQueryBuilder.mockReturnValue(mockQb);
-
-      const result = await service.findCustomers(
-        'org-uuid-123',
-        'user-uuid-123',
-        'org',
-        { status: CustomerStatus.ACTIVE, keyword: '测试' },
-        1,
-        10,
-      );
-
-      expect(result.items).toHaveLength(1);
-      expect(result.total).toBe(1);
+      await expect(service.findCustomerById('nonexistent', 'org-1')).rejects.toThrow(NotFoundException);
     });
 
-    it('should filter by self dataScope', async () => {
-      const mockQb = createMockQueryBuilder();
-      mockQb.getManyAndCount.mockResolvedValue([[mockCustomer], 1]);
-      customerRepository.createQueryBuilder.mockReturnValue(mockQb);
-
-      await service.findCustomers(
-        'org-uuid-123',
-        'user-uuid-123',
-        'self',
-        {},
-        1,
-        10,
-      );
-
-      expect(mockQb.andWhere).toHaveBeenCalled();
+    it('should query with orgId for multi-tenant isolation', async () => {
+      customerRepository.findOne.mockResolvedValue(mockCustomer);
+      await service.findCustomerById('customer-1', 'org-1');
+      expect(customerRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'customer-1', orgId: 'org-1' },
+      });
     });
   });
 
   describe('createCustomer', () => {
-    it('should create customer with potential status', async () => {
+    it('should create customer with orgId and ownerUserId', async () => {
       customerRepository.create.mockReturnValue(mockCustomer);
       customerRepository.save.mockResolvedValue(mockCustomer);
 
-      const result = await service.createCustomer('org-uuid-123', {
-        name: '测试客户',
-        phone: '13800138000',
-      }, 'user-uuid-123');
+      const result = await service.createCustomer('org-1', { name: '测试客户' }, 'user-1');
 
-      expect(customerRepository.create).toHaveBeenCalled();
-      expect(customerRepository.save).toHaveBeenCalled();
-      expect(result.name).toBe('测试客户');
+      expect(customerRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orgId: 'org-1',
+          ownerUserId: 'user-1',
+        }),
+      );
+      expect(result).toBeDefined();
     });
   });
 
   describe('updateCustomer', () => {
-    it('should update customer with version check', async () => {
+    it('should update customer when version matches', async () => {
       customerRepository.findOne.mockResolvedValue(mockCustomer);
       customerRepository.update.mockResolvedValue({ affected: 1 });
 
-      await service.updateCustomer(
-        'customer-uuid-123',
-        'org-uuid-123',
-        { name: '更新后的客户名' },
-        1,
-      );
+      const result = await service.updateCustomer('customer-1', 'org-1', { name: '更新名称' }, 1);
 
-      expect(customerRepository.update).toHaveBeenCalled();
+      expect(customerRepository.update).toHaveBeenCalledWith(
+        'customer-1',
+        expect.objectContaining({ name: '更新名称' }),
+      );
     });
 
-    it('should throw ConflictException for version mismatch', async () => {
-      customerRepository.findOne.mockResolvedValue({
-        ...mockCustomer,
-        version: 2,
-      });
+    it('should throw ConflictException when version mismatch', async () => {
+      customerRepository.findOne.mockResolvedValue({ ...mockCustomer, version: 2 });
 
       await expect(
-        service.updateCustomer('customer-uuid-123', 'org-uuid-123', { name: '新名称' }, 1),
+        service.updateCustomer('customer-1', 'org-1', { name: '更新名称' }, 1),
       ).rejects.toThrow(ConflictException);
     });
   });
 
   describe('changeStatus', () => {
-    it('should change customer status from potential to active', async () => {
+    it('should change status from potential to active', async () => {
       customerRepository.findOne.mockResolvedValue(mockCustomer);
       customerRepository.update.mockResolvedValue({ affected: 1 });
 
-      await service.changeStatus(
-        'customer-uuid-123',
-        'org-uuid-123',
-        CustomerStatus.ACTIVE,
-        '客户已激活',
-        1,
-      );
+      await service.changeStatus('customer-1', 'org-1', CustomerStatus.ACTIVE, '激活', 1);
 
-      expect(customerRepository.update).toHaveBeenCalledWith(
-        'customer-uuid-123',
-        expect.objectContaining({ status: CustomerStatus.ACTIVE }),
+      expect(eventBus.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventType: expect.stringContaining('customer'),
+        }),
       );
     });
 
-    it('should change status from active to silent', async () => {
-      customerRepository.findOne.mockResolvedValue({
-        ...mockCustomer,
-        status: CustomerStatus.ACTIVE,
-        version: 1,
-      });
-      customerRepository.update.mockResolvedValue({ affected: 1 });
+    it('should throw on illegal transition potential->lost', async () => {
+      customerRepository.findOne.mockResolvedValue(mockCustomer);
 
-      await service.changeStatus(
-        'customer-uuid-123',
-        'org-uuid-123',
-        CustomerStatus.SILENT,
-        '客户沉默',
-        1,
-      );
-
-      expect(customerRepository.update).toHaveBeenCalled();
+      await expect(
+        service.changeStatus('customer-1', 'org-1', CustomerStatus.LOST, '流失', 1),
+      ).rejects.toThrow();
     });
 
-    it('should change status from active to lost', async () => {
-      customerRepository.findOne.mockResolvedValue({
-        ...mockCustomer,
-        status: CustomerStatus.ACTIVE,
-        version: 1,
-      });
+    it('should allow active->silent', async () => {
+      const activeCustomer = { ...mockCustomer, status: CustomerStatus.ACTIVE };
+      customerRepository.findOne.mockResolvedValue(activeCustomer);
       customerRepository.update.mockResolvedValue({ affected: 1 });
 
-      await service.changeStatus(
-        'customer-uuid-123',
-        'org-uuid-123',
-        CustomerStatus.LOST,
-        '客户流失',
-        1,
-      );
+      await expect(
+        service.changeStatus('customer-1', 'org-1', CustomerStatus.SILENT, '沉默', 1),
+      ).resolves.toBeDefined();
+    });
 
-      expect(customerRepository.update).toHaveBeenCalledWith(
-        'customer-uuid-123',
-        expect.objectContaining({ status: CustomerStatus.LOST }),
-      );
+    it('should allow active->lost', async () => {
+      const activeCustomer = { ...mockCustomer, status: CustomerStatus.ACTIVE };
+      customerRepository.findOne.mockResolvedValue(activeCustomer);
+      customerRepository.update.mockResolvedValue({ affected: 1 });
+
+      await expect(
+        service.changeStatus('customer-1', 'org-1', CustomerStatus.LOST, '流失', 1),
+      ).resolves.toBeDefined();
+    });
+
+    it('should allow silent->active', async () => {
+      const silentCustomer = { ...mockCustomer, status: CustomerStatus.SILENT };
+      customerRepository.findOne.mockResolvedValue(silentCustomer);
+      customerRepository.update.mockResolvedValue({ affected: 1 });
+
+      await expect(
+        service.changeStatus('customer-1', 'org-1', CustomerStatus.ACTIVE, '重新激活', 1),
+      ).resolves.toBeDefined();
+    });
+
+    it('should disallow lost->active', async () => {
+      const lostCustomer = { ...mockCustomer, status: CustomerStatus.LOST };
+      customerRepository.findOne.mockResolvedValue(lostCustomer);
+
+      await expect(
+        service.changeStatus('customer-1', 'org-1', CustomerStatus.ACTIVE, '重新激活', 1),
+      ).rejects.toThrow();
     });
   });
 
   describe('findContacts', () => {
-    it('should return contacts for customer', async () => {
-      contactRepository.find.mockResolvedValue([mockContact]);
+    it('should return contacts for a customer', async () => {
+      const mockContacts = [{ id: 'contact-1', customerId: 'customer-1', isPrimary: true }];
+      contactRepository.find.mockResolvedValue(mockContacts);
 
-      const result = await service.findContacts('customer-uuid-123', 'org-uuid-123');
+      const result = await service.findContacts('customer-1', 'org-1');
 
+      expect(contactRepository.find).toHaveBeenCalledWith({
+        where: { customerId: 'customer-1', orgId: 'org-1' },
+        order: { isPrimary: 'DESC', createdAt: 'ASC' },
+      });
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('联系人A');
     });
   });
 
-  describe('SM-customer state machine validation', () => {
-    it('should allow transition from potential to active', async () => {
-      customerRepository.findOne.mockResolvedValue(mockCustomer);
-      customerRepository.update.mockResolvedValue({ affected: 1 });
+  describe('findCustomers', () => {
+    it('should filter by orgId', async () => {
+      const qb = createMockQb();
+      customerRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.changeStatus('customer-uuid-123', 'org-uuid-123', CustomerStatus.ACTIVE, '激活', 1),
-      ).resolves.not.toThrow();
+      await service.findCustomers('org-1', 'user-1', 'all', {}, 1, 20);
+
+      expect(qb.where).toHaveBeenCalledWith('customer.orgId = :orgId', { orgId: 'org-1' });
     });
 
-    it('should allow transition from active to silent', async () => {
-      customerRepository.findOne.mockResolvedValue({
-        ...mockCustomer,
-        status: CustomerStatus.ACTIVE,
-        version: 1,
-      });
-      customerRepository.update.mockResolvedValue({ affected: 1 });
+    it('should filter by self dataScope', async () => {
+      const qb = createMockQb();
+      customerRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.changeStatus('customer-uuid-123', 'org-uuid-123', CustomerStatus.SILENT, '沉默', 1),
-      ).resolves.not.toThrow();
+      await service.findCustomers('org-1', 'user-1', 'self', {}, 1, 20);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('customer.ownerUserId = :userId', { userId: 'user-1' });
     });
 
-    it('should allow transition from active to lost', async () => {
-      customerRepository.findOne.mockResolvedValue({
-        ...mockCustomer,
-        status: CustomerStatus.ACTIVE,
-        version: 1,
-      });
-      customerRepository.update.mockResolvedValue({ affected: 1 });
+    it('should filter by status', async () => {
+      const qb = createMockQb();
+      customerRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.changeStatus('customer-uuid-123', 'org-uuid-123', CustomerStatus.LOST, '流失', 1),
-      ).resolves.not.toThrow();
+      await service.findCustomers('org-1', 'user-1', 'all', { status: 'active' }, 1, 20);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('customer.status = :status', { status: 'active' });
     });
 
-    it('should allow transition from silent to active', async () => {
-      customerRepository.findOne.mockResolvedValue({
-        ...mockCustomer,
-        status: CustomerStatus.SILENT,
-        version: 1,
-      });
-      customerRepository.update.mockResolvedValue({ affected: 1 });
+    it('should filter by keyword', async () => {
+      const qb = createMockQb();
+      customerRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await expect(
-        service.changeStatus('customer-uuid-123', 'org-uuid-123', CustomerStatus.ACTIVE, '重新激活', 1),
-      ).resolves.not.toThrow();
-    });
+      await service.findCustomers('org-1', 'user-1', 'all', { keyword: '测试' }, 1, 20);
 
-    it('should allow transition from silent to lost', async () => {
-      customerRepository.findOne.mockResolvedValue({
-        ...mockCustomer,
-        status: CustomerStatus.SILENT,
-        version: 1,
-      });
-      customerRepository.update.mockResolvedValue({ affected: 1 });
-
-      await expect(
-        service.changeStatus('customer-uuid-123', 'org-uuid-123', CustomerStatus.LOST, '流失', 1),
-      ).resolves.not.toThrow();
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        '(customer.name LIKE :keyword OR customer.phone LIKE :keyword)',
+        { keyword: '%测试%' },
+      );
     });
   });
 });

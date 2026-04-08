@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AITask, AITaskType, AITaskStatus } from './entities/ai-task.entity';
-import { ExecutionEngineService } from '../art/services/execution-engine.service';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { AITask, AITaskType, AITaskStatus } from "./entities/ai-task.entity";
+import { ExecutionEngineService } from "../art/services/execution-engine.service";
 
 @Injectable()
 export class AiService {
@@ -18,7 +18,7 @@ export class AiService {
     });
 
     if (!task) {
-      throw new NotFoundException('RESOURCE_NOT_FOUND');
+      throw new NotFoundException("RESOURCE_NOT_FOUND");
     }
 
     return task;
@@ -48,7 +48,11 @@ export class AiService {
     return saved;
   }
 
-  async executeTask(taskId: string, orgId: string, userId?: string): Promise<void> {
+  async executeTask(
+    taskId: string,
+    orgId: string,
+    userId?: string,
+  ): Promise<void> {
     const task = await this.findTaskById(taskId, orgId);
 
     await this.aiTaskRepository.update(taskId, {
@@ -57,24 +61,25 @@ export class AiService {
 
     try {
       const run = await this.executionEngine.execute(
-        'AGENT-AI-003',
+        "AGENT-AI-003",
         {
           ...task.inputPayload,
           requestId: taskId,
         },
         orgId,
-        userId || 'system',
+        userId || "system",
       );
 
       const outputPayload = run.outputPayload || {};
 
       await this.aiTaskRepository.update(taskId, {
-        status: AITaskStatus.COMPLETED,
+        status: AITaskStatus.SUCCEEDED,
         outputPayload: outputPayload as any,
         agentRunId: run.id,
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       await this.aiTaskRepository.update(taskId, {
         status: AITaskStatus.FAILED,
         errorMessage,

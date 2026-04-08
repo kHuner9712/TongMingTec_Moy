@@ -49,6 +49,12 @@ export class Conversation extends BaseEntity {
   @Column({ type: 'varchar', length: 32, nullable: true, name: 'closed_reason' })
   closedReason: string | null;
 
+  @Column({ type: 'int', nullable: true, name: 'rating_score' })
+  ratingScore: number | null;
+
+  @Column({ type: 'text', nullable: true, name: 'rating_comment' })
+  ratingComment: string | null;
+
   @ManyToOne(() => Channel, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'channel_id' })
   channel: Channel;
