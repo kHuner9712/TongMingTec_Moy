@@ -129,8 +129,14 @@ export class AiRuntimeController {
     @Param("id") id: string,
     @CurrentUser("orgId") orgId: string,
     @CurrentUser("id") userId: string,
+    @Body() body: { version: number },
   ) {
-    const data = await this.aiRuntimeService.approveRequest(id, orgId, userId);
+    const data = await this.aiRuntimeService.approveRequest(
+      id,
+      orgId,
+      userId,
+      body.version,
+    );
     return { code: "OK", data };
   }
 
@@ -140,13 +146,14 @@ export class AiRuntimeController {
     @Param("id") id: string,
     @CurrentUser("orgId") orgId: string,
     @CurrentUser("id") userId: string,
-    @Body() dto: { reason?: string },
+    @Body() dto: { reason?: string; version: number },
   ) {
     const data = await this.aiRuntimeService.rejectRequest(
       id,
       orgId,
       userId,
       dto.reason,
+      dto.version,
     );
     return { code: "OK", data };
   }

@@ -31,17 +31,19 @@ export class ApprovalEngineService {
     id: string,
     orgId: string,
     userId: string,
+    version: number,
   ): Promise<AiApprovalRequest> {
-    return this.approvalCenterService.approve(id, orgId, userId);
+    return this.approvalCenterService.approve(id, orgId, userId, version);
   }
 
   async reject(
     id: string,
     orgId: string,
     userId: string,
-    reason?: string,
+    reason: string | undefined,
+    version: number,
   ): Promise<AiApprovalRequest> {
-    return this.approvalCenterService.reject(id, orgId, userId, reason);
+    return this.approvalCenterService.reject(id, orgId, userId, reason, version);
   }
 
   async checkExpired(): Promise<number> {

@@ -16,10 +16,12 @@ import { SeedRunner } from "./seeds/seed-runner";
 import { ApprovalCenterModule } from "../approval-center/approval-center.module";
 import { TakeoverCenterModule } from "../takeover-center/takeover-center.module";
 import { RollbackCenterModule } from "../rollback-center/rollback-center.module";
+import { EventsModule } from "../../common/events/events.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([AiAgent, AiAgentRun, AiPromptTemplate, AiTool]),
+    EventsModule,
     ApprovalCenterModule,
     TakeoverCenterModule,
     RollbackCenterModule,

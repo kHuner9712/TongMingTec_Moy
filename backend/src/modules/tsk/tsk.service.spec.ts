@@ -4,6 +4,7 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { TskService } from './tsk.service';
 import { Task, TaskStatus, TaskSourceType } from './entities/task.entity';
 import { EventBusService } from '../../common/events/event-bus.service';
+import { StateMachineError } from '../../common/statemachine/state-machine';
 
 describe('TskService', () => {
   let service: TskService;
@@ -228,7 +229,7 @@ describe('TskService', () => {
       expect(taskRepository.update).toHaveBeenCalled();
     });
 
-    it('should throw ConflictException on invalid transition', async () => {
+    it('should throw StateMachineError on invalid transition', async () => {
       taskRepository.findOne.mockResolvedValue({
         ...mockTask,
         status: TaskStatus.COMPLETED,
@@ -242,7 +243,7 @@ describe('TskService', () => {
           'user-uuid-123',
           1,
         ),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(StateMachineError);
     });
 
     it('should throw ConflictException on version mismatch', async () => {

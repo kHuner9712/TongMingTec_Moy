@@ -6,6 +6,7 @@ import { Conversation, ConversationStatus } from './entities/conversation.entity
 import { ConversationMessage, MessageDirection, MessageType, SenderType } from './entities/conversation-message.entity';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { EventBusService } from '../../common/events/event-bus.service';
+import { StateMachineError } from '../../common/statemachine/state-machine';
 
 describe('CnvService', () => {
   let service: CnvService;
@@ -149,7 +150,7 @@ describe('CnvService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should throw ConflictException for invalid status transition', async () => {
+    it('should throw StateMachineError for invalid status transition', async () => {
       conversationRepository.findOne.mockResolvedValue({
         ...mockConversation,
         status: ConversationStatus.CLOSED,
@@ -158,7 +159,7 @@ describe('CnvService', () => {
 
       await expect(
         service.accept('conv-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(StateMachineError);
     });
   });
 
@@ -196,7 +197,7 @@ describe('CnvService', () => {
       expect(mockQb.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: ConversationStatus.CLOSED,
-          closeReason: '问题已解决',
+          closedReason: '问题已解决',
         }),
       );
     });
@@ -213,7 +214,7 @@ describe('CnvService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should throw ConflictException for invalid status transition', async () => {
+    it('should throw StateMachineError for invalid status transition', async () => {
       conversationRepository.findOne.mockResolvedValue({
         ...mockConversation,
         status: ConversationStatus.CLOSED,
@@ -222,7 +223,7 @@ describe('CnvService', () => {
 
       await expect(
         service.close('conv-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(StateMachineError);
     });
   });
 
@@ -334,7 +335,7 @@ describe('CnvService', () => {
 
       await expect(
         service.accept('conv-uuid-123', 'org-uuid-123', 'agent-uuid-123', 'user-uuid-123', 1),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(StateMachineError);
     });
   });
 

@@ -13,6 +13,9 @@ import {
   AiAgentRun,
   AgentRunStatus,
 } from "../../art/entities/ai-agent-run.entity";
+import { approvalRequestStateMachine } from "../../../common/statemachine/definitions/approval-request.sm";
+import { EventBusService } from "../../../common/events/event-bus.service";
+import { approvalStatusChanged } from "../../../common/events/approval-events";
 
 @Injectable()
 export class ApprovalCenterService {
@@ -21,6 +24,7 @@ export class ApprovalCenterService {
     private readonly approvalRepo: Repository<AiApprovalRequest>,
     @InjectRepository(AiAgentRun)
     private readonly runRepo: Repository<AiAgentRun>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async getPendingCount(orgId: string): Promise<number> {
@@ -108,58 +112,210 @@ export class ApprovalCenterService {
     id: string,
     orgId: string,
     userId: string,
+    version: number,
   ): Promise<AiApprovalRequest> {
-    const request = await this.approvalRepo.findOne({ where: { id, orgId } });
-    if (!request) throw new NotFoundException("RESOURCE_NOT_FOUND");
-    if (request.status !== ApprovalStatus.PENDING) {
-      throw new ConflictException("STATUS_TRANSITION_INVALID");
+    const request = await this.findById(id, orgId);
+
+    if (request.version !== version) {
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
-    request.status = ApprovalStatus.APPROVED;
-    request.approverUserId = userId;
-    request.approvedAt = new Date();
-    await this.approvalRepo.save(request);
+    const fromStatus = request.status;
+    approvalRequestStateMachine.validateTransition(
+      fromStatus,
+      ApprovalStatus.APPROVED,
+    );
+
+    const result = await this.approvalRepo
+      .createQueryBuilder()
+      .update(AiApprovalRequest)
+      .set({
+        status: ApprovalStatus.APPROVED,
+        approverUserId: userId,
+        approvedAt: new Date(),
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     await this.runRepo.update(request.agentRunId, {
       status: AgentRunStatus.SUCCEEDED,
     });
 
-    return request;
+    this.eventBus.publish(
+      approvalStatusChanged({
+        orgId,
+        approvalId: id,
+        fromStatus,
+        toStatus: ApprovalStatus.APPROVED,
+        actorType: "user",
+        actorId: userId,
+      }),
+    );
+
+    return this.findById(id, orgId);
   }
 
   async reject(
     id: string,
     orgId: string,
     userId: string,
-    reason?: string,
+    reason: string | undefined,
+    version: number,
   ): Promise<AiApprovalRequest> {
-    const request = await this.approvalRepo.findOne({ where: { id, orgId } });
-    if (!request) throw new NotFoundException("RESOURCE_NOT_FOUND");
-    if (request.status !== ApprovalStatus.PENDING) {
-      throw new ConflictException("STATUS_TRANSITION_INVALID");
+    const request = await this.findById(id, orgId);
+
+    if (request.version !== version) {
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
-    request.status = ApprovalStatus.REJECTED;
-    request.approverUserId = userId;
-    request.approvedAt = new Date();
-    await this.approvalRepo.save(request);
+    const fromStatus = request.status;
+    approvalRequestStateMachine.validateTransition(
+      fromStatus,
+      ApprovalStatus.REJECTED,
+    );
+
+    const result = await this.approvalRepo
+      .createQueryBuilder()
+      .update(AiApprovalRequest)
+      .set({
+        status: ApprovalStatus.REJECTED,
+        approverUserId: userId,
+        approvedAt: new Date(),
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
 
     await this.runRepo.update(request.agentRunId, {
       status: AgentRunStatus.FAILED,
       errorMessage: reason || "Approval rejected",
     });
 
-    return request;
+    this.eventBus.publish(
+      approvalStatusChanged({
+        orgId,
+        approvalId: id,
+        fromStatus,
+        toStatus: ApprovalStatus.REJECTED,
+        actorType: "user",
+        actorId: userId,
+        reason,
+      }),
+    );
+
+    return this.findById(id, orgId);
+  }
+
+  async cancel(
+    id: string,
+    orgId: string,
+    userId: string,
+    version: number,
+  ): Promise<AiApprovalRequest> {
+    const request = await this.findById(id, orgId);
+
+    if (request.version !== version) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    const fromStatus = request.status;
+    approvalRequestStateMachine.validateTransition(
+      fromStatus,
+      ApprovalStatus.CANCELLED,
+    );
+
+    const result = await this.approvalRepo
+      .createQueryBuilder()
+      .update(AiApprovalRequest)
+      .set({
+        status: ApprovalStatus.CANCELLED,
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    this.eventBus.publish(
+      approvalStatusChanged({
+        orgId,
+        approvalId: id,
+        fromStatus,
+        toStatus: ApprovalStatus.CANCELLED,
+        actorType: "user",
+        actorId: userId,
+      }),
+    );
+
+    return this.findById(id, orgId);
   }
 
   async checkExpired(): Promise<number> {
-    const result = await this.approvalRepo.update(
-      {
+    const pendingRequests = await this.approvalRepo.find({
+      where: {
         status: ApprovalStatus.PENDING,
         expiresAt: LessThan(new Date()),
       },
-      { status: ApprovalStatus.EXPIRED },
-    );
-    return result.affected || 0;
+    });
+
+    let count = 0;
+    for (const req of pendingRequests) {
+      try {
+        approvalRequestStateMachine.validateTransition(
+          req.status,
+          ApprovalStatus.EXPIRED,
+        );
+
+        await this.approvalRepo
+          .createQueryBuilder()
+          .update(AiApprovalRequest)
+          .set({
+            status: ApprovalStatus.EXPIRED,
+            version: () => "version + 1",
+          })
+          .where("id = :id AND version = :version", {
+            id: req.id,
+            version: req.version,
+          })
+          .execute();
+
+        this.eventBus.publish(
+          approvalStatusChanged({
+            orgId: req.orgId,
+            approvalId: req.id,
+            fromStatus: req.status,
+            toStatus: ApprovalStatus.EXPIRED,
+            actorType: "system",
+            actorId: "system",
+          }),
+        );
+
+        count++;
+      } catch {
+        // 跳过已不是 pending 的记录
+      }
+    }
+
+    return count;
+  }
+
+  private async findById(
+    id: string,
+    orgId: string,
+  ): Promise<AiApprovalRequest> {
+    const request = await this.approvalRepo.findOne({ where: { id, orgId } });
+    if (!request) throw new NotFoundException("RESOURCE_NOT_FOUND");
+    return request;
   }
 }

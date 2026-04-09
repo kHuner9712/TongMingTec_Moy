@@ -6,4 +6,5 @@ export class ApprovalQueryDto {
 
 export class ApprovalRejectDto {
   reason?: string;
+  version: number;
 }

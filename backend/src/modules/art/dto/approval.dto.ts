@@ -1,4 +1,4 @@
-import { IsUUID } from 'class-validator';
+import { IsUUID } from "class-validator";
 
 export class ApproveRequestDto {
   @IsUUID()
@@ -10,4 +10,6 @@ export class RejectRequestDto {
   id: string;
 
   reason?: string;
+
+  version: number;
 }

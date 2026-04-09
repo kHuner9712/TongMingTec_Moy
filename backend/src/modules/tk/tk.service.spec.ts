@@ -6,6 +6,7 @@ import { TicketLog } from './entities/ticket-log.entity';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { EventBusService } from '../../common/events/event-bus.service';
+import { StateMachineError } from '../../common/statemachine/state-machine';
 
 describe('TkService', () => {
   let service: TkService;
@@ -35,6 +36,9 @@ describe('TkService', () => {
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
       getManyAndCount: jest.fn(),
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      execute: jest.fn(),
     };
     return qb;
   };
@@ -49,7 +53,6 @@ describe('TkService', () => {
             findOne: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
-            update: jest.fn(),
             createQueryBuilder: jest.fn(createMockQueryBuilder),
           },
         },
@@ -155,8 +158,15 @@ describe('TkService', () => {
 
   describe('assign', () => {
     it('should assign ticket to user', async () => {
-      ticketRepository.findOne.mockResolvedValue(mockTicket);
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      ticketRepository.findOne.mockResolvedValueOnce(mockTicket);
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.ASSIGNED,
+        assigneeUserId: 'agent-uuid-123',
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -168,8 +178,7 @@ describe('TkService', () => {
         1,
       );
 
-      expect(ticketRepository.update).toHaveBeenCalledWith(
-        'ticket-uuid-123',
+      expect(mockQb.set).toHaveBeenCalledWith(
         expect.objectContaining({ assigneeUserId: 'agent-uuid-123' }),
       );
     });
@@ -188,12 +197,18 @@ describe('TkService', () => {
 
   describe('resolve', () => {
     it('should resolve ticket', async () => {
-      ticketRepository.findOne.mockResolvedValue({
+      ticketRepository.findOne.mockResolvedValueOnce({
         ...mockTicket,
         status: TicketStatus.PROCESSING,
         assigneeUserId: 'agent-uuid-123',
       });
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.RESOLVED,
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -205,18 +220,17 @@ describe('TkService', () => {
         1,
       );
 
-      expect(ticketRepository.update).toHaveBeenCalledWith(
-        'ticket-uuid-123',
+      expect(mockQb.set).toHaveBeenCalledWith(
         expect.objectContaining({ status: TicketStatus.RESOLVED }),
       );
     });
 
-    it('should throw ConflictException if not in progress', async () => {
+    it('should throw StateMachineError if not in processing', async () => {
       ticketRepository.findOne.mockResolvedValue(mockTicket);
 
       await expect(
         service.resolve('ticket-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(StateMachineError);
     });
 
     it('should throw ConflictException for version mismatch', async () => {
@@ -235,11 +249,17 @@ describe('TkService', () => {
 
   describe('close', () => {
     it('should close resolved ticket', async () => {
-      ticketRepository.findOne.mockResolvedValue({
+      ticketRepository.findOne.mockResolvedValueOnce({
         ...mockTicket,
         status: TicketStatus.RESOLVED,
       });
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.CLOSED,
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -251,15 +271,20 @@ describe('TkService', () => {
         1,
       );
 
-      expect(ticketRepository.update).toHaveBeenCalledWith(
-        'ticket-uuid-123',
+      expect(mockQb.set).toHaveBeenCalledWith(
         expect.objectContaining({ status: TicketStatus.CLOSED }),
       );
     });
 
     it('should close pending ticket', async () => {
-      ticketRepository.findOne.mockResolvedValue(mockTicket);
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      ticketRepository.findOne.mockResolvedValueOnce(mockTicket);
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.CLOSED,
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -271,8 +296,7 @@ describe('TkService', () => {
         1,
       );
 
-      expect(ticketRepository.update).toHaveBeenCalledWith(
-        'ticket-uuid-123',
+      expect(mockQb.set).toHaveBeenCalledWith(
         expect.objectContaining({ status: TicketStatus.CLOSED }),
       );
     });
@@ -292,8 +316,14 @@ describe('TkService', () => {
 
   describe('SM-ticket state machine validation', () => {
     it('should allow transition from pending to assigned', async () => {
-      ticketRepository.findOne.mockResolvedValue(mockTicket);
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      ticketRepository.findOne.mockResolvedValueOnce(mockTicket);
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.ASSIGNED,
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -302,14 +332,20 @@ describe('TkService', () => {
       ).resolves.not.toThrow();
     });
 
-    it('should allow transition from assigned to in_progress', async () => {
-      ticketRepository.findOne.mockResolvedValue({
+    it('should allow transition from assigned to processing', async () => {
+      ticketRepository.findOne.mockResolvedValueOnce({
         ...mockTicket,
         status: TicketStatus.ASSIGNED,
         assigneeUserId: 'agent-uuid-123',
         version: 1,
       });
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.PROCESSING,
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -318,14 +354,20 @@ describe('TkService', () => {
       ).resolves.not.toThrow();
     });
 
-    it('should allow transition from in_progress to resolved', async () => {
-      ticketRepository.findOne.mockResolvedValue({
+    it('should allow transition from processing to resolved', async () => {
+      ticketRepository.findOne.mockResolvedValueOnce({
         ...mockTicket,
         status: TicketStatus.PROCESSING,
         assigneeUserId: 'agent-uuid-123',
         version: 1,
       });
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.RESOLVED,
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -335,12 +377,18 @@ describe('TkService', () => {
     });
 
     it('should allow transition from resolved to closed', async () => {
-      ticketRepository.findOne.mockResolvedValue({
+      ticketRepository.findOne.mockResolvedValueOnce({
         ...mockTicket,
         status: TicketStatus.RESOLVED,
         version: 1,
       });
-      ticketRepository.update.mockResolvedValue({ affected: 1 });
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.CLOSED,
+      });
       logRepository.create.mockReturnValue({});
       logRepository.save.mockResolvedValue({});
 
@@ -358,7 +406,7 @@ describe('TkService', () => {
 
       await expect(
         service.resolve('ticket-uuid-123', 'org-uuid-123', 'reason', 'user-uuid-123', 1),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(StateMachineError);
     });
   });
 

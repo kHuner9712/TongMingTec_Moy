@@ -47,8 +47,14 @@ export class ApprovalCenterController {
     @Param("id") id: string,
     @CurrentUser("orgId") orgId: string,
     @CurrentUser("id") userId: string,
+    @Body() body: { version: number },
   ) {
-    const data = await this.approvalCenterService.approve(id, orgId, userId);
+    const data = await this.approvalCenterService.approve(
+      id,
+      orgId,
+      userId,
+      body.version,
+    );
     return { code: "OK", data };
   }
 
@@ -65,6 +71,7 @@ export class ApprovalCenterController {
       orgId,
       userId,
       dto.reason,
+      dto.version,
     );
     return { code: "OK", data };
   }

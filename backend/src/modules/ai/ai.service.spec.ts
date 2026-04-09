@@ -73,7 +73,15 @@ describe("AiService", () => {
         {
           provide: ExecutionEngineService,
           useValue: {
-            execute: jest.fn(),
+            execute: jest.fn().mockResolvedValue({
+              id: "run-uuid-123",
+              outputPayload: {
+                suggestions: [
+                  { id: "1", content: "感谢您的咨询", confidence: 0.92 },
+                ],
+                processingTime: 800,
+              },
+            }),
           },
         },
       ],

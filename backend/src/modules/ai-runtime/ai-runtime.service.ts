@@ -90,17 +90,23 @@ export class AiRuntimeService {
     return this.approvalCenter.listPending(orgId);
   }
 
-  async approveRequest(id: string, orgId: string, userId: string) {
-    return this.approvalCenter.approve(id, orgId, userId);
+  async approveRequest(
+    id: string,
+    orgId: string,
+    userId: string,
+    version: number,
+  ) {
+    return this.approvalCenter.approve(id, orgId, userId, version);
   }
 
   async rejectRequest(
     id: string,
     orgId: string,
     userId: string,
-    reason?: string,
+    reason: string | undefined,
+    version: number,
   ) {
-    return this.approvalCenter.reject(id, orgId, userId, reason);
+    return this.approvalCenter.reject(id, orgId, userId, reason, version);
   }
 
   async executeTakeover(
@@ -186,7 +192,9 @@ export class AiRuntimeService {
         activeCustomers,
         pendingFollowups: pendingApprovals.length,
       },
-      recentAgentRuns: Array.isArray(recentRuns) ? recentRuns : (recentRuns as any)?.items || [],
+      recentAgentRuns: Array.isArray(recentRuns)
+        ? recentRuns
+        : (recentRuns as any)?.items || [],
       recommendedTodos,
     };
   }
