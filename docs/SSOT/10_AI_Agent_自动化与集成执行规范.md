@@ -1,7 +1,9 @@
 # MOY AI / Agent / 自动化 / 集成执行规范
 
 ## 1. 文档定位
+
 本文档是 MOY 唯一的 AI、Agent、自动化和集成执行规范，统一收口：
+
 - Agent registry
 - capability contract
 - execution mode
@@ -17,6 +19,7 @@
 - audit / observability
 
 ## 2. 基础边界
+
 - P0 已落地且继续继承的能力：
   - 智能回复
   - AI task 落库
@@ -35,7 +38,13 @@
   - Customer Operating Record（COR 模块：CustomerOperatingRecord + CustomerTimelineEvent + Customer360Service）
   - Customer Memory（CMEM 模块：CustomerContext + CustomerIntent + CustomerRisk + CustomerNextAction）
   - Domain Event System（EventBusService + 领域事件定义）
-  - State Machine Enforcement（StateMachine<S> + 9 个状态机定义）
+  - State Machine Enforcement（StateMachine<S> + 9 个 S1 状态机定义 + 2 个 S2 状态机定义）
+- S2 已实现能力：
+  - SM-ai_agent 集成到 AgentRegistryService（状态机校验 + EventBus agent.status_changed + 乐观锁版本控制）
+  - SM-approval_request 集成到 ApprovalCenterService（状态机校验 + EventBus approval.status_changed + 乐观锁版本控制 + cancel 方法 + checkExpired 定时检查）
+  - CMEM 事件驱动（CmemEventHandler 订阅 customer.status_changed → 自动触发 IntentService.detectIntent + RiskService.assessRisk）
+  - Agent 状态变更 API（API-AI-011：activate/pause/archive，含 version 乐观锁）
+  - 审批取消 API（API-AI-012：cancel，含 version 乐观锁）
 - 终局扩展能力：
   - Agent registry
   - 审批驱动的自动执行
@@ -45,23 +54,27 @@
   - 可观测性与风险分级
 
 ## 3. Agent Registry
+
 ### 3.1 统一注册表
-| Agent Code | 名称 | 主要职责 | introduced_in | required_in | 默认模式 | 实现状态 |
-| --- | --- | --- | --- | --- | --- | --- |
-| AGENT-AI-001 | Acquisition Agent | 渠道线索吸收、首轮清洗 | S2 | S4 | assist | specified |
-| AGENT-AI-002 | Lead Clean Agent | 去重、标准化、评分建议 | S2 | S3 | assist | specified |
-| AGENT-AI-003 | Conversation Agent | 智能回复、摘要、意图识别 | S1 | S1 | suggest | implemented |
-| AGENT-AI-004 | Sales Follow Agent | 跟进建议、下一步动作建议 | S2 | S3 | suggest | specified |
-| AGENT-AI-005 | Opportunity Agent | 商机风险与赢单建议 | S2 | S4 | suggest | specified |
-| AGENT-AI-006 | Ticket Agent | 工单摘要、分流建议、解决建议 | S2 | S3 | assist | specified |
-| AGENT-AI-007 | Knowledge Agent | 知识检索与答案合成 | S2 | S2 | assist | specified |
-| AGENT-AI-008 | Quality Agent | 会话/工单质检、敏感词、情绪分析 | S2 | S3 | auto | specified |
-| AGENT-AI-009 | Insight Agent | 数据洞察、异常解释、趋势归因 | S3 | S4 | assist | specified |
-| AGENT-AI-010 | Orchestrate Agent | 自动化流程编排与跨工具协调 | S3 | S4 | approval | specified |
-| AGENT-AI-011 | Dashboard Agent | 驾驶舱摘要与管理层日报 | S3 | S4 | suggest | specified |
+
+| Agent Code   | 名称               | 主要职责                        | introduced_in | required_in | 默认模式 | 实现状态    |
+| ------------ | ------------------ | ------------------------------- | ------------- | ----------- | -------- | ----------- |
+| AGENT-AI-001 | Acquisition Agent  | 渠道线索吸收、首轮清洗          | S2            | S4          | assist   | specified   |
+| AGENT-AI-002 | Lead Clean Agent   | 去重、标准化、评分建议          | S2            | S3          | assist   | specified   |
+| AGENT-AI-003 | Conversation Agent | 智能回复、摘要、意图识别        | S1            | S1          | suggest  | implemented |
+| AGENT-AI-004 | Sales Follow Agent | 跟进建议、下一步动作建议        | S2            | S3          | suggest  | specified   |
+| AGENT-AI-005 | Opportunity Agent  | 商机风险与赢单建议              | S2            | S4          | suggest  | specified   |
+| AGENT-AI-006 | Ticket Agent       | 工单摘要、分流建议、解决建议    | S2            | S3          | assist   | specified   |
+| AGENT-AI-007 | Knowledge Agent    | 知识检索与答案合成              | S2            | S2          | assist   | specified   |
+| AGENT-AI-008 | Quality Agent      | 会话/工单质检、敏感词、情绪分析 | S2            | S3          | auto     | specified   |
+| AGENT-AI-009 | Insight Agent      | 数据洞察、异常解释、趋势归因    | S3            | S4          | assist   | specified   |
+| AGENT-AI-010 | Orchestrate Agent  | 自动化流程编排与跨工具协调      | S3            | S4          | approval | specified   |
+| AGENT-AI-011 | Dashboard Agent    | 驾驶舱摘要与管理层日报          | S3            | S4          | suggest  | specified   |
 
 ### 3.2 capability contract
+
 每个 Agent 必须声明：
+
 - `agent_code`
 - `resource_scope`
 - `tool_scope`
@@ -75,20 +88,23 @@
 - `takeover_strategy`
 
 ## 4. 执行模式
-| 模式 | 说明 | 是否可直接落业务终态 |
-| --- | --- | --- |
-| `suggest` | 只给建议，不自动提交 | 否 |
-| `assist` | 可生成草稿或中间结果，由人工确认 | 否 |
-| `auto` | 可自动执行低风险动作 | 仅限低风险 |
-| `approval` | 自动准备动作，但必须审批后才执行 | 否，审批后才可执行 |
+
+| 模式       | 说明                             | 是否可直接落业务终态 |
+| ---------- | -------------------------------- | -------------------- |
+| `suggest`  | 只给建议，不自动提交             | 否                   |
+| `assist`   | 可生成草稿或中间结果，由人工确认 | 否                   |
+| `auto`     | 可自动执行低风险动作             | 仅限低风险           |
+| `approval` | 自动准备动作，但必须审批后才执行 | 否，审批后才可执行   |
 
 默认规则：
+
 - `Conversation Agent`、`Sales Follow Agent`：`suggest`
 - `Ticket Agent`、`Knowledge Agent`：`assist`
 - `Quality Agent`：`auto`
 - `Orchestrate Agent`：`approval`
 
 ## 5. Prompt / Template 规范
+
 - Prompt 必须模板化存储，不允许代码内散落硬编码长 Prompt。
 - 模板字段至少包含：
   - `template_code`
@@ -107,7 +123,9 @@
   - 脱敏后的用户输入
 
 ## 6. Tool Calling 规则
+
 ### 6.1 允许的工具类型
+
 - `read_api`
 - `write_api`
 - `kb_search`
@@ -117,14 +135,18 @@
 - `report_export`
 
 ### 6.2 工具调用约束
+
 - 工具调用前先跑权限解析。
 - 写工具必须声明目标资源、目标动作、预期状态变化。
 - 高风险写工具只能在 `approval` 模式下使用。
 - 工具调用日志必须写入 `TABLE-AI-003 ai_agent_runs`。
 
 ## 7. Orchestration 规则
+
 ### 7.1 编排结构
+
 一个编排流程至少包含：
+
 1. trigger
 2. context loader
 3. decision step
@@ -134,19 +156,22 @@
 7. rollback / takeover step
 
 ### 7.2 编排边界
+
 - 单 Agent 可以完成单资源判断。
 - 多资源、多模块、多终态变更必须通过 `Orchestrate Agent` + 审批链。
 - 任何跨模块事务都不得让 Agent 直接拼 SQL 或绕开 API。
 
 ## 8. Approval Flow
-| 场景 | 发起方式 | 审批节点 | 执行后动作 |
-| --- | --- | --- | --- |
-| AI 自动转派 | Agent 发起 `ai_approval_request` | 业务经理 | 调用目标写 API |
-| 批量状态修改 | 自动化流程触发 | 模块负责人 | 执行后写审计 |
-| 合同/报价审批建议 | Agent 仅给建议 | 人工审批 | 保留人工最终决定 |
-| 高风险商业动作 | Agent 只能准备，不可直接提交 | 财务/管理员 | 审批后执行 |
+
+| 场景              | 发起方式                         | 审批节点    | 执行后动作       |
+| ----------------- | -------------------------------- | ----------- | ---------------- |
+| AI 自动转派       | Agent 发起 `ai_approval_request` | 业务经理    | 调用目标写 API   |
+| 批量状态修改      | 自动化流程触发                   | 模块负责人  | 执行后写审计     |
+| 合同/报价审批建议 | Agent 仅给建议                   | 人工审批    | 保留人工最终决定 |
+| 高风险商业动作    | Agent 只能准备，不可直接提交     | 财务/管理员 | 审批后执行       |
 
 审批请求必须包含：
+
 - `resource_type`
 - `resource_id`
 - `requested_action`
@@ -156,12 +181,15 @@
 - `explanation`
 
 ## 9. Rollback / Human Takeover
+
 ### 9.1 rollback 原则
+
 - 只对 AI 自动写入的结果回滚，不回滚人工确认后的手工编辑。
 - 回滚前先生成 `before_snapshot` 与 `rollback_scope`。
 - 回滚结果必须写 `TABLE-AI-007 ai_rollbacks`。
 
 ### 9.2 human takeover 原则
+
 - 命中以下条件必须触发人工接管：
   - 超时重试后仍失败
   - 置信度低于阈值
@@ -174,8 +202,11 @@
   - 页面显式显示“已人工接管”
 
 ## 10. Integration Flow / Data Mapping
+
 ### 10.1 integration flow
+
 集成流必须声明：
+
 - `flow_code`
 - `source_system`
 - `target_system`
@@ -186,7 +217,9 @@
 - `mapping_set`
 
 ### 10.2 data mapping
+
 字段映射必须声明：
+
 - `source_field`
 - `target_field`
 - `transform_rule`
@@ -195,18 +228,22 @@
 - `masking_rule`
 
 ## 11. 超时、重试、熔断、限流
-| 机制 | 默认值 |
-| --- | --- |
-| LLM 单次超时 | 12s |
-| 外部集成超时 | 8s |
-| 默认重试 | 2 次，指数退避 |
-| 熔断阈值 | 5 分钟内失败率 > 50% |
+
+| 机制           | 默认值                     |
+| -------------- | -------------------------- |
+| LLM 单次超时   | 12s                        |
+| 外部集成超时   | 8s                         |
+| 默认重试       | 2 次，指数退避             |
+| 熔断阈值       | 5 分钟内失败率 > 50%       |
 | Agent 调用限流 | 每租户/每分钟按 Agent 配额 |
-| Webhook 重试 | 1m / 5m / 15m / 1h |
+| Webhook 重试   | 1m / 5m / 15m / 1h         |
 
 ## 12. 审计与可观测性
+
 ### 12.1 审计
+
 必须记录：
+
 - 发起人
 - Agent
 - 模板版本
@@ -218,6 +255,7 @@
 - 接管结果
 
 ### 12.2 观测指标
+
 - 调用量
 - 成功率
 - 平均延迟
@@ -228,6 +266,7 @@
 - 接管率
 
 ### 12.3 告警
+
 - Agent 失败率异常
 - 成本异常
 - 审批积压
@@ -235,6 +274,7 @@
 - Webhook 投递失败
 
 ## 13. 与其他主文档的关系
+
 - 表结构：见 `05`
 - 状态机：见 `06`
 - 权限与审批边界：见 `07`
