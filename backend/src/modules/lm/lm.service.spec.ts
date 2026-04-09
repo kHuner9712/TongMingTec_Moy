@@ -3,11 +3,8 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { LmService } from "./lm.service";
 import { Lead, LeadStatus } from "./entities/lead.entity";
 import { LeadFollowUp, FollowType } from "./entities/lead-follow-up.entity";
-import { Customer, CustomerStatus } from "../cm/entities/customer.entity";
-import {
-  Opportunity,
-  OpportunityStage,
-} from "../om/entities/opportunity.entity";
+import { Customer } from "../cm/entities/customer.entity";
+import { Opportunity } from "../om/entities/opportunity.entity";
 import { EventBusService } from "../../common/events/event-bus.service";
 import { NotFoundException, ConflictException } from "@nestjs/common";
 import { DataSource } from "typeorm";
@@ -133,11 +130,7 @@ describe("LmService", () => {
       leadRepository.create.mockReturnValue(mockLead);
       leadRepository.save.mockResolvedValue(mockLead);
 
-      const result = await service.createLead(
-        "org-1",
-        { name: "张三" },
-        "user-1",
-      );
+      await service.createLead("org-1", { name: "张三" }, "user-1");
 
       expect(leadRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -198,7 +191,7 @@ describe("LmService", () => {
       const qb = createMockQb();
       leadRepository.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.addFollowUp(
+      await service.addFollowUp(
         "lead-1",
         "org-1",
         "电话跟进",
@@ -230,7 +223,7 @@ describe("LmService", () => {
         Promise.resolve({ ...data }),
       );
 
-      const result = await service.convert("lead-1", "org-1", "user-1", 1);
+      await service.convert("lead-1", "org-1", "user-1", 1);
 
       expect(queryRunner.startTransaction).toHaveBeenCalled();
       expect(queryRunner.commitTransaction).toHaveBeenCalled();

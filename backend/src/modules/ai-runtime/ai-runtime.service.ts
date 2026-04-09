@@ -13,7 +13,6 @@ import { RollbackCenterService } from "../rollback-center/services/rollback-cent
 import { TimelineQueryDto } from "../cor/dto/timeline-query.dto";
 import { NextActionQueryDto } from "../cmem/dto/next-action.dto";
 import { Customer } from "../cm/entities/customer.entity";
-import { AiAgentRun } from "../art/entities/ai-agent-run.entity";
 
 @Injectable()
 export class AiRuntimeService {

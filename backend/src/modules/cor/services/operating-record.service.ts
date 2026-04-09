@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { CustomerOperatingRecord } from '../entities/customer-operating-record.entity';
-import { CreateOperatingRecordDto } from '../dto/create-operating-record.dto';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { CustomerOperatingRecord } from "../entities/customer-operating-record.entity";
+import { CreateOperatingRecordDto } from "../dto/create-operating-record.dto";
 
 @Injectable()
 export class OperatingRecordService {
@@ -15,7 +15,7 @@ export class OperatingRecordService {
     customerId: string,
     orgId: string,
     dto: CreateOperatingRecordDto,
-    userId: string,
+    _userId: string,
   ): Promise<CustomerOperatingRecord> {
     const record = this.recordRepo.create({
       orgId,
@@ -38,7 +38,7 @@ export class OperatingRecordService {
   ): Promise<{ items: CustomerOperatingRecord[]; total: number }> {
     const [items, total] = await this.recordRepo.findAndCount({
       where: { customerId, orgId },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     });

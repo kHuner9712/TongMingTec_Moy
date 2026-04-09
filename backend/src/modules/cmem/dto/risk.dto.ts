@@ -1,4 +1,4 @@
-import { IsOptional, IsJSON } from 'class-validator';
+import { IsOptional } from "class-validator";
 
 export class AssessRiskDto {
   @IsOptional()

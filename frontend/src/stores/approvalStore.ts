@@ -20,7 +20,9 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
       const data =
         await aiRuntimeApi.getPendingApprovals<AiApprovalRequest[]>();
       set({ pendingApprovals: Array.isArray(data) ? data : [] });
-    } catch {}
+    } catch (_e) {
+      // 获取待审批列表失败
+    }
   },
 
   approve: async (id) => {
@@ -30,7 +32,9 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
         pendingApprovals: get().pendingApprovals.filter((a) => a.id !== id),
         currentApproval: null,
       });
-    } catch {}
+    } catch (_e) {
+      // 审批通过失败
+    }
   },
 
   reject: async (id, reason) => {
@@ -40,7 +44,9 @@ export const useApprovalStore = create<ApprovalState>((set, get) => ({
         pendingApprovals: get().pendingApprovals.filter((a) => a.id !== id),
         currentApproval: null,
       });
-    } catch {}
+    } catch (_e) {
+      // 审批拒绝失败
+    }
   },
 
   setCurrentApproval: (approval) => set({ currentApproval: approval }),

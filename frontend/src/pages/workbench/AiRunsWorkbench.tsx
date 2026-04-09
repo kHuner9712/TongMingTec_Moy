@@ -147,7 +147,9 @@ export default function AiRunsWorkbench() {
                 try {
                   await aiRuntimeApi.executeRollback({ agentRunId: record.id });
                   fetchRuns();
-                } catch {}
+                } catch (_e) {
+                  // 回滚失败不阻塞 UI
+                }
               }}
             >
               回滚
