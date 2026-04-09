@@ -135,7 +135,7 @@ export class AiRuntimeService {
       this.customerRepo.find({ where: { orgId } }),
       this.executionEngine.listRuns(orgId, {}),
       this.approvalCenter.listPending(orgId),
-      this.riskService.getRisksByOrg(orgId).catch(() => []),
+      this.riskService.getRisksByOrg(orgId).catch((): any[] => []),
     ]);
 
     const totalCustomers = customers.length;
