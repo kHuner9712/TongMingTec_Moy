@@ -60,6 +60,7 @@ export class ExecutionEngineService {
 
       await this.runRepo.update(savedRun.id, {
         status: output.status,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         outputPayload: output.outputPayload as any,
         latencyMs,
       });

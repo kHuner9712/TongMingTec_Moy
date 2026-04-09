@@ -1,11 +1,15 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Customer, CustomerStatus } from './entities/customer.entity';
-import { CustomerContact } from './entities/customer-contact.entity';
-import { customerStateMachine } from '../../common/statemachine/definitions/customer.sm';
-import { EventBusService } from '../../common/events/event-bus.service';
-import { customerStatusChanged } from '../../common/events/customer-events';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, QueryDeepPartialEntity } from "typeorm";
+import { Customer, CustomerStatus } from "./entities/customer.entity";
+import { CustomerContact } from "./entities/customer-contact.entity";
+import { customerStateMachine } from "../../common/statemachine/definitions/customer.sm";
+import { EventBusService } from "../../common/events/event-bus.service";
+import { customerStatusChanged } from "../../common/events/customer-events";
 
 @Injectable()
 export class CmService {
@@ -25,23 +29,28 @@ export class CmService {
     page: number,
     pageSize: number,
   ): Promise<{ items: Customer[]; total: number }> {
-    const qb = this.customerRepository.createQueryBuilder('customer').where('customer.orgId = :orgId', { orgId });
+    const qb = this.customerRepository
+      .createQueryBuilder("customer")
+      .where("customer.orgId = :orgId", { orgId });
 
-    if (dataScope === 'self') {
-      qb.andWhere('customer.ownerUserId = :userId', { userId });
+    if (dataScope === "self") {
+      qb.andWhere("customer.ownerUserId = :userId", { userId });
     }
 
     if (filters.status) {
-      qb.andWhere('customer.status = :status', { status: filters.status });
+      qb.andWhere("customer.status = :status", { status: filters.status });
     }
 
     if (filters.keyword) {
-      qb.andWhere('(customer.name LIKE :keyword OR customer.phone LIKE :keyword)', {
-        keyword: `%${filters.keyword}%`,
-      });
+      qb.andWhere(
+        "(customer.name LIKE :keyword OR customer.phone LIKE :keyword)",
+        {
+          keyword: `%${filters.keyword}%`,
+        },
+      );
     }
 
-    qb.orderBy('customer.updatedAt', 'DESC');
+    qb.orderBy("customer.updatedAt", "DESC");
     qb.skip((page - 1) * pageSize).take(pageSize);
 
     const [items, total] = await qb.getManyAndCount();
@@ -54,7 +63,7 @@ export class CmService {
     });
 
     if (!customer) {
-      throw new NotFoundException('RESOURCE_NOT_FOUND');
+      throw new NotFoundException("RESOURCE_NOT_FOUND");
     }
 
     return customer;
@@ -83,13 +92,13 @@ export class CmService {
     const customer = await this.findCustomerById(id, orgId);
 
     if (customer.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
+      throw new ConflictException("CONFLICT_VERSION");
     }
 
     await this.customerRepository.update(id, {
       ...data,
-      version: () => 'version + 1',
-    } as any);
+      version: () => "version + 1",
+    } as QueryDeepPartialEntity<Customer>);
 
     return this.findCustomerById(id, orgId);
   }
@@ -114,7 +123,7 @@ export class CmService {
         fromStatus: customer.status,
         toStatus: status,
         reason,
-        actorType: 'user',
+        actorType: "user",
         actorId: customer.ownerUserId,
       }),
     );
@@ -122,10 +131,13 @@ export class CmService {
     return updated;
   }
 
-  async findContacts(customerId: string, orgId: string): Promise<CustomerContact[]> {
+  async findContacts(
+    customerId: string,
+    orgId: string,
+  ): Promise<CustomerContact[]> {
     return this.contactRepository.find({
       where: { customerId, orgId },
-      order: { isPrimary: 'DESC', createdAt: 'ASC' },
+      order: { isPrimary: "DESC", createdAt: "ASC" },
     });
   }
 }

@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsBoolean,
-  IsOptional,
-  MaxLength,
-} from "class-validator";
+import { IsString, IsNotEmpty, IsOptional, MaxLength } from "class-validator";
 
 export class RegisterAgentDto {
   @IsString()

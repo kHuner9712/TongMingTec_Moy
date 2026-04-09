@@ -3,7 +3,7 @@ import { aiRuntimeApi } from "../services/ai-runtime";
 import { AiAgentRun } from "../types";
 
 interface AiState {
-  agentList: any[];
+  agentList: Record<string, unknown>[];
   agentRuns: AiAgentRun[];
   currentAgentRun: AiAgentRun | null;
   copilotVisible: boolean;

@@ -1,5 +1,6 @@
 import api from "../utils/api";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function unwrap<T>(response: any): T {
   if (response && response.code === "OK" && response.data !== undefined) {
     return response.data as T;

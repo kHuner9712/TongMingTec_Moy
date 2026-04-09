@@ -132,7 +132,7 @@ export class AiRuntimeService {
 
   async getCockpitData(orgId: string) {
     const [customers, recentRuns, pendingApprovals, risks] = await Promise.all([
-      this.customerRepo.find({ where: { orgId } as any }),
+      this.customerRepo.find({ where: { orgId } }),
       this.executionEngine.listRuns(orgId, {}),
       this.approvalCenter.listPending(orgId),
       this.riskService.getRisksByOrg(orgId).catch(() => []),
@@ -144,25 +144,29 @@ export class AiRuntimeService {
     ).length;
 
     const aiInsights = risks
-      .filter((r: any) => r.riskLevel === "high" || r.riskLevel === "critical")
+      .filter((r) => r.riskLevel === "high" || r.riskLevel === "critical")
       .slice(0, 5)
-      .map((r: any) => ({
+      .map((r) => ({
         id: r.id,
         type: "risk_alert" as const,
-        title: r.reason || "高风险客户",
+        title:
+          ((r.riskFactors as Record<string, unknown>)?.hint as string) ||
+          "高风险客户",
         description: `客户 ${r.customerId?.substring(0, 8) || ""} 存在高风险`,
         severity: "error" as const,
         relatedType: "customer",
         relatedId: r.customerId,
       }));
 
-    const riskSignals = risks.slice(0, 10).map((r: any) => ({
+    const riskSignals = risks.slice(0, 10).map((r) => ({
       id: r.id,
       type:
         r.riskLevel === "high" || r.riskLevel === "critical"
           ? ("risk_alert" as const)
           : ("followup_reminder" as const),
-      title: r.reason || "风险信号",
+      title:
+        ((r.riskFactors as Record<string, unknown>)?.hint as string) ||
+        "风险信号",
       description: `风险等级: ${r.riskLevel}`,
       severity: (r.riskLevel === "high" || r.riskLevel === "critical"
         ? "error"
@@ -173,7 +177,7 @@ export class AiRuntimeService {
       relatedId: r.customerId,
     }));
 
-    const recommendedTodos = pendingApprovals.slice(0, 5).map((a: any) => ({
+    const recommendedTodos = pendingApprovals.slice(0, 5).map((a) => ({
       id: a.id,
       title: `审批请求: ${a.requestedAction || "待审批操作"}`,
       description: a.explanation || "",
@@ -193,7 +197,7 @@ export class AiRuntimeService {
       },
       recentAgentRuns: Array.isArray(recentRuns)
         ? recentRuns
-        : (recentRuns as any)?.items || [],
+        : (recentRuns as { items?: unknown[] })?.items || [],
       recommendedTodos,
     };
   }

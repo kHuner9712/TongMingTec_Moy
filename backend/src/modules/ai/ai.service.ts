@@ -74,6 +74,7 @@ export class AiService {
 
       await this.aiTaskRepository.update(taskId, {
         status: AITaskStatus.SUCCEEDED,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         outputPayload: outputPayload as any,
         agentRunId: run.id,
       });

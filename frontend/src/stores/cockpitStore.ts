@@ -18,6 +18,14 @@ interface RecommendedTodo {
   priority: number;
 }
 
+interface CockpitDataResponse {
+  aiInsights?: WorkbenchAiInsight[];
+  riskSignals?: WorkbenchAiInsight[];
+  keyMetrics?: KeyMetrics;
+  recentAgentRuns?: AiAgentRun[];
+  recommendedTodos?: RecommendedTodo[];
+}
+
 interface CockpitState {
   aiInsights: WorkbenchAiInsight[];
   riskSignals: WorkbenchAiInsight[];
@@ -39,7 +47,7 @@ export const useCockpitStore = create<CockpitState>((set) => ({
   fetchCockpitData: async () => {
     set({ loading: true });
     try {
-      const data = await aiRuntimeApi.getCockpitData<any>();
+      const data = await aiRuntimeApi.getCockpitData<CockpitDataResponse>();
       set({
         aiInsights: data.aiInsights || [],
         riskSignals: data.riskSignals || [],

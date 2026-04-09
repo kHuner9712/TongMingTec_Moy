@@ -5,7 +5,11 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
-import { AiAgent, AgentStatus } from "../entities/ai-agent.entity";
+import {
+  AiAgent,
+  AgentStatus,
+  AgentExecutionMode,
+} from "../entities/ai-agent.entity";
 import { RegisterAgentDto } from "../dto/register-agent.dto";
 import { aiAgentStateMachine } from "../../../common/statemachine/definitions/ai-agent.sm";
 import { EventBusService } from "../../../common/events/event-bus.service";
@@ -36,7 +40,7 @@ export class AgentRegistryService {
       code: dto.code,
       name: dto.name,
       agentType: dto.agentType,
-      executionMode: dto.executionMode as any,
+      executionMode: dto.executionMode as AgentExecutionMode,
       resourceScope: dto.resourceScope,
       toolScope: dto.toolScope,
       riskLevel: dto.riskLevel,

@@ -41,6 +41,7 @@ export default function AiRunsWorkbench() {
 
   useEffect(() => {
     fetchRuns();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchRuns = async () => {
@@ -57,6 +58,7 @@ export default function AiRunsWorkbench() {
 
   useEffect(() => {
     fetchRuns();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
   const summary = {

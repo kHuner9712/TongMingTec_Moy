@@ -47,6 +47,7 @@ export default function Cockpit() {
   useEffect(() => {
     fetchCockpitData();
     fetchPending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
