@@ -9,14 +9,14 @@ export class RollbackCenterController {
   constructor(private readonly rollbackCenterService: RollbackCenterService) {}
 
   @Get("stats")
-  @Permissions("rollback:read")
+  @Permissions("PERM-AI-ROLLBACK")
   async getStats(@CurrentUser("orgId") orgId: string) {
     const data = await this.rollbackCenterService.getRollbackStats(orgId);
     return { code: "OK", data };
   }
 
   @Get("history")
-  @Permissions("rollback:read")
+  @Permissions("PERM-AI-ROLLBACK")
   async getHistory(
     @CurrentUser("orgId") orgId: string,
     @Query() query: RollbackQueryDto,
@@ -28,7 +28,7 @@ export class RollbackCenterController {
   }
 
   @Post(":id/execute")
-  @Permissions("rollback:execute")
+  @Permissions("PERM-AI-ROLLBACK")
   async execute(
     @Param("id") id: string,
     @CurrentUser("orgId") orgId: string,

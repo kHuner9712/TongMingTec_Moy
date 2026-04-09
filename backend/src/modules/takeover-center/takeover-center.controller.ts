@@ -9,21 +9,21 @@ export class TakeoverCenterController {
   constructor(private readonly takeoverCenterService: TakeoverCenterService) {}
 
   @Get("active")
-  @Permissions("takeover:read")
+  @Permissions("PERM-AI-TAKEOVER")
   async getActiveTakeovers(@CurrentUser("orgId") orgId: string) {
     const data = await this.takeoverCenterService.getActiveTakeovers(orgId);
     return { code: "OK", data };
   }
 
   @Get("stats")
-  @Permissions("takeover:read")
+  @Permissions("PERM-AI-TAKEOVER")
   async getStats(@CurrentUser("orgId") orgId: string) {
     const data = await this.takeoverCenterService.getTakeoverStats(orgId);
     return { code: "OK", data };
   }
 
   @Get()
-  @Permissions("takeover:read")
+  @Permissions("PERM-AI-TAKEOVER")
   async getTakeoverRecords(
     @CurrentUser("orgId") orgId: string,
     @Query() query: TakeoverQueryDto,
@@ -35,7 +35,7 @@ export class TakeoverCenterController {
   }
 
   @Post(":id/resolve")
-  @Permissions("takeover:resolve")
+  @Permissions("PERM-AI-TAKEOVER")
   async resolve(
     @Param("id") id: string,
     @CurrentUser("orgId") orgId: string,

@@ -9,28 +9,28 @@ export class ApprovalCenterController {
   constructor(private readonly approvalCenterService: ApprovalCenterService) {}
 
   @Get("pending")
-  @Permissions("approval:read")
+  @Permissions("PERM-AI-APPROVE")
   async listPending(@CurrentUser("orgId") orgId: string) {
     const data = await this.approvalCenterService.listPending(orgId);
     return { code: "OK", data };
   }
 
   @Get("stats")
-  @Permissions("approval:read")
+  @Permissions("PERM-AI-APPROVE")
   async getStats(@CurrentUser("orgId") orgId: string) {
     const data = await this.approvalCenterService.getApprovalStats(orgId);
     return { code: "OK", data };
   }
 
   @Get("count")
-  @Permissions("approval:read")
+  @Permissions("PERM-AI-APPROVE")
   async getPendingCount(@CurrentUser("orgId") orgId: string) {
     const count = await this.approvalCenterService.getPendingCount(orgId);
     return { code: "OK", data: { count } };
   }
 
   @Get()
-  @Permissions("approval:read")
+  @Permissions("PERM-AI-APPROVE")
   async listAll(
     @CurrentUser("orgId") orgId: string,
     @Query() query: ApprovalQueryDto,
@@ -42,7 +42,7 @@ export class ApprovalCenterController {
   }
 
   @Post(":id/approve")
-  @Permissions("approval:approve")
+  @Permissions("PERM-AI-APPROVE")
   async approve(
     @Param("id") id: string,
     @CurrentUser("orgId") orgId: string,
@@ -59,7 +59,7 @@ export class ApprovalCenterController {
   }
 
   @Post(":id/reject")
-  @Permissions("approval:reject")
+  @Permissions("PERM-AI-APPROVE")
   async reject(
     @Param("id") id: string,
     @CurrentUser("orgId") orgId: string,
