@@ -6,7 +6,7 @@ import { UserRole } from '../usr/entities/user-role.entity';
 import { RolePermission } from '../usr/entities/role-permission.entity';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthService', () => {
@@ -65,6 +65,7 @@ describe('AuthService', () => {
           useValue: {
             findOne: jest.fn(),
             update: jest.fn(),
+            createQueryBuilder: jest.fn(),
           },
         },
         {
@@ -208,6 +209,38 @@ describe('AuthService', () => {
           newPassword: 'newpass123',
         }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('should reset password and set status to active', async () => {
+      userRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(mockUser),
+      });
+      jest.spyOn(bcrypt, 'hash').mockResolvedValue('newhash' as never);
+      userRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.forgotPassword({ usernameOrEmail: 'testuser' });
+
+      expect(userRepository.update).toHaveBeenCalledWith(
+        mockUser.id,
+        expect.objectContaining({
+          passwordHash: 'newhash',
+          status: UserStatus.ACTIVE,
+        }),
+      );
+    });
+
+    it('should throw NotFoundException for non-existent user', async () => {
+      userRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        service.forgotPassword({ usernameOrEmail: 'nonexistent' }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

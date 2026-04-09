@@ -43,6 +43,11 @@ describe('CmService', () => {
 
     contactRepository = {
       find: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+      update: jest.fn(),
+      softRemove: jest.fn(),
     };
 
     eventBus = {
@@ -195,6 +200,145 @@ describe('CmService', () => {
         order: { isPrimary: 'DESC', createdAt: 'ASC' },
       });
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('createContact', () => {
+    it('should create a contact for a customer', async () => {
+      customerRepository.findOne.mockResolvedValue(mockCustomer);
+      contactRepository.create.mockReturnValue({ id: 'contact-1', customerId: 'customer-1', name: '张三' });
+      contactRepository.save.mockResolvedValue({ id: 'contact-1', customerId: 'customer-1', name: '张三' });
+
+      const result = await service.createContact('customer-1', 'org-1', { name: '张三' }, 'user-1');
+
+      expect(contactRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          customerId: 'customer-1',
+          orgId: 'org-1',
+          name: '张三',
+          createdBy: 'user-1',
+        }),
+      );
+      expect(result).toBeDefined();
+    });
+
+    it('should clear existing primary when creating a primary contact', async () => {
+      customerRepository.findOne.mockResolvedValue(mockCustomer);
+      contactRepository.create.mockReturnValue({ id: 'contact-2', isPrimary: true });
+      contactRepository.save.mockResolvedValue({ id: 'contact-2', isPrimary: true });
+      contactRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.createContact('customer-1', 'org-1', { name: '李四', isPrimary: true }, 'user-1');
+
+      expect(contactRepository.update).toHaveBeenCalledWith(
+        { customerId: 'customer-1', orgId: 'org-1', isPrimary: true },
+        { isPrimary: false },
+      );
+    });
+
+    it('should throw NotFoundException if customer not found', async () => {
+      customerRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.createContact('nonexistent', 'org-1', { name: '张三' }, 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateContact', () => {
+    const mockContact = {
+      id: 'contact-1',
+      customerId: 'customer-1',
+      orgId: 'org-1',
+      name: '张三',
+      isPrimary: false,
+      version: 1,
+    };
+
+    it('should update contact when version matches', async () => {
+      contactRepository.findOne.mockResolvedValue(mockContact);
+      contactRepository.update.mockResolvedValue({ affected: 1 });
+
+      const result = await service.updateContact('contact-1', 'customer-1', 'org-1', { name: '李四' }, 1);
+
+      expect(contactRepository.update).toHaveBeenCalledWith(
+        'contact-1',
+        expect.objectContaining({ name: '李四' }),
+      );
+    });
+
+    it('should throw ConflictException when version mismatch', async () => {
+      contactRepository.findOne.mockResolvedValue({ ...mockContact, version: 2 });
+
+      await expect(
+        service.updateContact('contact-1', 'customer-1', 'org-1', { name: '李四' }, 1),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should clear existing primary when setting contact as primary', async () => {
+      contactRepository.findOne.mockResolvedValue(mockContact);
+      contactRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.updateContact('contact-1', 'customer-1', 'org-1', { isPrimary: true }, 1);
+
+      expect(contactRepository.update).toHaveBeenCalledWith(
+        { customerId: 'customer-1', orgId: 'org-1', isPrimary: true },
+        { isPrimary: false },
+      );
+    });
+  });
+
+  describe('deleteContact', () => {
+    it('should soft delete a contact', async () => {
+      const mockContact = { id: 'contact-1', customerId: 'customer-1', orgId: 'org-1' };
+      contactRepository.findOne.mockResolvedValue(mockContact);
+      contactRepository.softRemove.mockResolvedValue(mockContact);
+
+      await service.deleteContact('contact-1', 'customer-1', 'org-1');
+
+      expect(contactRepository.softRemove).toHaveBeenCalledWith(mockContact);
+    });
+
+    it('should throw NotFoundException if contact not found', async () => {
+      contactRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.deleteContact('nonexistent', 'customer-1', 'org-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('setPrimaryContact', () => {
+    const mockContact = {
+      id: 'contact-1',
+      customerId: 'customer-1',
+      orgId: 'org-1',
+      isPrimary: false,
+      version: 1,
+    };
+
+    it('should set contact as primary', async () => {
+      contactRepository.findOne.mockResolvedValue(mockContact);
+      contactRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.setPrimaryContact('contact-1', 'customer-1', 'org-1', 1);
+
+      expect(contactRepository.update).toHaveBeenCalledWith(
+        { customerId: 'customer-1', orgId: 'org-1', isPrimary: true },
+        { isPrimary: false },
+      );
+      expect(contactRepository.update).toHaveBeenCalledWith(
+        'contact-1',
+        expect.objectContaining({ isPrimary: true }),
+      );
+    });
+
+    it('should throw ConflictException when version mismatch', async () => {
+      contactRepository.findOne.mockResolvedValue({ ...mockContact, version: 2 });
+
+      await expect(
+        service.setPrimaryContact('contact-1', 'customer-1', 'org-1', 1),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

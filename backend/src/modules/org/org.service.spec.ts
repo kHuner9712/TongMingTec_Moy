@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
 import { OrgService } from './org.service';
-import { Organization, OrganizationStatus } from './entities/organization.entity';
+import { Organization, OrganizationStatus, OnboardStage } from './entities/organization.entity';
 import { Department } from './entities/department.entity';
+import { DataSource } from 'typeorm';
 
 describe('OrgService', () => {
   let service: OrgService;
@@ -18,6 +19,7 @@ describe('OrgService', () => {
     timezone: 'Asia/Shanghai',
     locale: 'zh-CN',
     version: 1,
+    onboardStage: OnboardStage.BOOTSTRAP_PENDING,
   };
 
   const mockDepartment = {
@@ -50,6 +52,16 @@ describe('OrgService', () => {
             create: jest.fn(),
             save: jest.fn(),
             update: jest.fn(),
+          },
+        },
+        {
+          provide: DataSource,
+          useValue: {
+            transaction: jest.fn((cb) => cb({
+              update: jest.fn().mockResolvedValue({ affected: 1 }),
+              create: jest.fn().mockReturnValue(mockDepartment),
+              save: jest.fn().mockResolvedValue(mockDepartment),
+            })),
           },
         },
       ],

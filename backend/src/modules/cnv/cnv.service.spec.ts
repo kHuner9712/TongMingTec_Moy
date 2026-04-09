@@ -7,6 +7,7 @@ import { ConversationMessage, MessageDirection, MessageType, SenderType } from '
 import { NotFoundException, ConflictException } from '@nestjs/common';
 import { EventBusService } from '../../common/events/event-bus.service';
 import { StateMachineError } from '../../common/statemachine/state-machine';
+import { TkService } from '../tk/tk.service';
 
 describe('CnvService', () => {
   let service: CnvService;
@@ -84,6 +85,12 @@ describe('CnvService', () => {
         {
           provide: EventBusService,
           useValue: { publish: jest.fn() },
+        },
+        {
+          provide: TkService,
+          useValue: {
+            createTicket: jest.fn().mockResolvedValue({ id: 'ticket-uuid-123' }),
+          },
         },
       ],
     }).compile();
@@ -360,6 +367,50 @@ describe('CnvService', () => {
       await expect(
         service.findConversationById('conv-uuid-123', 'different-org-id'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('createTicket', () => {
+    it('should create ticket from conversation', async () => {
+      const activeConv = {
+        ...mockConversation,
+        status: ConversationStatus.ACTIVE,
+        customerId: 'customer-uuid-123',
+        assigneeUserId: 'agent-uuid-123',
+      };
+      conversationRepository.findOne.mockResolvedValue(activeConv);
+
+      const tkService = (service as any).tkService;
+      const result = await service.createTicket(
+        'conv-uuid-123',
+        'org-uuid-123',
+        '客户反馈问题',
+        'normal' as any,
+        'user-uuid-123',
+        1,
+      );
+
+      expect(tkService.createTicket).toHaveBeenCalledWith(
+        'org-uuid-123',
+        expect.objectContaining({
+          title: '客户反馈问题',
+          conversationId: 'conv-uuid-123',
+          customerId: 'customer-uuid-123',
+        }),
+        'user-uuid-123',
+      );
+      expect(result.ticketId).toBe('ticket-uuid-123');
+    });
+
+    it('should throw ConflictException when version mismatch', async () => {
+      conversationRepository.findOne.mockResolvedValue({
+        ...mockConversation,
+        version: 2,
+      });
+
+      await expect(
+        service.createTicket('conv-uuid-123', 'org-uuid-123', '标题', 'normal' as any, 'user-uuid-123', 1),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });

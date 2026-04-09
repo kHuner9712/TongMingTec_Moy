@@ -305,4 +305,33 @@ export class LmService {
       order: { createdAt: 'DESC' },
     });
   }
+
+  async importLeads(
+    orgId: string,
+    leads: Partial<Lead>[],
+    userId: string,
+  ): Promise<{ jobId: string; total: number; succeeded: number; failed: number }> {
+    const jobId = `IMPORT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    let succeeded = 0;
+    let failed = 0;
+
+    for (const leadData of leads) {
+      try {
+        const lead = this.leadRepository.create({
+          ...leadData,
+          orgId,
+          ownerUserId: leadData.ownerUserId || userId,
+          status: LeadStatus.NEW,
+          createdBy: userId,
+        });
+
+        await this.leadRepository.save(lead);
+        succeeded++;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { jobId, total: leads.length, succeeded, failed };
+  }
 }

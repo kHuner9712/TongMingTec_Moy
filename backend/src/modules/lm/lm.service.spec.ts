@@ -333,4 +333,37 @@ describe("LmService", () => {
       expect(result).toHaveLength(1);
     });
   });
+
+  describe("importLeads", () => {
+    it("should import leads and return job result", async () => {
+      leadRepository.create.mockReturnValue({ id: "lead-import-1" });
+      leadRepository.save.mockResolvedValue({ id: "lead-import-1" });
+
+      const result = await service.importLeads(
+        "org-1",
+        [{ name: "测试线索1" }, { name: "测试线索2" }],
+        "user-1",
+      );
+
+      expect(result.total).toBe(2);
+      expect(result.succeeded).toBe(2);
+      expect(result.failed).toBe(0);
+      expect(result.jobId).toBeDefined();
+    });
+
+    it("should count failed leads on save error", async () => {
+      leadRepository.create.mockReturnValue({ id: "lead-import-1" });
+      leadRepository.save.mockRejectedValue(new Error("DB error"));
+
+      const result = await service.importLeads(
+        "org-1",
+        [{ name: "失败线索" }],
+        "user-1",
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.failed).toBe(1);
+      expect(result.succeeded).toBe(0);
+    });
+  });
 });

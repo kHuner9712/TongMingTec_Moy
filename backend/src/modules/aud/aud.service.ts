@@ -87,4 +87,65 @@ export class AudService {
 
     return this.auditLogRepository.save(log);
   }
+
+  async exportLogs(
+    orgId: string,
+    filters: {
+      userId?: string;
+      action?: string;
+      resourceType?: string;
+      startDate?: Date;
+      endDate?: Date;
+    },
+    format: 'csv' | 'json' = 'csv',
+  ): Promise<{ data: string; filename: string; contentType: string }> {
+    const qb = this.auditLogRepository
+      .createQueryBuilder('log')
+      .where('log.orgId = :orgId', { orgId });
+
+    if (filters.userId) {
+      qb.andWhere('log.userId = :userId', { userId: filters.userId });
+    }
+    if (filters.action) {
+      qb.andWhere('log.action = :action', { action: filters.action });
+    }
+    if (filters.resourceType) {
+      qb.andWhere('log.resourceType = :resourceType', { resourceType: filters.resourceType });
+    }
+    if (filters.startDate) {
+      qb.andWhere('log.createdAt >= :startDate', { startDate: filters.startDate });
+    }
+    if (filters.endDate) {
+      qb.andWhere('log.createdAt <= :endDate', { endDate: filters.endDate });
+    }
+
+    qb.orderBy('log.createdAt', 'DESC').limit(10000);
+
+    const items = await qb.getMany();
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `audit-logs-${timestamp}.${format}`;
+
+    if (format === 'json') {
+      return {
+        data: JSON.stringify(items, null, 2),
+        filename,
+        contentType: 'application/json',
+      };
+    }
+
+    const headers = ['id', 'orgId', 'userId', 'action', 'resourceType', 'resourceId', 'ipAddress', 'createdAt'];
+    const rows = items.map((item) =>
+      headers.map((h) => {
+        const val = (item as any)[h];
+        return typeof val === 'string' && val.includes(',') ? `"${val}"` : val ?? '';
+      }).join(','),
+    );
+
+    return {
+      data: [headers.join(','), ...rows].join('\n'),
+      filename,
+      contentType: 'text/csv',
+    };
+  }
 }

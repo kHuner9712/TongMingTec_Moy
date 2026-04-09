@@ -18,6 +18,8 @@ import {
 import { conversationStateMachine } from "../../common/statemachine/definitions/conversation.sm";
 import { EventBusService } from "../../common/events/event-bus.service";
 import { conversationMessageCreated } from "../../common/events/conversation-events";
+import { TkService } from "../tk/tk.service";
+import { TicketPriority } from "../tk/entities/ticket.entity";
 
 @Injectable()
 export class CnvService {
@@ -28,6 +30,7 @@ export class CnvService {
     private messageRepository: Repository<ConversationMessage>,
     private dataSource: DataSource,
     private readonly eventBus: EventBusService,
+    private readonly tkService: TkService,
   ) {}
 
   async findConversations(
@@ -350,5 +353,34 @@ export class CnvService {
     });
 
     return this.findConversationById(id, orgId);
+  }
+
+  async createTicket(
+    id: string,
+    orgId: string,
+    title: string,
+    priority: TicketPriority,
+    userId: string,
+    version: number,
+  ): Promise<{ ticketId: string }> {
+    const conv = await this.findConversationById(id, orgId);
+
+    if (conv.version !== version) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    const ticket = await this.tkService.createTicket(
+      orgId,
+      {
+        title,
+        priority,
+        conversationId: id,
+        customerId: conv.customerId,
+        assigneeUserId: conv.assigneeUserId,
+      },
+      userId,
+    );
+
+    return { ticketId: ticket.id };
   }
 }

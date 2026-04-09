@@ -85,6 +85,21 @@ class RatingDto {
   comment?: string;
 }
 
+class CreateTicketDto {
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  title: string;
+
+  @IsOptional()
+  @IsEnum(['low', 'normal', 'high', 'urgent'])
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+
+  @IsInt()
+  @Min(1)
+  version: number;
+}
+
 @Controller('conversations')
 export class CnvController {
   constructor(private readonly cnvService: CnvService) {}
@@ -234,5 +249,23 @@ export class CnvController {
     @Body() dto: RatingDto,
   ) {
     return this.cnvService.rate(id, orgId, dto.score, dto.comment || '');
+  }
+
+  @Post(':id/tickets')
+  @Permissions('PERM-CNV-CREATE_TICKET')
+  async createTicket(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateTicketDto,
+  ) {
+    return this.cnvService.createTicket(
+      id,
+      orgId,
+      dto.title,
+      (dto.priority as any) || 'normal',
+      userId,
+      dto.version,
+    );
   }
 }

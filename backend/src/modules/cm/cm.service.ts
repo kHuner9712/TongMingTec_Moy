@@ -140,4 +140,109 @@ export class CmService {
       order: { isPrimary: "DESC", createdAt: "ASC" },
     });
   }
+
+  async createContact(
+    customerId: string,
+    orgId: string,
+    data: Partial<CustomerContact>,
+    userId: string,
+  ): Promise<CustomerContact> {
+    await this.findCustomerById(customerId, orgId);
+
+    if (data.isPrimary) {
+      await this.clearPrimaryFlag(customerId, orgId);
+    }
+
+    const contact = this.contactRepository.create({
+      ...data,
+      customerId,
+      orgId,
+      createdBy: userId,
+      updatedBy: userId,
+    });
+
+    return this.contactRepository.save(contact);
+  }
+
+  async updateContact(
+    contactId: string,
+    customerId: string,
+    orgId: string,
+    data: Partial<CustomerContact>,
+    version: number,
+  ): Promise<CustomerContact> {
+    const contact = await this.findContactById(contactId, customerId, orgId);
+
+    if (contact.version !== version) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    if (data.isPrimary && !contact.isPrimary) {
+      await this.clearPrimaryFlag(customerId, orgId);
+    }
+
+    await this.contactRepository.update(contactId, {
+      ...data,
+      version: () => "version + 1",
+    } as QueryDeepPartialEntity<CustomerContact>);
+
+    return this.findContactById(contactId, customerId, orgId);
+  }
+
+  async deleteContact(
+    contactId: string,
+    customerId: string,
+    orgId: string,
+  ): Promise<void> {
+    const contact = await this.findContactById(contactId, customerId, orgId);
+    await this.contactRepository.softRemove(contact);
+  }
+
+  async setPrimaryContact(
+    contactId: string,
+    customerId: string,
+    orgId: string,
+    version: number,
+  ): Promise<CustomerContact> {
+    const contact = await this.findContactById(contactId, customerId, orgId);
+
+    if (contact.version !== version) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    await this.clearPrimaryFlag(customerId, orgId);
+
+    await this.contactRepository.update(contactId, {
+      isPrimary: true,
+      version: () => "version + 1",
+    } as QueryDeepPartialEntity<CustomerContact>);
+
+    return this.findContactById(contactId, customerId, orgId);
+  }
+
+  private async findContactById(
+    contactId: string,
+    customerId: string,
+    orgId: string,
+  ): Promise<CustomerContact> {
+    const contact = await this.contactRepository.findOne({
+      where: { id: contactId, customerId, orgId },
+    });
+
+    if (!contact) {
+      throw new NotFoundException("RESOURCE_NOT_FOUND");
+    }
+
+    return contact;
+  }
+
+  private async clearPrimaryFlag(
+    customerId: string,
+    orgId: string,
+  ): Promise<void> {
+    await this.contactRepository.update(
+      { customerId, orgId, isPrimary: true },
+      { isPrimary: false },
+    );
+  }
 }

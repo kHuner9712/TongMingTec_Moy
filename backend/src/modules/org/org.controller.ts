@@ -61,6 +61,31 @@ class UpdateDeptDto {
   version: number;
 }
 
+class BootstrapDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  defaultDepartmentName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  adminRoleName?: string;
+}
+
+class OrgConfigDto {
+  @IsString()
+  key: string;
+
+  @IsString()
+  value: string;
+}
+
+class BulkConfigsDto {
+  @IsOptional()
+  configs?: OrgConfigDto[];
+}
+
 @Controller('organizations')
 export class OrgController {
   constructor(private readonly orgService: OrgService) {}
@@ -82,6 +107,27 @@ export class OrgController {
     @Body() dto: UpdateOrgDto,
   ) {
     return this.orgService.update(id, orgId, dto, dto.version);
+  }
+
+  @Post(':id/bootstrap')
+  @Permissions('PERM-ORG-MANAGE')
+  async bootstrap(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: BootstrapDto,
+  ) {
+    return this.orgService.bootstrap(id, orgId, dto, userId);
+  }
+
+  @Post(':id/configs')
+  @Permissions('PERM-ORG-MANAGE')
+  async updateConfigs(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @Body() dto: BulkConfigsDto,
+  ) {
+    return this.orgService.updateConfigs(id, orgId, dto.configs || []);
   }
 }
 

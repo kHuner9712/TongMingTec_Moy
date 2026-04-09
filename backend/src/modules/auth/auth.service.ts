@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,7 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { User, UserStatus } from '../usr/entities/user.entity';
 import { UserRole } from '../usr/entities/user-role.entity';
 import { RolePermission } from '../usr/entities/role-permission.entity';
-import { LoginDto, RefreshTokenDto, ChangePasswordDto } from './dto/auth.dto';
+import { LoginDto, RefreshTokenDto, ChangePasswordDto, ForgotPasswordDto } from './dto/auth.dto';
 import {
   AuthSessionResponseDto,
   TokenPairDto,
@@ -109,6 +109,25 @@ export class AuthService {
     const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
     await this.userRepository.update(userId, {
       passwordHash: newPasswordHash,
+    });
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user.username = :value OR user.email = :value', { value: dto.usernameOrEmail })
+      .getOne();
+
+    if (!user) {
+      throw new NotFoundException('RESOURCE_NOT_FOUND');
+    }
+
+    const tempPassword = Math.random().toString(36).substring(2, 14);
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    await this.userRepository.update(user.id, {
+      passwordHash: hashedPassword,
+      status: UserStatus.ACTIVE,
     });
   }
 
