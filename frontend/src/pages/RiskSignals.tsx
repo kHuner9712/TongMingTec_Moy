@@ -170,11 +170,14 @@ export default function RiskSignals() {
       label: (
         <Space>
           <SyncOutlined /> 续费预警
+          <Tag color="blue" style={{ fontSize: 10, lineHeight: "16px" }}>
+            S2
+          </Tag>
         </Space>
       ),
       children: (
         <Empty
-          description="续费预警功能开发中"
+          description="续费预警属于 S2 阶段（CSM 域），当前阶段暂不开放"
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         />
       ),
@@ -184,11 +187,14 @@ export default function RiskSignals() {
       label: (
         <Space>
           <CustomerServiceOutlined /> 服务预警
+          <Tag color="blue" style={{ fontSize: 10, lineHeight: "16px" }}>
+            S2
+          </Tag>
         </Space>
       ),
       children: (
         <Empty
-          description="服务预警功能开发中"
+          description="服务预警属于 S2 阶段（CSM 域），当前阶段暂不开放"
           image={Empty.PRESENTED_IMAGE_SIMPLE}
         />
       ),

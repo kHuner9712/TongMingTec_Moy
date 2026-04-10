@@ -16,17 +16,37 @@ import {
   CloseOutlined,
   AuditOutlined,
   EyeOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import { useApprovalStore } from "../../stores/approvalStore";
 import { AiApprovalRequest } from "../../types";
 
 const { Title, Text } = Typography;
 
+const statusColorMap: Record<string, string> = {
+  pending: "processing",
+  approved: "green",
+  rejected: "red",
+  expired: "default",
+};
+
+const statusLabelMap: Record<string, string> = {
+  pending: "待审批",
+  approved: "已批准",
+  rejected: "已拒绝",
+  expired: "已过期",
+};
+
 export default function ApprovalWorkbench() {
   const {
     pendingApprovals,
+    approvedApprovals,
+    expiredApprovals,
     currentApproval,
     fetchPending,
+    fetchApproved,
+    fetchExpired,
     approve,
     reject,
     setCurrentApproval,
@@ -34,6 +54,8 @@ export default function ApprovalWorkbench() {
 
   useEffect(() => {
     fetchPending();
+    fetchApproved();
+    fetchExpired();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -48,7 +70,7 @@ export default function ApprovalWorkbench() {
     });
   };
 
-  const renderItem = (item: AiApprovalRequest) => (
+  const renderPendingItem = (item: AiApprovalRequest) => (
     <List.Item
       actions={[
         <Button
@@ -111,6 +133,58 @@ export default function ApprovalWorkbench() {
     </List.Item>
   );
 
+  const renderHistoryItem = (item: AiApprovalRequest) => (
+    <List.Item
+      actions={[
+        <Button
+          key="detail"
+          size="small"
+          icon={<EyeOutlined />}
+          onClick={() => setCurrentApproval(item)}
+        >
+          详情
+        </Button>,
+      ]}
+    >
+      <List.Item.Meta
+        title={
+          <Space>
+            <Text strong>{item.requestedAction}</Text>
+            <Tag color={statusColorMap[item.status] || "default"}>
+              {statusLabelMap[item.status] || item.status}
+            </Tag>
+            <Tag
+              color={
+                item.riskLevel === "high"
+                  ? "red"
+                  : item.riskLevel === "medium"
+                    ? "orange"
+                    : "blue"
+              }
+            >
+              {item.riskLevel} 风险
+            </Tag>
+          </Space>
+        }
+        description={
+          <Space direction="vertical" size={0}>
+            <Text type="secondary">资源类型: {item.resourceType}</Text>
+            {item.customerId && (
+              <Text type="secondary">
+                关联客户: {item.customerId.substring(0, 8)}...
+              </Text>
+            )}
+            {item.approvedAt && (
+              <Text type="secondary">
+                处理时间: {new Date(item.approvedAt).toLocaleString()}
+              </Text>
+            )}
+          </Space>
+        }
+      />
+    </List.Item>
+  );
+
   const tabItems = [
     {
       key: "pending",
@@ -123,28 +197,42 @@ export default function ApprovalWorkbench() {
         pendingApprovals.length === 0 ? (
           <Empty description="暂无待审批项" />
         ) : (
-          <List dataSource={pendingApprovals} renderItem={renderItem} />
+          <List dataSource={pendingApprovals} renderItem={renderPendingItem} />
         ),
     },
     {
       key: "approved",
-      label: "已审批",
-      children: (
-        <Empty
-          description="暂无已审批记录"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+      label: (
+        <Space>
+          <CheckCircleOutlined /> 已审批 ({approvedApprovals.length})
+        </Space>
       ),
+      children:
+        approvedApprovals.length === 0 ? (
+          <Empty
+            description="暂无已审批记录"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        ) : (
+          <List dataSource={approvedApprovals} renderItem={renderHistoryItem} />
+        ),
     },
     {
       key: "expired",
-      label: "已过期",
-      children: (
-        <Empty
-          description="暂无过期记录"
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+      label: (
+        <Space>
+          <ClockCircleOutlined /> 已过期 ({expiredApprovals.length})
+        </Space>
       ),
+      children:
+        expiredApprovals.length === 0 ? (
+          <Empty
+            description="暂无过期记录"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        ) : (
+          <List dataSource={expiredApprovals} renderItem={renderHistoryItem} />
+        ),
     },
   ];
 
@@ -164,21 +252,32 @@ export default function ApprovalWorkbench() {
         title="审批详情"
         onCancel={() => setCurrentApproval(null)}
         footer={[
-          <Button
-            key="reject"
-            danger
-            onClick={() => currentApproval && handleReject(currentApproval.id)}
-          >
-            拒绝
+          currentApproval?.status === "pending" && (
+            <Button
+              key="reject"
+              danger
+              onClick={() =>
+                currentApproval && handleReject(currentApproval.id)
+              }
+            >
+              拒绝
+            </Button>
+          ),
+          currentApproval?.status === "pending" && (
+            <Button
+              key="approve"
+              type="primary"
+              onClick={() =>
+                currentApproval && handleApprove(currentApproval.id)
+              }
+            >
+              批准
+            </Button>
+          ),
+          <Button key="close" onClick={() => setCurrentApproval(null)}>
+            关闭
           </Button>,
-          <Button
-            key="approve"
-            type="primary"
-            onClick={() => currentApproval && handleApprove(currentApproval.id)}
-          >
-            批准
-          </Button>,
-        ]}
+        ].filter(Boolean)}
       >
         {currentApproval && (
           <Descriptions column={1} size="small" bordered>
@@ -191,12 +290,23 @@ export default function ApprovalWorkbench() {
             <Descriptions.Item label="风险等级">
               {currentApproval.riskLevel}
             </Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Tag color={statusColorMap[currentApproval.status]}>
+                {statusLabelMap[currentApproval.status] ||
+                  currentApproval.status}
+              </Tag>
+            </Descriptions.Item>
             <Descriptions.Item label="说明">
               {currentApproval.explanation}
             </Descriptions.Item>
             {currentApproval.customerId && (
               <Descriptions.Item label="关联客户">
                 {currentApproval.customerId}
+              </Descriptions.Item>
+            )}
+            {currentApproval.approvedAt && (
+              <Descriptions.Item label="处理时间">
+                {new Date(currentApproval.approvedAt).toLocaleString()}
               </Descriptions.Item>
             )}
             <Descriptions.Item label="变更前">

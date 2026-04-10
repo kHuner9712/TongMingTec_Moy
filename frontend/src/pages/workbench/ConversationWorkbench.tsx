@@ -23,6 +23,7 @@ import { conversationApi } from "../../services/conversation";
 import { aiRuntimeApi } from "../../services/ai-runtime";
 import { Conversation } from "../../types";
 import UserSelect from "../../components/UserSelect";
+import { useAuthStore } from "../../stores/authStore";
 
 const { Title, Text } = Typography;
 
@@ -91,8 +92,12 @@ export default function ConversationWorkbench() {
   const handleAccept = async (record: Conversation) => {
     setActionLoading(record.id);
     try {
-      const currentUser = JSON.parse(localStorage.getItem("auth_user") || "{}");
-      await conversationApi.accept(record.id, currentUser.id, record.version);
+      const userId = useAuthStore.getState().user?.id;
+      if (!userId) {
+        message.error("未获取到当前用户信息，请重新登录");
+        return;
+      }
+      await conversationApi.accept(record.id, userId, record.version);
       message.success("已接入会话");
       fetchConversations();
     } catch (e: unknown) {
