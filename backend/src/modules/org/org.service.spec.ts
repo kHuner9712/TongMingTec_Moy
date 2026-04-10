@@ -4,7 +4,9 @@ import { NotFoundException, ForbiddenException, ConflictException, BadRequestExc
 import { OrgService } from './org.service';
 import { Organization, OrganizationStatus, OnboardStage } from './entities/organization.entity';
 import { Department } from './entities/department.entity';
+import { Permission } from '../usr/entities/permission.entity';
 import { DataSource } from 'typeorm';
+import { PermissionSeedRunner } from '../usr/seeds/permission-seed-runner';
 
 describe('OrgService', () => {
   let service: OrgService;
@@ -62,6 +64,20 @@ describe('OrgService', () => {
               create: jest.fn().mockReturnValue(mockDepartment),
               save: jest.fn().mockResolvedValue(mockDepartment),
             })),
+          },
+        },
+        {
+          provide: getRepositoryToken(Permission),
+          useValue: {
+            findOne: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+          },
+        },
+        {
+          provide: PermissionSeedRunner,
+          useValue: {
+            seedForOrg: jest.fn().mockResolvedValue(48),
           },
         },
       ],

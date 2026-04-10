@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { Organization, OnboardStage } from './entities/organization.entity';
 import { Department } from './entities/department.entity';
+import { PermissionSeedRunner } from '../usr/seeds/permission-seed-runner';
 
 @Injectable()
 export class OrgService {
@@ -12,6 +13,7 @@ export class OrgService {
     @InjectRepository(Department)
     private deptRepository: Repository<Department>,
     private dataSource: DataSource,
+    private readonly permissionSeedRunner: PermissionSeedRunner,
   ) {}
 
   async findById(id: string, orgId: string): Promise<Organization> {
@@ -142,6 +144,8 @@ export class OrgService {
         // for now, just mark bootstrapped
       }
     });
+
+    await this.permissionSeedRunner.seedForOrg(orgId);
 
     return this.findById(id, orgId);
   }

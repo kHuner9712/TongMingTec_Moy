@@ -14,14 +14,14 @@ export class PermissionSeedRunner implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    await this.seedPermissions();
+    await this.seedGlobalPermissions();
   }
 
-  private async seedPermissions() {
+  private async seedGlobalPermissions() {
     let created = 0;
     for (const seed of permissionSeeds) {
       const existing = await this.permRepo.findOne({
-        where: { permId: seed.permId },
+        where: { permId: seed.permId, orgId: 'system' },
       });
       if (!existing) {
         const perm = this.permRepo.create({
@@ -30,11 +30,32 @@ export class PermissionSeedRunner implements OnModuleInit {
         });
         await this.permRepo.save(perm);
         created++;
-        this.logger.log(`种子数据：Permission ${seed.permId} 已创建`);
+        this.logger.log(`种子数据：全局权限 ${seed.permId} 已创建`);
       }
     }
     if (created > 0) {
-      this.logger.log(`权限种子数据初始化完成，新增 ${created} 条`);
+      this.logger.log(`全局权限种子数据初始化完成，新增 ${created} 条`);
     }
+  }
+
+  async seedForOrg(orgId: string): Promise<number> {
+    let created = 0;
+    for (const seed of permissionSeeds) {
+      const existing = await this.permRepo.findOne({
+        where: { permId: seed.permId, orgId },
+      });
+      if (!existing) {
+        const perm = this.permRepo.create({
+          ...seed,
+          orgId,
+        });
+        await this.permRepo.save(perm);
+        created++;
+      }
+    }
+    if (created > 0) {
+      this.logger.log(`租户 ${orgId} 权限初始化完成，新增 ${created} 条`);
+    }
+    return created;
   }
 }
