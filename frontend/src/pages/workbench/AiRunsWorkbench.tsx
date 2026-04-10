@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   Tag,
@@ -34,6 +35,7 @@ const statusColorMap: Record<string, string> = {
 };
 
 export default function AiRunsWorkbench() {
+  const navigate = useNavigate();
   const [runs, setRuns] = useState<AiAgentRun[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
@@ -133,9 +135,7 @@ export default function AiRunsWorkbench() {
               type="link"
               size="small"
               icon={<AuditOutlined />}
-              onClick={() => {
-                /* TODO: navigate to approval */
-              }}
+              onClick={() => navigate("/workbench/approvals")}
             >
               审批
             </Button>
