@@ -1,6 +1,24 @@
-import { IsOptional } from "class-validator";
+import { IsOptional, IsString, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
-export class AssessRiskDto {
+export class RiskQueryDto {
   @IsOptional()
-  factors?: Record<string, unknown>;
+  @IsString()
+  riskLevel?: string;
+
+  @IsOptional()
+  @IsString()
+  riskType?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageSize?: number = 50;
 }

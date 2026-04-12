@@ -6,6 +6,7 @@ import { TimelineService } from "../cor/services/timeline.service";
 import { SnapshotService } from "../cor/services/snapshot.service";
 import { NextActionService } from "../cmem/services/next-action.service";
 import { RiskService } from "../cmem/services/risk.service";
+import { CustomerRisk } from "../cmem/entities/customer-risk.entity";
 import { ExecutionEngineService } from "../art/services/execution-engine.service";
 import { ApprovalCenterService } from "../approval-center/services/approval-center.service";
 import { TakeoverCenterService } from "../takeover-center/services/takeover-center.service";
@@ -131,12 +132,16 @@ export class AiRuntimeService {
   }
 
   async getCockpitData(orgId: string) {
-    const [customers, recentRuns, pendingApprovals, risks] = await Promise.all([
+    const [customers, recentRuns, pendingApprovals, riskResponse] = await Promise.all([
       this.customerRepo.find({ where: { orgId } }),
       this.executionEngine.listRuns(orgId, {}),
       this.approvalCenter.listPending(orgId),
-      this.riskService.getRisksByOrg(orgId).catch((): any[] => []),
+      this.riskService.getRisksByOrg(orgId).catch(() => ({
+        items: [] as CustomerRisk[],
+        meta: { page: 1, pageSize: 0, total: 0 },
+      })),
     ]);
+    const risks = riskResponse.items;
 
     const totalCustomers = customers.length;
     const activeCustomers = customers.filter(

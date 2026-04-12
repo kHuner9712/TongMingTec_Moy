@@ -142,12 +142,23 @@ describe('IntentService', () => {
 describe('RiskService', () => {
   let service: RiskService;
   let riskRepo: any;
+  let riskQb: any;
 
   beforeEach(async () => {
+    riskQb = {
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getManyAndCount: jest.fn(),
+    };
+
     riskRepo = {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(riskQb),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -202,6 +213,45 @@ describe('RiskService', () => {
       const result = await service.getLatestRiskLevel('cust-1', 'org-1');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('getRisksByOrg', () => {
+    it('should apply filters and return paged results', async () => {
+      riskQb.getManyAndCount.mockResolvedValue([
+        [{ id: 'risk-1', riskLevel: RiskLevel.HIGH }],
+        1,
+      ]);
+
+      const result = await service.getRisksByOrg('org-1', {
+        riskLevel: RiskLevel.HIGH,
+        riskType: 'overdue',
+        page: 2,
+        pageSize: 10,
+      });
+
+      expect(riskRepo.createQueryBuilder).toHaveBeenCalledWith('r');
+      expect(riskQb.andWhere).toHaveBeenCalledWith('r.risk_level = :riskLevel', {
+        riskLevel: RiskLevel.HIGH,
+      });
+      expect(riskQb.andWhere).toHaveBeenCalledWith(
+        `r.risk_factors ->> 'riskType' = :riskType`,
+        { riskType: 'overdue' },
+      );
+      expect(riskQb.skip).toHaveBeenCalledWith(10);
+      expect(riskQb.take).toHaveBeenCalledWith(10);
+      expect(result.meta).toEqual({ page: 2, pageSize: 10, total: 1 });
+      expect(result.items).toHaveLength(1);
+    });
+
+    it('should use default paging when query is empty', async () => {
+      riskQb.getManyAndCount.mockResolvedValue([[], 0]);
+
+      const result = await service.getRisksByOrg('org-1');
+
+      expect(riskQb.skip).toHaveBeenCalledWith(0);
+      expect(riskQb.take).toHaveBeenCalledWith(50);
+      expect(result.meta).toEqual({ page: 1, pageSize: 50, total: 0 });
     });
   });
 });

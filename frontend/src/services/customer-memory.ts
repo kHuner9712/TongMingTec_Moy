@@ -6,6 +6,15 @@ import {
   CustomerNextAction,
 } from "../types";
 
+type RiskListResponse = {
+  items: CustomerRisk[];
+  meta: {
+    page: number;
+    pageSize: number;
+    total: number;
+  };
+};
+
 export const customerMemoryApi = {
   getContext: async (customerId: string): Promise<CustomerContext[]> => {
     return api.get(`/cmem/customers/${customerId}/context`);
@@ -21,9 +30,10 @@ export const customerMemoryApi = {
 
   listRisks: async (params?: {
     riskLevel?: string;
+    riskType?: string;
     page?: number;
     pageSize?: number;
-  }): Promise<{ items?: CustomerRisk[]; [key: string]: unknown }> => {
+  }): Promise<RiskListResponse | CustomerRisk[]> => {
     return api.get("/cmem/risks", { params });
   },
 

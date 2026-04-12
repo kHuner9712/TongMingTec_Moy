@@ -99,7 +99,10 @@ describe('AiRuntimeService', () => {
       ]);
       executionEngine.listRuns.mockResolvedValue([]);
       approvalCenter.listPending.mockResolvedValue([]);
-      riskService.getRisksByOrg.mockResolvedValue([]);
+      riskService.getRisksByOrg.mockResolvedValue({
+        items: [],
+        meta: { page: 1, pageSize: 50, total: 0 },
+      });
 
       const result = await service.getCockpitData('org-1');
 
@@ -115,10 +118,13 @@ describe('AiRuntimeService', () => {
       customerRepo.find.mockResolvedValue([{ id: 'c1', status: 'active' }]);
       executionEngine.listRuns.mockResolvedValue([]);
       approvalCenter.listPending.mockResolvedValue([]);
-      riskService.getRisksByOrg.mockResolvedValue([
-        { id: 'r1', riskLevel: 'high', riskFactors: { hint: '客户流失风险' }, customerId: 'cust-1' },
-        { id: 'r2', riskLevel: 'critical', riskFactors: { hint: '欠费风险' }, customerId: 'cust-2' },
-      ]);
+      riskService.getRisksByOrg.mockResolvedValue({
+        items: [
+        { id: 'r1', riskLevel: 'high', riskFactors: { hint: '瀹㈡埛娴佸け椋庨櫓' }, customerId: 'cust-1' },
+        { id: 'r2', riskLevel: 'critical', riskFactors: { hint: '娆犺垂椋庨櫓' }, customerId: 'cust-2' },
+        ],
+        meta: { page: 1, pageSize: 50, total: 2 },
+      });
 
       const result = await service.getCockpitData('org-1');
 
@@ -132,9 +138,12 @@ describe('AiRuntimeService', () => {
       customerRepo.find.mockResolvedValue([]);
       executionEngine.listRuns.mockResolvedValue([]);
       approvalCenter.listPending.mockResolvedValue([
-        { id: 'a1', requestedAction: 'update_customer', explanation: 'AI建议更新客户信息' },
+        { id: 'a1', requestedAction: 'update_customer', explanation: 'AI寤鸿鏇存柊瀹㈡埛淇℃伅' },
       ]);
-      riskService.getRisksByOrg.mockResolvedValue([]);
+      riskService.getRisksByOrg.mockResolvedValue({
+        items: [],
+        meta: { page: 1, pageSize: 50, total: 0 },
+      });
 
       const result = await service.getCockpitData('org-1');
 
@@ -256,9 +265,9 @@ describe('AiRuntimeService', () => {
     it('should delegate to approval center with reason', async () => {
       approvalCenter.reject.mockResolvedValue({ id: 'a1', status: 'rejected' });
 
-      const result = await service.rejectRequest('a1', 'org-1', 'user-1', '不合规', 1);
+      const result = await service.rejectRequest('a1', 'org-1', 'user-1', 'not-allowed', 1);
 
-      expect(approvalCenter.reject).toHaveBeenCalledWith('a1', 'org-1', 'user-1', '不合规', 1);
+      expect(approvalCenter.reject).toHaveBeenCalledWith('a1', 'org-1', 'user-1', 'not-allowed', 1);
     });
 
     it('should delegate to approval center without reason', async () => {
@@ -274,9 +283,9 @@ describe('AiRuntimeService', () => {
     it('should delegate to takeover center', async () => {
       takeoverCenter.takeover.mockResolvedValue({ id: 't1' });
 
-      const result = await service.executeTakeover('run-1', 'org-1', 'user-1', '需要人工介入');
+      const result = await service.executeTakeover('run-1', 'org-1', 'user-1', 'manual-takeover');
 
-      expect(takeoverCenter.takeover).toHaveBeenCalledWith('run-1', 'org-1', 'user-1', '需要人工介入');
+      expect(takeoverCenter.takeover).toHaveBeenCalledWith('run-1', 'org-1', 'user-1', 'manual-takeover');
     });
   });
 

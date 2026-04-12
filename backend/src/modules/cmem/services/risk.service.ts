@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomerRisk, RiskLevel } from '../entities/customer-risk.entity';
+import { RiskQueryDto } from '../dto/risk.dto';
+
+type RiskListResponse = {
+  items: CustomerRisk[];
+  meta: { page: number; pageSize: number; total: number };
+};
 
 @Injectable()
 export class RiskService {
@@ -55,12 +61,36 @@ export class RiskService {
     return risks.length > 0 ? risks[0] : null;
   }
 
-  async getRisksByOrg(orgId: string): Promise<CustomerRisk[]> {
-    return this.riskRepo.find({
-      where: { orgId },
-      order: { assessedAt: 'DESC' },
-      take: 50,
-    });
+  async getRisksByOrg(
+    orgId: string,
+    query?: RiskQueryDto,
+  ): Promise<RiskListResponse> {
+    const qb = this.riskRepo.createQueryBuilder('r')
+      .where('r.org_id = :orgId', { orgId })
+      .orderBy('r.assessed_at', 'DESC');
+
+    if (query?.riskLevel) {
+      qb.andWhere('r.risk_level = :riskLevel', { riskLevel: query.riskLevel });
+    }
+    if (query?.riskType) {
+      qb.andWhere(`r.risk_factors ->> 'riskType' = :riskType`, {
+        riskType: query.riskType,
+      });
+    }
+
+    const page = query?.page || 1;
+    const pageSize = query?.pageSize || 50;
+    const skip = (page - 1) * pageSize;
+
+    const [items, total] = await qb
+      .skip(skip)
+      .take(pageSize)
+      .getManyAndCount();
+
+    return {
+      items,
+      meta: { page, pageSize, total },
+    };
   }
 
   async getLatestRiskLevel(customerId: string, orgId: string): Promise<string | null> {

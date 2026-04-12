@@ -12,6 +12,7 @@ import { NextActionService } from './services/next-action.service';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { NextActionQueryDto } from './dto/next-action.dto';
+import { RiskQueryDto } from './dto/risk.dto';
 
 @Controller('cmem')
 export class CmemController {
@@ -21,6 +22,15 @@ export class CmemController {
     private readonly riskService: RiskService,
     private readonly nextActionService: NextActionService,
   ) {}
+
+  @Get('risks')
+  @Permissions('PERM-CM-VIEW')
+  async listRisks(
+    @CurrentUser('orgId') orgId: string,
+    @Query() query: RiskQueryDto,
+  ) {
+    return this.riskService.getRisksByOrg(orgId, query);
+  }
 
   @Get('customers/:id/context')
   @Permissions('PERM-CM-VIEW')
