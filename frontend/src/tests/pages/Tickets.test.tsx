@@ -36,6 +36,10 @@ vi.mock('../../components/CustomerSelect', () => ({
   ),
 }));
 
+vi.mock('../../hooks/usePermission', () => ({
+  usePermission: () => ({ can: () => true, canAny: () => true, canAll: () => true }),
+}));
+
 const createWrapper = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return ({ children }: { children: React.ReactNode }) => (

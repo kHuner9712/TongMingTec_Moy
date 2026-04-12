@@ -24,10 +24,12 @@ import { aiRuntimeApi } from "../../services/ai-runtime";
 import { Conversation } from "../../types";
 import UserSelect from "../../components/UserSelect";
 import { useAuthStore } from "../../stores/authStore";
+import { usePermission } from "../../hooks/usePermission";
 
 const { Title, Text } = Typography;
 
 export default function ConversationWorkbench() {
+  const { can } = usePermission();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
@@ -285,7 +287,7 @@ export default function ConversationWorkbench() {
         const isLoading = actionLoading === record.id;
         return (
           <Space>
-            {record.status === "queued" && (
+            {record.status === "queued" && can("PERM-CNV-ACCEPT") && (
               <Popconfirm
                 title="确认接入此会话？"
                 onConfirm={() => handleAccept(record)}
@@ -304,25 +306,29 @@ export default function ConversationWorkbench() {
             )}
             {record.status === "active" && (
               <>
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<SwapOutlined />}
-                  onClick={() => handleTransferClick(record)}
-                  loading={isLoading}
-                >
-                  转接
-                </Button>
-                <Button
-                  type="link"
-                  size="small"
-                  danger
-                  icon={<StopOutlined />}
-                  onClick={() => handleCloseClick(record)}
-                  loading={isLoading}
-                >
-                  关闭
-                </Button>
+                {can("PERM-CNV-TRANSFER") && (
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<SwapOutlined />}
+                    onClick={() => handleTransferClick(record)}
+                    loading={isLoading}
+                  >
+                    转接
+                  </Button>
+                )}
+                {can("PERM-CNV-CLOSE") && (
+                  <Button
+                    type="link"
+                    size="small"
+                    danger
+                    icon={<StopOutlined />}
+                    onClick={() => handleCloseClick(record)}
+                    loading={isLoading}
+                  >
+                    关闭
+                  </Button>
+                )}
               </>
             )}
             {record.status === "closed" && (

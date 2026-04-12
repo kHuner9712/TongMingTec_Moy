@@ -41,6 +41,7 @@ import CustomerSelect from "../components/CustomerSelect";
 import dayjs from "dayjs";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { useAuthStore } from "../stores/authStore";
+import { usePermission } from "../hooks/usePermission";
 
 const STAGE_CONFIG: Record<OpportunityStage, { text: string; color: string }> =
   {
@@ -125,6 +126,7 @@ function StageStats({ summary }: { summary?: OpportunitySummary }) {
 export default function Opportunities() {
   const queryClient = useQueryClient();
   const tokens = useAuthStore((state) => state.tokens);
+  const { can } = usePermission();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [stageFilter, setStageFilter] = useState<
@@ -382,6 +384,7 @@ export default function Opportunities() {
               size="small"
               icon={<RightOutlined />}
               onClick={() => openStageModal(record)}
+              disabled={!can("PERM-OM-STAGE")}
             >
               推进
             </Button>
@@ -392,6 +395,7 @@ export default function Opportunities() {
               size="small"
               icon={<TrophyOutlined />}
               onClick={() => openResultModal(record)}
+              disabled={!can("PERM-OM-RESULT")}
             >
               结果
             </Button>
@@ -461,6 +465,7 @@ export default function Opportunities() {
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => setIsCreateModalOpen(true)}
+          disabled={!can("PERM-OM-CREATE")}
         >
           新建商机
         </Button>

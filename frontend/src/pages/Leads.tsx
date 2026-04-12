@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { leadApi, FollowUpDto } from "../services/lead";
+import { usePermission } from "../hooks/usePermission";
 import { Lead, LeadStatus, CreateLeadDto, LeadFollowUp } from "../types";
 import UserSelect from "../components/UserSelect";
 import dayjs from "dayjs";
@@ -45,6 +46,7 @@ const FOLLOW_TYPE_CONFIG: Record<string, string> = {
 
 export default function Leads() {
   const queryClient = useQueryClient();
+  const { can } = usePermission();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<LeadStatus | undefined>();
@@ -236,6 +238,7 @@ export default function Leads() {
             size="small"
             icon={<UserSwitchOutlined />}
             onClick={() => openAssignModal(record)}
+            disabled={!can("PERM-LM-ASSIGN")}
           >
             分配
           </Button>
@@ -243,6 +246,7 @@ export default function Leads() {
             type="link"
             size="small"
             onClick={() => openFollowUpModal(record)}
+            disabled={!can("PERM-LM-FOLLOW_UP")}
           >
             跟进
           </Button>
@@ -252,6 +256,7 @@ export default function Leads() {
               size="small"
               icon={<SyncOutlined />}
               onClick={() => openConvertModal(record)}
+              disabled={!can("PERM-LM-CONVERT")}
             >
               转化
             </Button>
@@ -289,6 +294,7 @@ export default function Leads() {
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => setIsCreateModalOpen(true)}
+          disabled={!can("PERM-LM-CREATE")}
         >
           新建线索
         </Button>

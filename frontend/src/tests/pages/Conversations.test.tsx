@@ -30,6 +30,9 @@ vi.mock('../../hooks/useWebSocket', () => ({
 vi.mock('../../stores/authStore', () => ({
   useAuthStore: () => ({ tokens: { accessToken: 'test-token' } }),
 }));
+vi.mock('../../hooks/usePermission', () => ({
+  usePermission: () => ({ can: () => true, canAny: () => true, canAll: () => true }),
+}));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

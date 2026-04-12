@@ -67,6 +67,14 @@ vi.mock("../../stores/authStore", () => ({
   }),
 }));
 
+vi.mock("../../hooks/usePermission", () => ({
+  usePermission: () => ({
+    can: () => true,
+    canAny: () => true,
+    canAll: () => true,
+  }),
+}));
+
 let queryClient: QueryClient;
 
 const createWrapper = () => {

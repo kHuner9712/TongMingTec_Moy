@@ -24,6 +24,7 @@ import {
 } from "@ant-design/icons";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { ticketApi } from "../services/ticket";
+import { usePermission } from "../hooks/usePermission";
 import {
   Ticket,
   TicketStatus,
@@ -53,6 +54,7 @@ const PRIORITY_CONFIG: Record<TicketPriority, { color: string; text: string }> =
 
 export default function Tickets() {
   const queryClient = useQueryClient();
+  const { can } = usePermission();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | undefined>();
@@ -295,6 +297,7 @@ export default function Tickets() {
               size="small"
               icon={<UserSwitchOutlined />}
               onClick={() => openAssignModal(record)}
+              disabled={!can("PERM-TK-ASSIGN")}
             >
               分配
             </Button>
@@ -305,6 +308,7 @@ export default function Tickets() {
               size="small"
               icon={<PlayCircleOutlined />}
               onClick={() => handleStart(record)}
+              disabled={!can("PERM-TK-START")}
             >
               开始
             </Button>
@@ -315,6 +319,7 @@ export default function Tickets() {
               size="small"
               icon={<CheckCircleOutlined />}
               onClick={() => openResolveModal(record)}
+              disabled={!can("PERM-TK-RESOLVE")}
             >
               解决
             </Button>
@@ -325,6 +330,7 @@ export default function Tickets() {
               size="small"
               icon={<CloseCircleOutlined />}
               onClick={() => openCloseModal(record)}
+              disabled={!can("PERM-TK-CLOSE")}
             >
               关闭
             </Button>
@@ -375,6 +381,7 @@ export default function Tickets() {
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => setIsCreateModalOpen(true)}
+          disabled={!can("PERM-TK-CREATE")}
         >
           新建工单
         </Button>

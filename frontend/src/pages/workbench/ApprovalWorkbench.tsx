@@ -20,6 +20,7 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import { useApprovalStore } from "../../stores/approvalStore";
+import { usePermission } from "../../hooks/usePermission";
 import { AiApprovalRequest } from "../../types";
 
 const { Title, Text } = Typography;
@@ -39,6 +40,7 @@ const statusLabelMap: Record<string, string> = {
 };
 
 export default function ApprovalWorkbench() {
+  const { can } = usePermission();
   const {
     pendingApprovals,
     approvedApprovals,
@@ -73,24 +75,28 @@ export default function ApprovalWorkbench() {
   const renderPendingItem = (item: AiApprovalRequest) => (
     <List.Item
       actions={[
-        <Button
-          key="approve"
-          type="primary"
-          size="small"
-          icon={<CheckOutlined />}
-          onClick={() => handleApprove(item.id)}
-        >
-          批准
-        </Button>,
-        <Button
-          key="reject"
-          danger
-          size="small"
-          icon={<CloseOutlined />}
-          onClick={() => handleReject(item.id)}
-        >
-          拒绝
-        </Button>,
+        can("PERM-AI-APPROVE") && (
+          <Button
+            key="approve"
+            type="primary"
+            size="small"
+            icon={<CheckOutlined />}
+            onClick={() => handleApprove(item.id)}
+          >
+            批准
+          </Button>
+        ),
+        can("PERM-AI-APPROVE") && (
+          <Button
+            key="reject"
+            danger
+            size="small"
+            icon={<CloseOutlined />}
+            onClick={() => handleReject(item.id)}
+          >
+            拒绝
+          </Button>
+        ),
         <Button
           key="detail"
           size="small"
@@ -99,7 +105,7 @@ export default function ApprovalWorkbench() {
         >
           详情
         </Button>,
-      ]}
+      ].filter(Boolean)}
     >
       <List.Item.Meta
         title={
@@ -252,7 +258,7 @@ export default function ApprovalWorkbench() {
         title="审批详情"
         onCancel={() => setCurrentApproval(null)}
         footer={[
-          currentApproval?.status === "pending" && (
+          can("PERM-AI-APPROVE") && currentApproval?.status === "pending" && (
             <Button
               key="reject"
               danger
@@ -263,7 +269,7 @@ export default function ApprovalWorkbench() {
               拒绝
             </Button>
           ),
-          currentApproval?.status === "pending" && (
+          can("PERM-AI-APPROVE") && currentApproval?.status === "pending" && (
             <Button
               key="approve"
               type="primary"

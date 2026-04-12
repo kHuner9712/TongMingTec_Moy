@@ -19,6 +19,7 @@ import {
   EyeOutlined,
 } from "@ant-design/icons";
 import { aiRuntimeApi } from "../../services/ai-runtime";
+import { usePermission } from "../../hooks/usePermission";
 import { AiAgentRun } from "../../types";
 
 const { Title, Text } = Typography;
@@ -36,6 +37,7 @@ const statusColorMap: Record<string, string> = {
 
 export default function AiRunsWorkbench() {
   const navigate = useNavigate();
+  const { can } = usePermission();
   const [runs, setRuns] = useState<AiAgentRun[]>([]);
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
@@ -140,7 +142,7 @@ export default function AiRunsWorkbench() {
               审批
             </Button>
           )}
-          {record.status === "succeeded" && (
+          {record.status === "succeeded" && can("PERM-AI-ROLLBACK") && (
             <Button
               type="link"
               size="small"
