@@ -120,8 +120,8 @@ describe('AiRuntimeService', () => {
       approvalCenter.listPending.mockResolvedValue([]);
       riskService.getRisksByOrg.mockResolvedValue({
         items: [
-        { id: 'r1', riskLevel: 'high', riskFactors: { hint: '瀹㈡埛娴佸け椋庨櫓' }, customerId: 'cust-1' },
-        { id: 'r2', riskLevel: 'critical', riskFactors: { hint: '娆犺垂椋庨櫓' }, customerId: 'cust-2' },
+        { id: 'r1', riskLevel: 'high', riskFactors: { hint: 'churn-risk' }, customerId: 'cust-1' },
+        { id: 'r2', riskLevel: 'critical', riskFactors: { hint: 'overdue-risk' }, customerId: 'cust-2' },
         ],
         meta: { page: 1, pageSize: 50, total: 2 },
       });
@@ -138,7 +138,7 @@ describe('AiRuntimeService', () => {
       customerRepo.find.mockResolvedValue([]);
       executionEngine.listRuns.mockResolvedValue([]);
       approvalCenter.listPending.mockResolvedValue([
-        { id: 'a1', requestedAction: 'update_customer', explanation: 'AI寤鸿鏇存柊瀹㈡埛淇℃伅' },
+        { id: 'a1', requestedAction: 'update_customer', explanation: 'ai-suggestion' },
       ]);
       riskService.getRisksByOrg.mockResolvedValue({
         items: [],
