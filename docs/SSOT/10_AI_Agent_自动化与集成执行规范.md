@@ -66,7 +66,7 @@
 | AGENT-AI-005 | Opportunity Agent  | 商机风险与赢单建议              | S2            | S4          | suggest  | specified   |
 | AGENT-AI-006 | Ticket Agent       | 工单摘要、分流建议、解决建议    | S2            | S3          | assist   | specified   |
 | AGENT-AI-007 | Knowledge Agent    | 知识检索与答案合成              | S2            | S2          | assist   | specified   |
-| AGENT-AI-008 | Quality Agent      | 会话/工单质检、敏感词、情绪分析 | S2            | S3          | auto     | specified   |
+| AGENT-AI-008 | Quality Agent      | 会话/工单质检、敏感词、情绪分析，S3 升级为 auto | S2            | S3          | assist   | specified   |
 | AGENT-AI-009 | Insight Agent      | 数据洞察、异常解释、趋势归因    | S3            | S4          | assist   | specified   |
 | AGENT-AI-010 | Orchestrate Agent  | 自动化流程编排与跨工具协调      | S3            | S4          | approval | specified   |
 | AGENT-AI-011 | Dashboard Agent    | 驾驶舱摘要与管理层日报          | S3            | S4          | suggest  | specified   |
@@ -88,6 +88,8 @@
 - `takeover_strategy`
 
 ### 3.3 Agent 可操作模块
+
+> 以下所列模式为各模块在全阶段（S1~S4）的能力范围。实际在每个阶段允许使用的执行模式，以第 13 节"AI 执行治理与阶段关系"的阶段治理总表为准。
 
 **报价（QT）**：
 - suggest：根据商机信息建议报价金额和明细
@@ -121,7 +123,7 @@
 
 - `Conversation Agent`、`Sales Follow Agent`：`suggest`
 - `Ticket Agent`、`Knowledge Agent`：`assist`
-- `Quality Agent`：`auto`
+- `Quality Agent`：`assist`（S3 升级为 `auto`）
 - `Orchestrate Agent`：`approval`
 
 阶段约束：
@@ -130,6 +132,8 @@
 - S3 阶段：允许 suggest + assist + auto + approval 模式
 - S4 阶段：允许全部模式
 - 详细治理要求见第 13 节
+
+> **S2 阶段 auto 模式禁用说明**：S2 严禁 auto 模式。任何涉及资金流转（如付款确认后激活订单）或服务开通（如订单激活后开通订阅）的动作，在 S2 必须走 approval 模式，经人工审批后才可执行。auto 模式从 S3 才开放，且仅限低风险、可补偿、可审计、可回滚的动作。
 
 ## 5. Prompt / Template 规范
 
@@ -213,9 +217,11 @@
 **与成交链路的衔接**：
 - opportunity.won → 自动创建报价（suggest 模式）
 - contract.signed → 自动创建订单（assist 模式）
-- payment.succeeded → 自动激活订单（auto 模式）
-- order.activated → 自动开通订阅（auto 模式）
+- payment.succeeded → 自动激活订单（approval 模式）
+- order.activated → 自动开通订阅（approval 模式）
 - subscription.expiring → 自动发送续费提醒（notify 模式）
+
+> **S2/S3 阶段差异说明**：S2 阶段严禁 auto 模式，上述成交链路衔接动作中涉及 auto 的均改为 approval 模式（需人工审批后才执行）。这些动作进入 auto 模式须满足以下条件且仅在 S3 开放：① 审计日志完整可查；② 补偿/冲正机制可用；③ 回滚能力达到 production_ready；④ 异常恢复可自动触发；⑤ 动作风险评级为低风险。
 
 **限制**：
 - S2 仅支持单步骤和双步骤流程，不支持复杂分支/循环
@@ -359,11 +365,13 @@
 - 审批中心必须升级至 workflow_ready
 - 接管/回滚必须升级至 workflow_ready
 - AI Agent Registry 必须支持 activate/pause/archive
+- 严禁 auto 模式，任何涉及资金或服务开通的动作必须走 approval
 
 **S3**：
 - 新增 auto 模式，但仅限低风险动作（如质检、标签建议、提醒创建）
 - P0/P1 风险动作（发票开具、支付对账、权限回滚、停服）必须经过 approval 模式
 - AI 质检可用（Quality Agent auto 模式）
+- auto 模式开放条件：审计完整、补偿机制可用、回滚能力 production_ready、异常恢复可自动触发，且仅限低风险动作
 - 回滚/接管必须 production_ready
 
 **S4**：
