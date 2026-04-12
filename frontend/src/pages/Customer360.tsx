@@ -14,6 +14,7 @@ import {
   Empty,
   Spin,
   Alert,
+  message,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -21,6 +22,8 @@ import {
   WarningOutlined,
   BulbOutlined,
   CameraOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import {
   Customer360View,
@@ -31,6 +34,7 @@ import {
 } from "../types";
 import { aiRuntimeApi } from "../services/ai-runtime";
 import { useCustomerContextStore } from "../stores/customerContextStore";
+import { usePermission } from "../hooks/usePermission";
 
 const { Title, Text } = Typography;
 
@@ -47,14 +51,29 @@ const intentLabelMap: Record<string, string> = {
   renewal: "续费",
   churn_risk: "流失风险",
 };
+const actionStatusLabelMap: Record<string, { color: string; text: string }> = {
+  pending: { color: "blue", text: "待处理" },
+  accepted: { color: "green", text: "已接受" },
+  dismissed: { color: "default", text: "已忽略" },
+  expired: { color: "default", text: "已过期" },
+};
 
 export default function Customer360() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { can } = usePermission();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<Customer360View | null>(null);
-  const { loadCustomerContext, nextActions, timeline, aiRuns, snapshots } =
-    useCustomerContextStore();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const {
+    loadCustomerContext,
+    nextActions,
+    timeline,
+    aiRuns,
+    snapshots,
+    acceptAction,
+    dismissAction,
+  } = useCustomerContextStore();
 
   useEffect(() => {
     if (!id) return;
@@ -68,6 +87,32 @@ export default function Customer360() {
       })
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleAcceptAction = async (actionId: string) => {
+    if (!id) return;
+    setActionLoading(actionId);
+    try {
+      await acceptAction(id, actionId);
+      message.success("已接受 AI 建议");
+    } catch {
+      message.error("操作失败");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDismissAction = async (actionId: string) => {
+    if (!id) return;
+    setActionLoading(actionId);
+    try {
+      await dismissAction(id, actionId);
+      message.success("已忽略 AI 建议");
+    } catch {
+      message.error("操作失败");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   if (loading)
     return (
@@ -207,7 +252,48 @@ export default function Customer360() {
                 size="small"
                 dataSource={nextActions}
                 renderItem={(action: CustomerNextAction) => (
-                  <List.Item>
+                  <List.Item
+                    actions={
+                      action.status === "pending" && can("PERM-CM-UPDATE")
+                        ? [
+                            <Button
+                              key="accept"
+                              type="link"
+                              size="small"
+                              icon={<CheckOutlined />}
+                              loading={actionLoading === action.id}
+                              onClick={() => handleAcceptAction(action.id)}
+                            >
+                              接受
+                            </Button>,
+                            <Button
+                              key="dismiss"
+                              type="link"
+                              size="small"
+                              danger
+                              icon={<CloseOutlined />}
+                              loading={actionLoading === action.id}
+                              onClick={() => handleDismissAction(action.id)}
+                            >
+                              忽略
+                            </Button>,
+                          ]
+                        : action.status !== "pending"
+                          ? [
+                              <Tag
+                                key="status"
+                                color={
+                                  actionStatusLabelMap[action.status]?.color ||
+                                  "default"
+                                }
+                              >
+                                {actionStatusLabelMap[action.status]?.text ||
+                                  action.status}
+                              </Tag>,
+                            ]
+                          : []
+                    }
+                  >
                     <List.Item.Meta
                       title={<Text>{action.actionType}</Text>}
                       description={action.reasoning}

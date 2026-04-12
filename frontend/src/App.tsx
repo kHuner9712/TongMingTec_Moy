@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout';
+import PermissionGate from './components/PermissionGate';
 import { Spin } from 'antd';
 
 const Login = lazy(() => import('./pages/Login'));
@@ -33,6 +34,10 @@ const PageLoader = () => (
   </div>
 );
 
+const withPermission = (element: ReactNode, anyOf: string[]) => (
+  <PermissionGate anyOf={anyOf}>{element}</PermissionGate>
+);
+
 function App() {
   const { isAuthenticated } = useAuthStore();
 
@@ -59,7 +64,7 @@ function App() {
             path="cockpit"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Cockpit />
+                {withPermission(<Cockpit />, ['PERM-SYS-VIEW'])}
               </Suspense>
             }
           />
@@ -68,7 +73,7 @@ function App() {
             path="workbench/customer"
             element={
               <Suspense fallback={<PageLoader />}>
-                <CustomerWorkbench />
+                {withPermission(<CustomerWorkbench />, ['PERM-CM-VIEW'])}
               </Suspense>
             }
           />
@@ -76,7 +81,7 @@ function App() {
             path="workbench/conversation"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ConversationWorkbench />
+                {withPermission(<ConversationWorkbench />, ['PERM-CNV-VIEW'])}
               </Suspense>
             }
           />
@@ -84,7 +89,7 @@ function App() {
             path="workbench/ai-runs"
             element={
               <Suspense fallback={<PageLoader />}>
-                <AiRunsWorkbench />
+                {withPermission(<AiRunsWorkbench />, ['PERM-AI-EXECUTE'])}
               </Suspense>
             }
           />
@@ -92,7 +97,7 @@ function App() {
             path="workbench/approvals"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ApprovalWorkbench />
+                {withPermission(<ApprovalWorkbench />, ['PERM-AI-APPROVE'])}
               </Suspense>
             }
           />
@@ -101,7 +106,7 @@ function App() {
             path="customer-360/:id"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Customer360 />
+                {withPermission(<Customer360 />, ['PERM-CM-VIEW'])}
               </Suspense>
             }
           />
@@ -110,7 +115,7 @@ function App() {
             path="risk-signals"
             element={
               <Suspense fallback={<PageLoader />}>
-                <RiskSignals />
+                {withPermission(<RiskSignals />, ['PERM-CM-VIEW'])}
               </Suspense>
             }
           />
@@ -123,7 +128,7 @@ function App() {
             path="agents"
             element={
               <Suspense fallback={<PageLoader />}>
-                <AgentHub />
+                {withPermission(<AgentHub />, ['PERM-AI-AGENT_MANAGE'])}
               </Suspense>
             }
           />
@@ -132,7 +137,7 @@ function App() {
             path="dashboard"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Dashboard />
+                {withPermission(<Dashboard />, ['PERM-SYS-VIEW', 'PERM-DASH-VIEW'])}
               </Suspense>
             }
           />
@@ -140,7 +145,12 @@ function App() {
             path="leads"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Leads />
+                {withPermission(<Leads />, [
+                  'PERM-LM-CREATE',
+                  'PERM-LM-ASSIGN',
+                  'PERM-LM-FOLLOW_UP',
+                  'PERM-LM-CONVERT',
+                ])}
               </Suspense>
             }
           />
@@ -148,7 +158,11 @@ function App() {
             path="opportunities"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Opportunities />
+                {withPermission(<Opportunities />, [
+                  'PERM-OM-CREATE',
+                  'PERM-OM-STAGE',
+                  'PERM-OM-RESULT',
+                ])}
               </Suspense>
             }
           />
@@ -156,7 +170,7 @@ function App() {
             path="tickets"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Tickets />
+                {withPermission(<Tickets />, ['PERM-TK-VIEW'])}
               </Suspense>
             }
           />
@@ -164,7 +178,7 @@ function App() {
             path="users"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Users />
+                {withPermission(<Users />, ['PERM-USR-MANAGE'])}
               </Suspense>
             }
           />
@@ -172,7 +186,7 @@ function App() {
             path="settings"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Settings />
+                {withPermission(<Settings />, ['PERM-SYS-MANAGE'])}
               </Suspense>
             }
           />
@@ -180,7 +194,7 @@ function App() {
             path="workbench"
             element={
               <Suspense fallback={<PageLoader />}>
-                <Workbench />
+                {withPermission(<Workbench />, ['PERM-SYS-VIEW'])}
               </Suspense>
             }
           />
