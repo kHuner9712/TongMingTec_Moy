@@ -36,6 +36,35 @@ interface CockpitState {
   fetchCockpitData: () => Promise<void>;
 }
 
+function normalizeList<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+  if (
+    value &&
+    typeof value === "object" &&
+    Array.isArray((value as { items?: unknown[] }).items)
+  ) {
+    return (value as { items: T[] }).items;
+  }
+  return [];
+}
+
+function normalizeKeyMetrics(value: unknown): KeyMetrics {
+  if (!value || typeof value !== "object") {
+    return { totalCustomers: 0, activeCustomers: 0, pendingFollowups: 0 };
+  }
+  const raw = value as Partial<KeyMetrics>;
+  return {
+    totalCustomers:
+      typeof raw.totalCustomers === "number" ? raw.totalCustomers : 0,
+    activeCustomers:
+      typeof raw.activeCustomers === "number" ? raw.activeCustomers : 0,
+    pendingFollowups:
+      typeof raw.pendingFollowups === "number" ? raw.pendingFollowups : 0,
+  };
+}
+
 export const useCockpitStore = create<CockpitState>((set) => ({
   aiInsights: [],
   riskSignals: [],
@@ -49,15 +78,11 @@ export const useCockpitStore = create<CockpitState>((set) => ({
     try {
       const data = await aiRuntimeApi.getCockpitData<CockpitDataResponse>();
       set({
-        aiInsights: data.aiInsights || [],
-        riskSignals: data.riskSignals || [],
-        keyMetrics: data.keyMetrics || {
-          totalCustomers: 0,
-          activeCustomers: 0,
-          pendingFollowups: 0,
-        },
-        recentAgentRuns: data.recentAgentRuns || [],
-        recommendedTodos: data.recommendedTodos || [],
+        aiInsights: normalizeList<WorkbenchAiInsight>(data.aiInsights),
+        riskSignals: normalizeList<WorkbenchAiInsight>(data.riskSignals),
+        keyMetrics: normalizeKeyMetrics(data.keyMetrics),
+        recentAgentRuns: normalizeList<AiAgentRun>(data.recentAgentRuns),
+        recommendedTodos: normalizeList<RecommendedTodo>(data.recommendedTodos),
         loading: false,
       });
     } catch {
