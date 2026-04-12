@@ -22,6 +22,7 @@ import {
   IsEnum,
   IsNumber,
   IsDateString,
+  IsBooleanString,
 } from 'class-validator';
 
 class CreateOpportunityDto {
@@ -53,6 +54,36 @@ class UpdateOpportunityDto {
   @IsOptional()
   @IsDateString()
   expectedCloseDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  pauseReason?: string;
+
+  @IsInt()
+  @Min(1)
+  version: number;
+}
+
+class ForecastQueryDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  forecastModel?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  includeDrivers?: string;
+}
+
+class PauseActionDto {
+  @IsString()
+  @MaxLength(255)
+  pauseReason: string;
+
+  @IsOptional()
+  @IsDateString()
+  resumeHintAt?: string;
 
   @IsInt()
   @Min(1)
@@ -166,7 +197,44 @@ export class OmController {
     if (dto.expectedCloseDate) {
       data.expectedCloseDate = new Date(dto.expectedCloseDate);
     }
+    if (dto.pauseReason !== undefined) {
+      data.pauseReason = dto.pauseReason.trim() || null;
+    }
     return this.omService.updateOpportunity(id, orgId, data, dto.version);
+  }
+
+  @Get(':id/forecast')
+  @Permissions('PERM-OM-FORECAST')
+  async getForecast(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('dataScope') dataScope: string,
+    @Query() query: ForecastQueryDto,
+  ): Promise<Record<string, unknown>> {
+    return this.omService.getForecast(id, orgId, userId, dataScope, {
+      forecastModel: query.forecastModel || 'default',
+      includeDrivers: query.includeDrivers !== 'false',
+    });
+  }
+
+  @Post(':id/pause')
+  @Permissions('PERM-OM-UPDATE')
+  async pauseOpportunity(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('dataScope') dataScope: string,
+    @Body() dto: PauseActionDto,
+  ) {
+    return this.omService.pauseOpportunity(
+      id,
+      orgId,
+      dto.pauseReason,
+      userId,
+      dataScope,
+      dto.version,
+    );
   }
 
   @Post(':id/stage')

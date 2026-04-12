@@ -71,6 +71,9 @@ vi.mock("../pages/Dashboard", () => ({
 vi.mock("../pages/Opportunities", () => ({
   default: () => <div>Opportunities Page</div>,
 }));
+vi.mock("../pages/OpportunityForecast", () => ({
+  default: () => <div>Opportunity Forecast Page</div>,
+}));
 vi.mock("../pages/Tickets", () => ({
   default: () => <div>Tickets Page</div>,
 }));
@@ -130,5 +133,16 @@ describe("App route permission baseline", () => {
   it("allows Notifications route with PERM-NTF-VIEW", async () => {
     renderAt("/notifications", ["PERM-NTF-VIEW"]);
     expect(await screen.findByText("Notifications Page")).toBeInTheDocument();
+  });
+
+  it("blocks Opportunity Forecast route when missing PERM-OM-FORECAST", async () => {
+    renderAt("/opportunities/forecast");
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Opportunity Forecast Page")).not.toBeInTheDocument();
+  });
+
+  it("allows Opportunity Forecast route with PERM-OM-FORECAST", async () => {
+    renderAt("/opportunities/forecast", ["PERM-OM-FORECAST"]);
+    expect(await screen.findByText("Opportunity Forecast Page")).toBeInTheDocument();
   });
 });

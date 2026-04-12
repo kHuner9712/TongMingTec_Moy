@@ -14,6 +14,20 @@ export interface OpportunitySummary {
   byStage: Record<OpportunityStage, number>;
   byResult: { won: number; lost: number };
 }
+
+export interface OpportunityForecastDriver {
+  label: string;
+  score: number;
+  reason: string;
+}
+
+export interface OpportunityForecast {
+  opportunityId: string;
+  winRate: number;
+  commitBand: "low" | "medium" | "high";
+  drivers: OpportunityForecastDriver[];
+}
+
 export const opportunityApi = {
   list: async (params?: {
     page?: number;
@@ -38,9 +52,28 @@ export const opportunityApi = {
 
   update: async (
     id: string,
-    data: { amount?: number; expectedCloseDate?: string; version: number },
+    data: {
+      amount?: number;
+      expectedCloseDate?: string;
+      pauseReason?: string | null;
+      version: number;
+    },
   ): Promise<Opportunity> => {
     return api.put(`/opportunities/${id}`, data);
+  },
+
+  getForecast: async (
+    id: string,
+    params?: { forecastModel?: string; includeDrivers?: boolean },
+  ): Promise<OpportunityForecast> => {
+    return api.get(`/opportunities/${id}/forecast`, { params });
+  },
+
+  pause: async (
+    id: string,
+    data: { pauseReason: string; resumeHintAt?: string; version: number },
+  ): Promise<Opportunity> => {
+    return api.post(`/opportunities/${id}/pause`, data);
   },
 
   changeStage: async (

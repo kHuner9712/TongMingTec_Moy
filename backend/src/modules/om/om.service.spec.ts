@@ -4,7 +4,7 @@ import { OmService } from './om.service';
 import { Opportunity, OpportunityStage, OpportunityResult } from './entities/opportunity.entity';
 import { OpportunityStageHistory } from './entities/opportunity-stage-history.entity';
 import { EventBusService } from '../../common/events/event-bus.service';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 describe('OmService', () => {
   let service: OmService;
@@ -21,6 +21,8 @@ describe('OmService', () => {
     stage: OpportunityStage.DISCOVERY,
     result: null,
     amount: 100000,
+    expectedCloseDate: new Date('2026-06-30'),
+    pauseReason: null,
     version: 1,
   };
 
@@ -211,6 +213,118 @@ describe('OmService', () => {
       expect(result.total).toBe(3);
       expect(result.byResult.won).toBe(1);
       expect(result.byResult.lost).toBe(1);
+    });
+  });
+
+  describe('getForecast', () => {
+    it('should calculate forecast and include drivers', async () => {
+      opportunityRepository.findOne.mockResolvedValue({
+        ...mockOpportunity,
+        stage: OpportunityStage.PROPOSAL,
+        amount: 320000,
+        expectedCloseDate: new Date('2026-05-20'),
+      });
+
+      const result = await service.getForecast('opp-1', 'org-1', 'user-1', 'all', {
+        forecastModel: 'default',
+        includeDrivers: true,
+      });
+
+      expect(result.opportunityId).toBe('opp-1');
+      expect(result.winRate).toBeGreaterThan(0);
+      expect(result.commitBand).toBeDefined();
+      expect(result.drivers.length).toBeGreaterThan(0);
+    });
+
+    it('should hide drivers when includeDrivers=false', async () => {
+      opportunityRepository.findOne.mockResolvedValue(mockOpportunity);
+
+      const result = await service.getForecast('opp-1', 'org-1', 'user-1', 'all', {
+        forecastModel: 'default',
+        includeDrivers: false,
+      });
+
+      expect(result.drivers).toEqual([]);
+    });
+
+    it('should return fixed high forecast for won opportunity', async () => {
+      opportunityRepository.findOne.mockResolvedValue({
+        ...mockOpportunity,
+        result: OpportunityResult.WON,
+      });
+
+      const result = await service.getForecast('opp-1', 'org-1', 'user-1', 'all', {
+        forecastModel: 'default',
+        includeDrivers: true,
+      });
+
+      expect(result.winRate).toBe(100);
+      expect(result.commitBand).toBe('high');
+    });
+
+    it('should enforce self data scope when owner mismatch', async () => {
+      opportunityRepository.findOne.mockResolvedValue({
+        ...mockOpportunity,
+        ownerUserId: 'other-user',
+      });
+
+      await expect(
+        service.getForecast('opp-1', 'org-1', 'user-1', 'self', {
+          forecastModel: 'default',
+          includeDrivers: true,
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('pauseOpportunity', () => {
+    it('should update pause reason and publish stage event', async () => {
+      opportunityRepository.findOne
+        .mockResolvedValueOnce({ ...mockOpportunity, pauseReason: null })
+        .mockResolvedValueOnce({ ...mockOpportunity, pauseReason: '等待预算审批' });
+      historyRepository.create.mockReturnValue({});
+      historyRepository.save.mockResolvedValue({});
+      opportunityRepository.update.mockResolvedValue({ affected: 1 });
+
+      await service.pauseOpportunity(
+        'opp-1',
+        'org-1',
+        '等待预算审批',
+        'user-1',
+        'all',
+        1,
+      );
+
+      expect(opportunityRepository.update).toHaveBeenCalledWith(
+        'opp-1',
+        expect.objectContaining({ pauseReason: '等待预算审批' }),
+      );
+      expect(eventBus.publish).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when pause reason is empty', async () => {
+      await expect(
+        service.pauseOpportunity('opp-1', 'org-1', '   ', 'user-1', 'all', 1),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ConflictException on version mismatch', async () => {
+      opportunityRepository.findOne.mockResolvedValue({ ...mockOpportunity, version: 2 });
+
+      await expect(
+        service.pauseOpportunity('opp-1', 'org-1', '等待预算审批', 'user-1', 'all', 1),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw ConflictException when opportunity already has result', async () => {
+      opportunityRepository.findOne.mockResolvedValue({
+        ...mockOpportunity,
+        result: OpportunityResult.WON,
+      });
+
+      await expect(
+        service.pauseOpportunity('opp-1', 'org-1', '等待预算审批', 'user-1', 'all', 1),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });

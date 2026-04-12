@@ -107,6 +107,12 @@ const menuItems: MenuGroupWithPermission[] = [
         permission: "PERM-OM-CREATE",
       },
       {
+        key: "/opportunities/forecast",
+        icon: <PhoneOutlined />,
+        label: "Opportunity Forecast",
+        permission: "PERM-OM-FORECAST",
+      },
+      {
         key: "/tickets",
         icon: <FileTextOutlined />,
         label: "Tickets",
@@ -174,6 +180,7 @@ export default function Layout() {
     if (path.startsWith("/customers")) return ["/workbench/customer"];
     if (path.startsWith("/conversations")) return ["/workbench/conversation"];
     if (path.startsWith("/approvals")) return ["/workbench/approvals"];
+    if (path.startsWith("/opportunities/forecast")) return ["/opportunities/forecast"];
     return [path];
   };
 

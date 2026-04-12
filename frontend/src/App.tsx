@@ -11,6 +11,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Customer360 = lazy(() => import('./pages/Customer360'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Opportunities = lazy(() => import('./pages/Opportunities'));
+const OpportunityForecast = lazy(() => import('./pages/OpportunityForecast'));
 const Tickets = lazy(() => import('./pages/Tickets'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const AgentHub = lazy(() => import('./pages/AgentHub'));
@@ -152,6 +153,14 @@ function App() {
                   'PERM-LM-FOLLOW_UP',
                   'PERM-LM-CONVERT',
                 ])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="opportunities/forecast"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<OpportunityForecast />, ['PERM-OM-FORECAST'])}
               </Suspense>
             }
           />
