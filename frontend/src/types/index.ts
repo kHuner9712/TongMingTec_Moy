@@ -224,13 +224,17 @@ export interface Task extends BaseEntity {
 
 export interface Notification extends BaseEntity {
   userId: string;
-  type: string;
+  type?: string;
+  notificationType?: string;
+  category?: string;
   title: string;
   content: string | null;
   isRead: boolean;
   readAt: string | null;
-  relatedType: string | null;
-  relatedId: string | null;
+  sourceType?: string | null;
+  sourceId?: string | null;
+  relatedType?: string | null;
+  relatedId?: string | null;
 }
 
 export interface Channel extends BaseEntity {

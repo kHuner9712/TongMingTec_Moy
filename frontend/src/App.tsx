@@ -12,6 +12,7 @@ const Customer360 = lazy(() => import('./pages/Customer360'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Opportunities = lazy(() => import('./pages/Opportunities'));
 const Tickets = lazy(() => import('./pages/Tickets'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 const AgentHub = lazy(() => import('./pages/AgentHub'));
 const Users = lazy(() => import('./pages/Users'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -171,6 +172,14 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<Tickets />, ['PERM-TK-VIEW'])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="notifications"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Notifications />, ['PERM-NTF-VIEW'])}
               </Suspense>
             }
           />

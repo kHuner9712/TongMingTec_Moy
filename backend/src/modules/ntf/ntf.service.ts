@@ -1,19 +1,32 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
+import { NotificationPreference } from './entities/notification-preference.entity';
+import { UpdateNotificationPreferenceDto } from './dto/update-notification-preference.dto';
 
 @Injectable()
 export class NtfService {
   constructor(
     @InjectRepository(Notification)
     private notificationRepository: Repository<Notification>,
+    @InjectRepository(NotificationPreference)
+    private notificationPreferenceRepository: Repository<NotificationPreference>,
   ) {}
 
   async findNotifications(
     orgId: string,
     userId: string,
-    filters: { isRead?: boolean; notificationType?: string },
+    filters: {
+      isRead?: boolean;
+      notificationType?: string;
+      category?: string;
+      sourceType?: string;
+    },
     page: number,
     pageSize: number,
   ): Promise<{ items: Notification[]; total: number }> {
@@ -26,9 +39,16 @@ export class NtfService {
       qb.andWhere('notification.isRead = :isRead', { isRead: filters.isRead });
     }
 
-    if (filters.notificationType) {
+    const typeFilter = filters.category || filters.notificationType;
+    if (typeFilter) {
       qb.andWhere('notification.notificationType = :notificationType', {
-        notificationType: filters.notificationType,
+        notificationType: typeFilter,
+      });
+    }
+
+    if (filters.sourceType) {
+      qb.andWhere('notification.sourceType = :sourceType', {
+        sourceType: filters.sourceType,
       });
     }
 
@@ -66,6 +86,61 @@ export class NtfService {
     await this.notificationRepository.update(
       { orgId, userId, isRead: false },
       { isRead: true, readAt: new Date() },
+    );
+  }
+
+  async updateNotificationPreferences(
+    orgId: string,
+    userId: string,
+    payload: UpdateNotificationPreferenceDto,
+  ): Promise<NotificationPreference> {
+    const channels = this.normalizeChannels(payload.channels);
+    const existing = await this.notificationPreferenceRepository.findOne({
+      where: { orgId, userId },
+    });
+
+    if (existing) {
+      if (payload.version && payload.version !== existing.version) {
+        throw new ConflictException('CONFLICT_VERSION');
+      }
+
+      existing.channels = channels;
+      if (payload.muteCategories) {
+        existing.muteCategories = payload.muteCategories;
+      }
+      if (payload.digestTime !== undefined) {
+        existing.digestTime = payload.digestTime;
+      }
+      existing.updatedBy = userId;
+      existing.version += 1;
+
+      return this.notificationPreferenceRepository.save(existing);
+    }
+
+    const created = this.notificationPreferenceRepository.create({
+      orgId,
+      userId,
+      channels,
+      muteCategories: payload.muteCategories || [],
+      digestTime: payload.digestTime || null,
+      createdBy: userId,
+      updatedBy: userId,
+    });
+
+    return this.notificationPreferenceRepository.save(created);
+  }
+
+  private normalizeChannels(
+    channels: Record<string, boolean>,
+  ): Record<string, boolean> {
+    return Object.entries(channels || {}).reduce<Record<string, boolean>>(
+      (acc, [channel, enabled]) => {
+        if (typeof enabled === 'boolean') {
+          acc[channel] = enabled;
+        }
+        return acc;
+      },
+      {},
     );
   }
 

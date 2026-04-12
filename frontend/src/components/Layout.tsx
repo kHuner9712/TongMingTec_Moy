@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Layout as AntLayout, Menu, Badge } from "antd";
 import {
   TeamOutlined,
@@ -14,8 +14,8 @@ import {
   ThunderboltOutlined,
   DashboardOutlined,
   WarningOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
-import { useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import { useApprovalStore } from "../stores/approvalStore";
 import { CopilotPanel } from "./AiCopilot";
@@ -37,103 +37,109 @@ interface MenuGroupWithPermission {
 
 const menuItems: MenuGroupWithPermission[] = [
   {
-    type: "group" as const,
-    label: "经营中心",
+    type: "group",
+    label: "Operations Center",
     children: [
       {
         key: "/cockpit",
         icon: <DashboardOutlined />,
-        label: "经营驾驶舱",
+        label: "Cockpit",
         permission: "PERM-SYS-VIEW",
       },
     ],
   },
   {
-    type: "group" as const,
-    label: "工作台",
+    type: "group",
+    label: "Workbench",
     children: [
       {
         key: "/workbench/customer",
         icon: <TeamOutlined />,
-        label: "客户经营",
+        label: "Customer Workbench",
         permission: "PERM-CM-VIEW",
       },
       {
         key: "/workbench/conversation",
         icon: <CustomerServiceOutlined />,
-        label: "会话跟进",
+        label: "Conversation Workbench",
         permission: "PERM-CNV-VIEW",
       },
       {
         key: "/workbench/ai-runs",
         icon: <RobotOutlined />,
-        label: "AI 执行流",
+        label: "AI Runs",
         permission: "PERM-AI-EXECUTE",
       },
       {
         key: "/workbench/approvals",
         icon: <AuditOutlined />,
-        label: "审批流",
+        label: "Approvals",
         permission: "PERM-AI-APPROVE",
       },
     ],
   },
   {
-    type: "group" as const,
-    label: "预警与洞察",
+    type: "group",
+    label: "Risk & Insights",
     children: [
       {
         key: "/risk-signals",
         icon: <WarningOutlined />,
-        label: "风险预警台",
+        label: "Risk Signals",
         permission: "PERM-CM-VIEW",
       },
     ],
   },
   {
-    type: "group" as const,
-    label: "业务管理",
+    type: "group",
+    label: "Business",
     children: [
       {
         key: "/leads",
         icon: <UserOutlined />,
-        label: "线索管理",
+        label: "Leads",
         permission: "PERM-LM-CREATE",
       },
       {
         key: "/opportunities",
         icon: <PhoneOutlined />,
-        label: "商机管理",
+        label: "Opportunities",
         permission: "PERM-OM-CREATE",
       },
       {
         key: "/tickets",
         icon: <FileTextOutlined />,
-        label: "工单管理",
+        label: "Tickets",
         permission: "PERM-TK-VIEW",
+      },
+      {
+        key: "/notifications",
+        icon: <BellOutlined />,
+        label: "Notifications",
+        permission: "PERM-NTF-VIEW",
       },
     ],
   },
   {
-    type: "group" as const,
-    label: "系统",
+    type: "group",
+    label: "System",
     children: [
       {
         key: "/agents",
         icon: <ThunderboltOutlined />,
-        label: "Agent 管理",
+        label: "Agent Hub",
         permission: "PERM-AI-AGENT_MANAGE",
       },
       {
         key: "/users",
         icon: <UserSwitchOutlined />,
-        label: "用户管理",
+        label: "Users",
         permission: "PERM-USR-MANAGE",
       },
       {
         key: "/settings",
         icon: <SettingOutlined />,
-        label: "系统设置",
+        label: "Settings",
         permission: "PERM-SYS-MANAGE",
       },
     ],
@@ -158,16 +164,12 @@ export default function Layout() {
   const getSelectedKeys = () => {
     const path = location.pathname;
     if (path === "/cockpit") return ["/cockpit"];
-    if (
-      path.startsWith("/workbench/customer") ||
-      path.startsWith("/customer-360")
-    )
+    if (path.startsWith("/workbench/customer") || path.startsWith("/customer-360"))
       return ["/workbench/customer"];
     if (path.startsWith("/workbench/conversation"))
       return ["/workbench/conversation"];
     if (path.startsWith("/workbench/ai-runs")) return ["/workbench/ai-runs"];
-    if (path.startsWith("/workbench/approvals"))
-      return ["/workbench/approvals"];
+    if (path.startsWith("/workbench/approvals")) return ["/workbench/approvals"];
     if (path.startsWith("/risk-signals")) return ["/risk-signals"];
     if (path.startsWith("/customers")) return ["/workbench/customer"];
     if (path.startsWith("/conversations")) return ["/workbench/conversation"];
@@ -177,7 +179,6 @@ export default function Layout() {
 
   const filteredMenuItems = menuItems
     .map((group) => {
-      if (group.type !== "group" || !group.children) return group;
       const filteredChildren = group.children.filter(
         (item) => !item.permission || hasPermission(item.permission),
       );
@@ -185,10 +186,7 @@ export default function Layout() {
       return {
         ...group,
         children: filteredChildren.map((item) => {
-          if (
-            item.key === "/workbench/approvals" &&
-            pendingApprovals.length > 0
-          ) {
+          if (item.key === "/workbench/approvals" && pendingApprovals.length > 0) {
             return {
               ...item,
               label: (
@@ -206,7 +204,7 @@ export default function Layout() {
 
   return (
     <AntLayout style={{ minHeight: "100vh" }}>
-      <Sider width={220} theme="light">
+      <Sider width={240} theme="light">
         <div
           style={{
             height: 64,
@@ -216,9 +214,7 @@ export default function Layout() {
             borderBottom: "1px solid #f0f0f0",
           }}
         >
-          <h1 style={{ margin: 0, fontSize: 20, color: "#1890ff" }}>
-            MOY 墨言
-          </h1>
+          <h1 style={{ margin: 0, fontSize: 20, color: "#1677ff" }}>MOY</h1>
         </div>
         <Menu
           mode="inline"
@@ -242,14 +238,11 @@ export default function Layout() {
           <div />
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <RobotOutlined
-              style={{ fontSize: 18, cursor: "pointer", color: "#1890ff" }}
+              style={{ fontSize: 18, cursor: "pointer", color: "#1677ff" }}
               title="AI Copilot"
             />
             <span>{user?.displayName}</span>
-            <LogoutOutlined
-              style={{ cursor: "pointer" }}
-              onClick={handleLogout}
-            />
+            <LogoutOutlined style={{ cursor: "pointer" }} onClick={handleLogout} />
           </div>
         </Header>
         <Content

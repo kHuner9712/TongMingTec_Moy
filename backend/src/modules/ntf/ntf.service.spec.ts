@@ -1,12 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { NtfService } from './ntf.service';
 import { Notification, NotificationType } from './entities/notification.entity';
+import { NotificationPreference } from './entities/notification-preference.entity';
 
 describe('NtfService', () => {
   let service: NtfService;
   let notificationRepository: jest.Mocked<any>;
+  let notificationPreferenceRepository: jest.Mocked<any>;
 
   const mockNotification = {
     id: 'notif-uuid-123',
@@ -49,11 +51,22 @@ describe('NtfService', () => {
             count: jest.fn(),
           },
         },
+        {
+          provide: getRepositoryToken(NotificationPreference),
+          useValue: {
+            findOne: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<NtfService>(NtfService);
     notificationRepository = module.get(getRepositoryToken(Notification));
+    notificationPreferenceRepository = module.get(
+      getRepositoryToken(NotificationPreference),
+    );
   });
 
   describe('findNotifications', () => {
@@ -194,6 +207,94 @@ describe('NtfService', () => {
       const result = await service.getUnreadCount('org-uuid-123', 'user-uuid-123');
 
       expect(result).toBe(5);
+    });
+  });
+
+  describe('updateNotificationPreferences', () => {
+    it('should create preferences when none exists', async () => {
+      notificationPreferenceRepository.findOne.mockResolvedValue(null);
+      notificationPreferenceRepository.create.mockReturnValue({
+        orgId: 'org-uuid-123',
+        userId: 'user-uuid-123',
+        channels: { inbox: true, email: false },
+        muteCategories: ['system'],
+        digestTime: '09:00',
+        version: 1,
+      });
+      notificationPreferenceRepository.save.mockResolvedValue({
+        orgId: 'org-uuid-123',
+        userId: 'user-uuid-123',
+        channels: { inbox: true, email: false },
+        muteCategories: ['system'],
+        digestTime: '09:00',
+        version: 1,
+      });
+
+      const result = await service.updateNotificationPreferences(
+        'org-uuid-123',
+        'user-uuid-123',
+        {
+          channels: { inbox: true, email: false },
+          muteCategories: ['system'],
+          digestTime: '09:00',
+        },
+      );
+
+      expect(notificationPreferenceRepository.create).toHaveBeenCalled();
+      expect(result.channels).toEqual({ inbox: true, email: false });
+    });
+
+    it('should update preferences and increment version', async () => {
+      const existing = {
+        id: 'pref-uuid-123',
+        orgId: 'org-uuid-123',
+        userId: 'user-uuid-123',
+        channels: { inbox: true, email: true },
+        muteCategories: [],
+        digestTime: null,
+        version: 2,
+      };
+      notificationPreferenceRepository.findOne.mockResolvedValue(existing);
+      notificationPreferenceRepository.save.mockResolvedValue({
+        ...existing,
+        channels: { inbox: true, email: false },
+        muteCategories: ['bill'],
+        digestTime: '08:30',
+        version: 3,
+      });
+
+      const result = await service.updateNotificationPreferences(
+        'org-uuid-123',
+        'user-uuid-123',
+        {
+          channels: { inbox: true, email: false },
+          muteCategories: ['bill'],
+          digestTime: '08:30',
+          version: 2,
+        },
+      );
+
+      expect(notificationPreferenceRepository.save).toHaveBeenCalled();
+      expect(result.version).toBe(3);
+    });
+
+    it('should throw ConflictException when version mismatch', async () => {
+      notificationPreferenceRepository.findOne.mockResolvedValue({
+        id: 'pref-uuid-123',
+        orgId: 'org-uuid-123',
+        userId: 'user-uuid-123',
+        channels: { inbox: true },
+        muteCategories: [],
+        digestTime: null,
+        version: 4,
+      });
+
+      await expect(
+        service.updateNotificationPreferences('org-uuid-123', 'user-uuid-123', {
+          channels: { inbox: false },
+          version: 2,
+        }),
+      ).rejects.toThrow(ConflictException);
     });
   });
 });

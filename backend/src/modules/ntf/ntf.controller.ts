@@ -21,14 +21,25 @@ export class NtfController {
     @CurrentUser('id') userId: string,
     @Query() query: PageQueryDto,
     @Query('isRead') isRead?: string,
+    @Query('is_read') isReadSnake?: string,
     @Query('notificationType') notificationType?: string,
+    @Query('category') category?: string,
+    @Query('source_type') sourceType?: string,
   ) {
+    const resolvedIsRead = isReadSnake ?? isRead;
     const { items, total } = await this.ntfService.findNotifications(
       orgId,
       userId,
       {
-        isRead: isRead === 'true' ? true : isRead === 'false' ? false : undefined,
+        isRead:
+          resolvedIsRead === 'true'
+            ? true
+            : resolvedIsRead === 'false'
+              ? false
+              : undefined,
         notificationType,
+        category,
+        sourceType,
       },
       query.page || 1,
       query.page_size || 20,
@@ -63,7 +74,8 @@ export class NtfController {
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
   ) {
-    return this.ntfService.markAsRead(id, orgId, userId);
+    await this.ntfService.markAsRead(id, orgId, userId);
+    return { code: 'OK', message: 'success' };
   }
 
   @Post('read-all')

@@ -74,6 +74,9 @@ vi.mock("../pages/Opportunities", () => ({
 vi.mock("../pages/Tickets", () => ({
   default: () => <div>Tickets Page</div>,
 }));
+vi.mock("../pages/Notifications", () => ({
+  default: () => <div>Notifications Page</div>,
+}));
 vi.mock("../pages/Users", () => ({
   default: () => <div>Users Page</div>,
 }));
@@ -98,7 +101,7 @@ describe("App route permission baseline", () => {
 
   it("blocks direct Customer360 route access when missing PERM-CM-VIEW", async () => {
     renderAt("/customer-360/cust-1");
-    expect(await screen.findByText("无权限访问")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.queryByText("Customer360 Page")).not.toBeInTheDocument();
   });
 
@@ -114,7 +117,18 @@ describe("App route permission baseline", () => {
 
   it("blocks Leads route when all configured permissions are missing", async () => {
     renderAt("/leads");
-    expect(await screen.findByText("无权限访问")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.queryByText("Leads Page")).not.toBeInTheDocument();
+  });
+
+  it("blocks Notifications route when missing PERM-NTF-VIEW", async () => {
+    renderAt("/notifications");
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Notifications Page")).not.toBeInTheDocument();
+  });
+
+  it("allows Notifications route with PERM-NTF-VIEW", async () => {
+    renderAt("/notifications", ["PERM-NTF-VIEW"]);
+    expect(await screen.findByText("Notifications Page")).toBeInTheDocument();
   });
 });
