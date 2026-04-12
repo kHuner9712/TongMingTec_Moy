@@ -15,6 +15,9 @@ import {
   DashboardOutlined,
   WarningOutlined,
   BellOutlined,
+  ShoppingCartOutlined,
+  FileProtectOutlined,
+  AccountBookOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 import { useApprovalStore } from "../stores/approvalStore";
@@ -113,6 +116,30 @@ const menuItems: MenuGroupWithPermission[] = [
         permission: "PERM-OM-FORECAST",
       },
       {
+        key: "/quotes",
+        icon: <FileProtectOutlined />,
+        label: "Quotes",
+        permission: "PERM-QT-MANAGE",
+      },
+      {
+        key: "/contracts",
+        icon: <FileTextOutlined />,
+        label: "Contracts",
+        permission: "PERM-CT-MANAGE",
+      },
+      {
+        key: "/orders",
+        icon: <ShoppingCartOutlined />,
+        label: "Orders",
+        permission: "PERM-ORD-MANAGE",
+      },
+      {
+        key: "/payments",
+        icon: <AccountBookOutlined />,
+        label: "Payments",
+        permission: "PERM-PAY-MANAGE",
+      },
+      {
         key: "/tickets",
         icon: <FileTextOutlined />,
         label: "Tickets",
@@ -170,17 +197,26 @@ export default function Layout() {
   const getSelectedKeys = () => {
     const path = location.pathname;
     if (path === "/cockpit") return ["/cockpit"];
-    if (path.startsWith("/workbench/customer") || path.startsWith("/customer-360"))
+    if (
+      path.startsWith("/workbench/customer") ||
+      path.startsWith("/customer-360")
+    )
       return ["/workbench/customer"];
     if (path.startsWith("/workbench/conversation"))
       return ["/workbench/conversation"];
     if (path.startsWith("/workbench/ai-runs")) return ["/workbench/ai-runs"];
-    if (path.startsWith("/workbench/approvals")) return ["/workbench/approvals"];
+    if (path.startsWith("/workbench/approvals"))
+      return ["/workbench/approvals"];
     if (path.startsWith("/risk-signals")) return ["/risk-signals"];
     if (path.startsWith("/customers")) return ["/workbench/customer"];
     if (path.startsWith("/conversations")) return ["/workbench/conversation"];
     if (path.startsWith("/approvals")) return ["/workbench/approvals"];
-    if (path.startsWith("/opportunities/forecast")) return ["/opportunities/forecast"];
+    if (path.startsWith("/opportunities/forecast"))
+      return ["/opportunities/forecast"];
+    if (path.startsWith("/quotes")) return ["/quotes"];
+    if (path.startsWith("/contracts")) return ["/contracts"];
+    if (path.startsWith("/orders")) return ["/orders"];
+    if (path.startsWith("/payments")) return ["/payments"];
     return [path];
   };
 
@@ -193,7 +229,10 @@ export default function Layout() {
       return {
         ...group,
         children: filteredChildren.map((item) => {
-          if (item.key === "/workbench/approvals" && pendingApprovals.length > 0) {
+          if (
+            item.key === "/workbench/approvals" &&
+            pendingApprovals.length > 0
+          ) {
             return {
               ...item,
               label: (
@@ -249,7 +288,10 @@ export default function Layout() {
               title="AI Copilot"
             />
             <span>{user?.displayName}</span>
-            <LogoutOutlined style={{ cursor: "pointer" }} onClick={handleLogout} />
+            <LogoutOutlined
+              style={{ cursor: "pointer" }}
+              onClick={handleLogout}
+            />
           </div>
         </Header>
         <Content

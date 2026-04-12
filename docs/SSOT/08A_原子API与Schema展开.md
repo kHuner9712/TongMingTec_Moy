@@ -152,21 +152,23 @@
 | `API-CT-005` | `CT` | `POST` | `/api/v1/contracts/{id}/expire-check` | `S2 / S3 / S2,S3,S4 / implementation-ready` | `SCH-CT-EXPIRE-CHECK-REQ` | `SCH-ACK` | `200 / 400,403,404 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-CT-ARCHIVE / ORG` | `Y / required / version` | `CONTRACT_EXPIRE_CHECK / notification.created / req={version}; resp={code:OK}` |
 | `API-CT-006` | `CT` | `GET` | `/api/v1/contracts/{id}` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-CT-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-CT-MANAGE / SELF,TEAM,ORG` | `N / n/a / -` | `CONTRACT_DETAIL / - / req={id}; resp={contract,documents}` |
 | `API-CT-007` | `CT` | `PUT` | `/api/v1/contracts/{id}` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-CT-UPDATE-REQ` | `SCH-CT-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-CT-MANAGE / ORG` | `Y / optional / version` | `CONTRACT_UPDATE / - / req={starts_on,ends_on,version}; resp={id}` |
-| `API-ORD-001` | `ORD` | `GET` | `/api/v1/orders` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-ORD-LIST-QUERY` | `SCH-ORD-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-ORD-MANAGE / ORG` | `N / n/a / -` | `ORDER_LIST / subscription.status.changed / req=?status=confirmed; resp={items}` |
-| `API-ORD-002` | `ORD` | `POST` | `/api/v1/orders` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-ORD-CREATE-REQ` | `SCH-ORD-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-ORD-MANAGE / ORG` | `Y / required / -` | `ORDER_CREATE / - / req={customer_id,items}; resp={id,status}` |
-| `API-ORD-003` | `ORD` | `POST` | `/api/v1/orders/{id}/activate` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-ORD-ACTIVATE-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-ORD-ACTIVATE / ORG` | `Y / required / version` | `ORDER_ACTIVATE / subscription.status.changed / req={activation_mode,version}; resp={status}` |
-| `API-ORD-004` | `ORD` | `POST` | `/api/v1/orders/{id}/refund` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-ORD-REFUND-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-ORD-MANAGE,PERM-PAY-MANAGE / ORG` | `Y / required / version` | `ORDER_REFUND / payment.status.changed / req={amount,reason,version}; resp={status}` |
-| `API-ORD-005` | `ORD` | `GET` | `/api/v1/orders/{id}` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-ORD-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-ORD-MANAGE / ORG` | `N / n/a / -` | `ORDER_DETAIL / - / req={id}; resp={order,payments}` |
-| `API-ORD-006` | `ORD` | `PUT` | `/api/v1/orders/{id}` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-ORD-UPDATE-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-ORD-MANAGE / ORG` | `Y / optional / version` | `ORDER_UPDATE / - / req={items,version}; resp={id}` |
+| `API-ORD-001` | `ORD` | `GET` | `/api/v1/orders` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-ORD-LIST-QUERY` | `SCH-ORD-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-ORD-MANAGE / ORG` | `N / n/a / -` | `ORDER_LIST / subscription.status.changed / req=?status=confirmed; resp={items}` |
+| `API-ORD-002` | `ORD` | `POST` | `/api/v1/orders` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-ORD-CREATE-REQ` | `SCH-ORD-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-ORD-MANAGE / ORG` | `Y / required / -` | `ORDER_CREATE / - / req={customer_id,items}; resp={id,status}` |
+| `API-ORD-003` | `ORD` | `POST` | `/api/v1/orders/{id}/confirm` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-ORD-CONFIRM-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-ORD-MANAGE / ORG` | `Y / required / version` | `ORDER_CONFIRM / - / req={version}; resp={status}` |
+| `API-ORD-004` | `ORD` | `POST` | `/api/v1/orders/{id}/activate` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-ORD-ACTIVATE-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-ORD-ACTIVATE / ORG` | `Y / required / version` | `ORDER_ACTIVATE / subscription.status.changed / req={activation_mode,version}; resp={status}` |
+| `API-ORD-005` | `ORD` | `POST` | `/api/v1/orders/{id}/cancel` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-ORD-CANCEL-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-ORD-MANAGE / ORG` | `Y / required / version` | `ORDER_CANCEL / - / req={reason,version}; resp={status}` |
+| `API-ORD-006` | `ORD` | `GET` | `/api/v1/orders/{id}` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-ORD-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-ORD-MANAGE / ORG` | `N / n/a / -` | `ORDER_DETAIL / - / req={id}; resp={order,payments}` |
+| `API-ORD-007` | `ORD` | `PUT` | `/api/v1/orders/{id}` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-ORD-UPDATE-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-ORD-MANAGE / ORG` | `Y / optional / version` | `ORDER_UPDATE / - / req={items,version}; resp={id}` |
+| `API-ORD-008` | `ORD` | `POST` | `/api/v1/orders/{id}/refund` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-ORD-REFUND-REQ` | `SCH-ORD-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-ORD-MANAGE,PERM-PAY-MANAGE / ORG` | `Y / required / version` | `ORDER_REFUND / payment.status.changed / req={amount,reason,version}; resp={status}` |
 | `API-PLAN-001` | `PLAN` | `GET` | `/api/v1/plans` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PLAN-LIST-QUERY` | `SCH-PLAN-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-PLAN-MANAGE / ORG` | `N / n/a / -` | `PLAN_LIST / - / req=?status=active; resp={items}` |
 | `API-PLAN-002` | `PLAN` | `POST` | `/api/v1/plans` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PLAN-CREATE-REQ` | `SCH-PLAN-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-PLAN-MANAGE / ORG` | `Y / required / -` | `PLAN_CREATE / - / req={code,name,base_price}; resp={id}` |
 | `API-PLAN-003` | `PLAN` | `GET` | `/api/v1/add-ons` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PLAN-ADDON-LIST-QUERY` | `SCH-PLAN-ADDON-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-PLAN-MANAGE / ORG` | `N / n/a / -` | `ADDON_LIST / - / req=?billing_type=usage; resp={items}` |
 | `API-PLAN-004` | `PLAN` | `POST` | `/api/v1/add-ons` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PLAN-ADDON-CREATE-REQ` | `SCH-PLAN-ADDON-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-PLAN-MANAGE / ORG` | `Y / required / -` | `ADDON_CREATE / - / req={code,name,unit_price}; resp={id}` |
 | `API-PLAN-005` | `PLAN` | `PUT` | `/api/v1/quota-policies/{id}` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PLAN-QUOTA-POLICY-UPDATE-REQ` | `SCH-PLAN-QUOTA-POLICY-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-PLAN-MANAGE / ORG` | `Y / optional / version` | `QUOTA_POLICY_UPDATE / - / req={limits,version}; resp={id}` |
-| `API-SUB-001` | `SUB` | `GET` | `/api/v1/subscriptions` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-SUB-LIST-QUERY` | `SCH-SUB-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-SUB-MANAGE / ORG` | `N / n/a / -` | `SUBSCRIPTION_LIST / subscription.status.changed / req=?status=active; resp={items}` |
-| `API-SUB-002` | `SUB` | `POST` | `/api/v1/subscriptions` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-SUB-CREATE-REQ` | `SCH-SUB-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-SUB-MANAGE / ORG` | `Y / required / -` | `SUBSCRIPTION_CREATE / subscription.status.changed / req={order_id,plan_id}; resp={id,status}` |
-| `API-SUB-003` | `SUB` | `GET` | `/api/v1/subscriptions/{id}` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-SUB-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-SUB-MANAGE / ORG` | `N / n/a / -` | `SUBSCRIPTION_DETAIL / - / req={id}; resp={subscription,renewals}` |
-| `API-SUB-004` | `SUB` | `PUT` | `/api/v1/subscriptions/{id}` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-SUB-UPDATE-REQ` | `SCH-SUB-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-SUB-MANAGE / ORG` | `Y / optional / version` | `SUBSCRIPTION_UPDATE / - / req={seat_count,auto_renew,version}; resp={id}` |
+| `API-SUB-001` | `SUB` | `GET` | `/api/v1/subscriptions` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-SUB-LIST-QUERY` | `SCH-SUB-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-SUB-MANAGE / ORG` | `N / n/a / -` | `SUBSCRIPTION_LIST / subscription.status.changed / req=?status=active; resp={items}` |
+| `API-SUB-002` | `SUB` | `POST` | `/api/v1/subscriptions` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-SUB-CREATE-REQ` | `SCH-SUB-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-SUB-MANAGE / ORG` | `Y / required / -` | `SUBSCRIPTION_CREATE / subscription.status.changed / req={order_id,plan_id}; resp={id,status}` |
+| `API-SUB-003` | `SUB` | `GET` | `/api/v1/subscriptions/{id}` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-SUB-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-SUB-MANAGE / ORG` | `N / n/a / -` | `SUBSCRIPTION_DETAIL / - / req={id}; resp={subscription,renewals}` |
+| `API-SUB-004` | `SUB` | `PUT` | `/api/v1/subscriptions/{id}` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-SUB-UPDATE-REQ` | `SCH-SUB-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-SUB-MANAGE / ORG` | `Y / optional / version` | `SUBSCRIPTION_UPDATE / - / req={seat_count,auto_renew,version}; resp={id}` |
 | `API-SUB-005` | `SUB` | `POST` | `/api/v1/subscriptions/{id}/renew` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-SUB-RENEW-REQ` | `SCH-SUB-RENEW-RESP` | `202 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-SUB-RENEW / ORG` | `Y / required / version` | `SUBSCRIPTION_RENEW / bill.status.changed,subscription.status.changed / req={target_end_at,version}; resp={renewal_id}` |
 | `API-SUB-006` | `SUB` | `POST` | `/api/v1/subscriptions/{id}/suspend` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-SUB-SUSPEND-REQ` | `SCH-SUB-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-SUB-SUSPEND / ORG` | `Y / required / version` | `SUBSCRIPTION_SUSPEND / subscription.status.changed / req={reason,version}; resp={status}` |
 | `API-BILL-001` | `BILL` | `GET` | `/api/v1/bills` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-BILL-LIST-QUERY` | `SCH-BILL-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-BILL-READ / ORG` | `N / n/a / -` | `BILL_LIST / bill.status.changed / req=?status=open; resp={items}` |
@@ -174,9 +176,13 @@
 | `API-BILL-003` | `BILL` | `GET` | `/api/v1/bills/{id}` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-BILL-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-BILL-READ / ORG` | `N / n/a / -` | `BILL_DETAIL / - / req={id}; resp={bill,bill_items}` |
 | `API-BILL-004` | `BILL` | `GET` | `/api/v1/bills/{id}/export` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-BILL-EXPORT-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-BILL-EXPORT / ORG` | `N / n/a / -` | `BILL_EXPORT / - / req={id}; resp={file_url}` |
 | `API-BILL-005` | `BILL` | `POST` | `/api/v1/bills/{id}/collect` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-BILL-COLLECT-REQ` | `SCH-ACK` | `202 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-BILL-COLLECT / ORG` | `Y / required / version` | `BILL_COLLECT / bill.status.changed,subscription.status.changed / req={action,version}; resp={code:OK}` |
-| `API-PAY-001` | `PAY` | `POST` | `/api/v1/payments` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PAY-CREATE-REQ` | `SCH-PAY-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-PAY-MANAGE / ORG` | `Y / required / -` | `PAYMENT_CREATE / payment.status.changed / req={payment_scene,amount}; resp={id,status}` |
-| `API-PAY-002` | `PAY` | `POST` | `/api/v1/payments/{id}/reconcile` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-PAY-RECONCILE-REQ` | `SCH-PAY-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-PAY-RECONCILE / ORG` | `Y / required / version` | `PAYMENT_RECONCILE / payment.status.changed,bill.status.changed / req={provider_ref,version}; resp={status}` |
-| `API-PAY-003` | `PAY` | `GET` | `/api/v1/payments` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-PAY-LIST-QUERY` | `SCH-PAY-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-PAY-MANAGE / ORG` | `N / n/a / -` | `PAYMENT_LIST / payment.status.changed / req=?status=succeeded; resp={items}` |
+| `API-PAY-001` | `PAY` | `POST` | `/api/v1/payments` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PAY-CREATE-REQ` | `SCH-PAY-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-PAY-MANAGE / ORG` | `Y / required / -` | `PAYMENT_CREATE / payment.status.changed / req={payment_scene,amount}; resp={id,status}` |
+| `API-PAY-002` | `PAY` | `POST` | `/api/v1/payments/{id}/confirm` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PAY-CONFIRM-REQ` | `SCH-PAY-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-PAY-CONFIRM / ORG` | `Y / required / version` | `PAYMENT_CONFIRM / payment.status.changed / req={paid_at,version}; resp={status}` |
+| `API-PAY-003` | `PAY` | `GET` | `/api/v1/payments` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PAY-LIST-QUERY` | `SCH-PAY-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-PAY-MANAGE / ORG` | `N / n/a / -` | `PAYMENT_LIST / payment.status.changed / req=?status=succeeded; resp={items}` |
+| `API-PAY-004` | `PAY` | `GET` | `/api/v1/payments/{id}` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-PAY-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-PAY-MANAGE / ORG` | `N / n/a / -` | `PAYMENT_DETAIL / - / req={id}; resp={payment}` |
+| `API-PAY-005` | `PAY` | `POST` | `/api/v1/payments/{id}/refund` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PAY-REFUND-REQ` | `SCH-PAY-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-PAY-REFUND / ORG` | `Y / required / version` | `PAYMENT_REFUND / payment.status.changed / req={version}; resp={status}` |
+| `API-PAY-006` | `PAY` | `POST` | `/api/v1/payments/{id}/void` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `SCH-PAY-VOID-REQ` | `SCH-PAY-DETAIL-RESP` | `200 / 400,403,404,409,422 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION,STATUS_TRANSITION_INVALID` | `PERM-PAY-MANAGE / ORG` | `Y / required / version` | `PAYMENT_VOID / payment.status.changed / req={version}; resp={status}` |
+| `API-PAY-007` | `PAY` | `POST` | `/api/v1/payments/{id}/reconcile` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-PAY-RECONCILE-REQ` | `SCH-PAY-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-PAY-RECONCILE / ORG` | `Y / required / version` | `PAYMENT_RECONCILE / payment.status.changed,bill.status.changed / req={provider_ref,version}; resp={status}` |
 | `API-INV-001` | `INV` | `GET` | `/api/v1/invoices` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-INV-LIST-QUERY` | `SCH-INV-LIST-RESP` | `200 / 403 / AUTH_FORBIDDEN` | `PERM-INV-MANAGE / ORG` | `N / n/a / -` | `INVOICE_LIST / invoice.status.changed / req=?status=requested; resp={items}` |
 | `API-INV-002` | `INV` | `POST` | `/api/v1/invoices` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-INV-CREATE-REQ` | `SCH-INV-DETAIL-RESP` | `201 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-INV-MANAGE / ORG` | `Y / required / -` | `INVOICE_CREATE / invoice.status.changed / req={bill_id,title,tax_no}; resp={id,status}` |
 | `API-INV-003` | `INV` | `POST` | `/api/v1/invoices/{id}/issue` | `S3 / S3 / S3,S4 / implementation-ready` | `SCH-INV-ISSUE-REQ` | `SCH-INV-DETAIL-RESP` | `200 / 400,403,404,409 / PARAM_INVALID,AUTH_FORBIDDEN,RESOURCE_NOT_FOUND,CONFLICT_VERSION` | `PERM-INV-ISSUE / ORG` | `Y / required / version` | `INVOICE_ISSUE / invoice.status.changed / req={invoice_no,version}; resp={status,issued_at}` |
@@ -204,3 +210,1059 @@
 | `API-DEPLOY-003` | `DEPLOY` | `POST` | `/api/v1/migration-batches` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-DEPLOY-MIGRATION-CREATE-REQ` | `SCH-DEPLOY-MIGRATION-RESP` | `202 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-DEPLOY-MANAGE / ORG` | `Y / required / -` | `MIGRATION_BATCH_CREATE / - / req={deployment_profile_id,from_version,to_version}; resp={batch_id}` |
 | `API-DEPLOY-004` | `DEPLOY` | `GET` | `/api/v1/migration-batches/{id}` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-PATH-ID` | `SCH-DEPLOY-MIGRATION-DETAIL-RESP` | `200 / 403,404 / AUTH_FORBIDDEN,RESOURCE_NOT_FOUND` | `PERM-DEPLOY-MANAGE / ORG` | `N / n/a / -` | `MIGRATION_BATCH_DETAIL / - / req={id}; resp={status,rollback_token}` |
 | `API-DEPLOY-005` | `DEPLOY` | `POST` | `/api/v1/license-tokens/activate` | `S3 / S4 / S3,S4 / implementation-ready` | `SCH-DEPLOY-LICENSE-ACTIVATE-REQ` | `SCH-DEPLOY-LICENSE-ACTIVATE-RESP` | `200 / 400,403,409 / PARAM_INVALID,AUTH_FORBIDDEN,CONFLICT_VERSION` | `PERM-DEPLOY-MANAGE / ORG` | `Y / required / -` | `LICENSE_ACTIVATE / - / req={token_code,bound_fingerprint}; resp={status,activated_at}` |
+
+## 4. S2 新增模块原子 API 合同
+
+## QT 报价管理
+
+### API-QT-001 创建报价
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /quotes |
+| 认证 | Bearer JWT |
+| 权限 | PERM-QT-CREATE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{
+  "opportunityId": "uuid",
+  "customerId": "uuid",
+  "currency": "CNY",
+  "items": [
+    { "itemType": "plan", "refId": "uuid", "quantity": 1, "unitPrice": 10000.00 }
+  ]
+}
+```
+
+**响应体**（201）：
+```json
+{
+  "id": "uuid",
+  "quoteNo": "QT-2026-00001",
+  "opportunityId": "uuid",
+  "customerId": "uuid",
+  "currentVersionNo": 1,
+  "currency": "CNY",
+  "amount": 10000.00,
+  "status": "draft",
+  "createdAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-QT-002 获取报价详情
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /quotes/{id} |
+| 认证 | Bearer JWT |
+| 权限 | PERM-QT-VIEW |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{
+  "id": "uuid",
+  "quoteNo": "QT-2026-00001",
+  "opportunityId": "uuid",
+  "customerId": "uuid",
+  "currentVersionNo": 1,
+  "currency": "CNY",
+  "amount": 10000.00,
+  "status": "draft",
+  "versions": [
+    { "versionNo": 1, "totalAmount": 10000.00, "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "createdAt": "2026-04-12T10:00:00Z",
+  "updatedAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-QT-003 提交报价审批
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /quotes/{id}/submit |
+| 认证 | Bearer JWT |
+| 权限 | PERM-QT-CREATE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "pending_approval" }
+```
+
+### API-QT-004 报价审批
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /quotes/{id}/approve |
+| 认证 | Bearer JWT |
+| 权限 | PERM-QT-APPROVE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "action": "approved|rejected", "comment": "string" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "approved|rejected" }
+```
+
+### API-QT-005 发送报价
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /quotes/{id}/send |
+| 认证 | Bearer JWT |
+| 权限 | PERM-QT-CREATE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "sent" }
+```
+
+### API-QT-006 报价列表
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /quotes |
+| 认证 | Bearer JWT |
+| 权限 | PERM-QT-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`status`, `customerId`, `opportunityId`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "quoteNo": "QT-2026-00001", "customerId": "uuid", "status": "draft", "amount": 10000.00, "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+## CT 合同管理
+
+### API-CT-001 创建合同
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /contracts |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CT-CREATE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{
+  "quoteId": "uuid|null",
+  "opportunityId": "uuid",
+  "customerId": "uuid",
+  "startsOn": "2026-05-01",
+  "endsOn": "2027-04-30"
+}
+```
+
+**响应体**（201）：
+```json
+{
+  "id": "uuid",
+  "contractNo": "CT-2026-00001",
+  "quoteId": "uuid|null",
+  "opportunityId": "uuid",
+  "customerId": "uuid",
+  "status": "draft",
+  "startsOn": "2026-05-01",
+  "endsOn": "2027-04-30",
+  "createdAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-CT-002 获取合同详情
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /contracts/{id} |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CT-VIEW |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{
+  "id": "uuid",
+  "contractNo": "CT-2026-00001",
+  "quoteId": "uuid|null",
+  "opportunityId": "uuid",
+  "customerId": "uuid",
+  "status": "draft",
+  "startsOn": "2026-05-01",
+  "endsOn": "2027-04-30",
+  "documents": [],
+  "createdAt": "2026-04-12T10:00:00Z",
+  "updatedAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-CT-003 提交合同审批
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /contracts/{id}/submit |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CT-CREATE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "pending_approval" }
+```
+
+### API-CT-004 合同审批
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /contracts/{id}/approve |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CT-APPROVE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "action": "approved|rejected", "comment": "string" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "approved|rejected" }
+```
+
+### API-CT-005 合同签署
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /contracts/{id}/sign |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CT-SIGN |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "signedAt": "2026-04-12T10:00:00Z" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "active", "signedAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-CT-006 上传合同文档
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /contracts/{id}/documents |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CT-CREATE |
+| 阶段 | S2 |
+
+**请求体**（multipart/form-data）：`file`, `docType`
+
+**响应体**（201）：
+```json
+{ "id": "uuid", "contractId": "uuid", "fileUrl": "string", "docType": "original" }
+```
+
+### API-CT-007 合同列表
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /contracts |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CT-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`status`, `customerId`, `opportunityId`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "contractNo": "CT-2026-00001", "customerId": "uuid", "status": "draft", "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+## ORD 订单管理
+
+### API-ORD-001 创建订单
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /orders |
+| 认证 | Bearer JWT |
+| 权限 | PERM-ORD-CREATE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{
+  "contractId": "uuid|null",
+  "quoteId": "uuid|null",
+  "customerId": "uuid",
+  "orderType": "new",
+  "items": [
+    { "itemType": "plan", "refId": "uuid", "quantity": 1, "unitPrice": 10000.00 }
+  ]
+}
+```
+
+**响应体**（201）：
+```json
+{
+  "id": "uuid",
+  "orderNo": "ORD-2026-00001",
+  "contractId": "uuid|null",
+  "quoteId": "uuid|null",
+  "customerId": "uuid",
+  "orderType": "new",
+  "status": "draft",
+  "currency": "CNY",
+  "totalAmount": 10000.00,
+  "createdAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-ORD-002 获取订单详情
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /orders/{id} |
+| 认证 | Bearer JWT |
+| 权限 | PERM-ORD-VIEW |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{
+  "id": "uuid",
+  "orderNo": "ORD-2026-00001",
+  "contractId": "uuid|null",
+  "quoteId": "uuid|null",
+  "customerId": "uuid",
+  "orderType": "new",
+  "status": "draft",
+  "currency": "CNY",
+  "totalAmount": 10000.00,
+  "items": [
+    { "id": "uuid", "itemType": "plan", "refId": "uuid", "quantity": 1, "unitPrice": 10000.00 }
+  ],
+  "payments": [],
+  "createdAt": "2026-04-12T10:00:00Z",
+  "updatedAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-ORD-003 确认订单
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /orders/{id}/confirm |
+| 认证 | Bearer JWT |
+| 权限 | PERM-ORD-CONFIRM |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "confirmed" }
+```
+
+### API-ORD-004 激活订单
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /orders/{id}/activate |
+| 认证 | Bearer JWT |
+| 权限 | PERM-ORD-CONFIRM |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "active" }
+```
+
+### API-ORD-005 取消订单
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /orders/{id}/cancel |
+| 认证 | Bearer JWT |
+| 权限 | PERM-ORD-CANCEL |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "reason": "string" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "cancelled" }
+```
+
+### API-ORD-006 订单列表
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /orders |
+| 认证 | Bearer JWT |
+| 权限 | PERM-ORD-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`status`, `customerId`, `orderType`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "orderNo": "ORD-2026-00001", "customerId": "uuid", "orderType": "new", "status": "draft", "totalAmount": 10000.00, "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+## PAY 付款确认
+
+### API-PAY-001 创建付款记录
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /payments |
+| 认证 | Bearer JWT |
+| 权限 | PERM-PAY-CREATE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{
+  "paymentScene": "order",
+  "sceneId": "uuid",
+  "channel": "bank_transfer",
+  "amount": 10000.00,
+  "currency": "CNY"
+}
+```
+
+**响应体**（201）：
+```json
+{
+  "id": "uuid",
+  "paymentNo": "PAY-2026-00001",
+  "paymentScene": "order",
+  "sceneId": "uuid",
+  "channel": "bank_transfer",
+  "status": "pending",
+  "amount": 10000.00,
+  "currency": "CNY",
+  "createdAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-PAY-002 确认付款
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /payments/{id}/confirm |
+| 认证 | Bearer JWT |
+| 权限 | PERM-PAY-CONFIRM |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "paidAt": "2026-04-12T10:00:00Z" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "succeeded", "paidAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-PAY-003 付款列表
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /payments |
+| 认证 | Bearer JWT |
+| 权限 | PERM-PAY-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`status`, `paymentScene`, `sceneId`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "paymentNo": "PAY-2026-00001", "paymentScene": "order", "sceneId": "uuid", "status": "pending", "amount": 10000.00, "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+## SUB 订阅管理
+
+### API-SUB-001 开通订阅
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /subscriptions |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-CREATE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{
+  "customerId": "uuid",
+  "orderId": "uuid",
+  "planId": "uuid|null",
+  "startsAt": "2026-05-01T00:00:00Z",
+  "endsAt": "2027-04-30T23:59:59Z",
+  "autoRenew": false
+}
+```
+
+**响应体**（201）：
+```json
+{
+  "id": "uuid",
+  "customerId": "uuid",
+  "orderId": "uuid",
+  "planId": "uuid|null",
+  "status": "active",
+  "startsAt": "2026-05-01T00:00:00Z",
+  "endsAt": "2027-04-30T23:59:59Z",
+  "autoRenew": false,
+  "createdAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-SUB-002 获取订阅详情
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /subscriptions/{id} |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-VIEW |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{
+  "id": "uuid",
+  "customerId": "uuid",
+  "orderId": "uuid",
+  "planId": "uuid|null",
+  "status": "active",
+  "startsAt": "2026-05-01T00:00:00Z",
+  "endsAt": "2027-04-30T23:59:59Z",
+  "autoRenew": false,
+  "seats": [],
+  "createdAt": "2026-04-12T10:00:00Z",
+  "updatedAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-SUB-003 暂停订阅
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /subscriptions/{id}/suspend |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "reason": "string" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "suspended" }
+```
+
+### API-SUB-004 恢复订阅
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /subscriptions/{id}/resume |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-MANAGE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "active" }
+```
+
+### API-SUB-005 取消订阅
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /subscriptions/{id}/cancel |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "reason": "string" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "cancelled" }
+```
+
+### API-SUB-006 订阅列表
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /subscriptions |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`status`, `customerId`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "customerId": "uuid", "status": "active", "startsAt": "2026-05-01T00:00:00Z", "endsAt": "2027-04-30T23:59:59Z", "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+## CSM 客户成功
+
+### API-CSM-001 获取客户健康度
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /customers/{id}/health |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CSM-VIEW |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{
+  "id": "uuid",
+  "customerId": "uuid",
+  "score": 75.00,
+  "level": "medium",
+  "factors": { "engagement": 80, "support": 60, "payment": 85 },
+  "evaluatedAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-CSM-002 创建成功计划
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /customers/{id}/success-plans |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CSM-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "title": "string", "ownerUserId": "uuid", "payload": {} }
+```
+
+**响应体**（201）：
+```json
+{ "id": "uuid", "customerId": "uuid", "title": "string", "status": "draft", "ownerUserId": "uuid", "createdAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-CSM-003 创建回访记录
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /customers/{id}/return-visits |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CSM-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "visitType": "phone", "summary": "string", "nextVisitAt": "2026-05-12T10:00:00Z" }
+```
+
+**响应体**（201）：
+```json
+{ "id": "uuid", "customerId": "uuid", "visitType": "phone", "summary": "string", "createdAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-CSM-004 续费提醒列表
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /csm/renewal-reminders |
+| 认证 | Bearer JWT |
+| 权限 | PERM-CSM-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`daysBeforeExpiry`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "customerId": "uuid", "customerName": "string", "subscriptionId": "uuid", "endsAt": "2027-04-30T23:59:59Z", "daysLeft": 30 }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+## KB 知识库
+
+### API-KB-001 创建知识分类
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /knowledge/categories |
+| 认证 | Bearer JWT |
+| 权限 | PERM-KB-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "code": "string", "name": "string", "parentId": "uuid|null", "sortOrder": 0 }
+```
+
+**响应体**（201）：
+```json
+{ "id": "uuid", "code": "string", "name": "string", "parentId": "uuid|null", "sortOrder": 0, "status": "active", "createdAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-KB-002 创建知识条目
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /knowledge/items |
+| 认证 | Bearer JWT |
+| 权限 | PERM-KB-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "categoryId": "uuid", "title": "string", "contentMd": "string", "keywords": ["string"], "sourceType": "manual" }
+```
+
+**响应体**（201）：
+```json
+{ "id": "uuid", "categoryId": "uuid", "title": "string", "status": "draft", "sourceType": "manual", "createdAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-KB-003 提交知识审核
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /knowledge/items/{id}/submit |
+| 认证 | Bearer JWT |
+| 权限 | PERM-KB-MANAGE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "review" }
+```
+
+### API-KB-004 知识审核
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /knowledge/items/{id}/review |
+| 认证 | Bearer JWT |
+| 权限 | PERM-KB-REVIEW |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "action": "approved|rejected", "comment": "string" }
+```
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "published|draft" }
+```
+
+### API-KB-005 知识搜索
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /knowledge/search |
+| 认证 | Bearer JWT |
+| 权限 | PERM-KB-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`q`, `categoryId`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "title": "string", "categoryId": "uuid", "status": "published", "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+### API-KB-006 AI 知识问答
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /knowledge/ask |
+| 认证 | Bearer JWT |
+| 权限 | PERM-KB-VIEW |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "question": "string", "categoryId": "uuid|null" }
+```
+
+**响应体**（200）：
+```json
+{ "answer": "string", "sources": [{ "itemId": "uuid", "title": "string", "relevance": 0.95 }] }
+```
+
+## DASH 经营驾驶舱
+
+### API-DASH-001 销售看板
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /dashboard/sales |
+| 认证 | Bearer JWT |
+| 权限 | PERM-DASH-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`period`, `ownerUserId`
+
+**响应体**（200）：
+```json
+{
+  "pipelineSummary": { "totalLeads": 100, "totalOpportunities": 50, "wonAmount": 500000.00 },
+  "conversionRates": { "leadToOpportunity": 0.3, "opportunityToWon": 0.2 },
+  "monthlyTrend": [{ "month": "2026-04", "wonAmount": 100000.00, "newLeads": 30 }]
+}
+```
+
+### API-DASH-002 服务看板
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /dashboard/service |
+| 认证 | Bearer JWT |
+| 权限 | PERM-DASH-VIEW |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{
+  "activeSubscriptions": 120,
+  "expiringIn30Days": 15,
+  "healthDistribution": { "high": 60, "medium": 40, "low": 15, "critical": 5 },
+  "pendingReturnVisits": 8
+}
+```
+
+### API-DASH-003 指标快照
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /dashboard/metrics/{metricCode} |
+| 认证 | Bearer JWT |
+| 权限 | PERM-DASH-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`from`, `to`
+
+**响应体**（200）：
+```json
+{
+  "metricCode": "won_amount_monthly",
+  "snapshots": [{ "snapshotAt": "2026-04-01T00:00:00Z", "metricValue": 100000.00 }]
+}
+```
+
+## AUTO 触发式自动化
+
+### API-AUTO-001 创建自动化流程
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /automation/flows |
+| 认证 | Bearer JWT |
+| 权限 | PERM-AUTO-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{ "code": "string", "name": "string", "triggerType": "event", "definition": { "trigger": { "event": "opportunity.won" }, "steps": [{ "stepCode": "create_quote", "stepType": "action", "config": {} }] } }
+```
+
+**响应体**（201）：
+```json
+{ "id": "uuid", "code": "string", "name": "string", "triggerType": "event", "status": "draft", "createdAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-AUTO-002 获取自动化流程详情
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /automation/flows/{id} |
+| 认证 | Bearer JWT |
+| 权限 | PERM-AUTO-VIEW |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "code": "string", "name": "string", "triggerType": "event", "status": "draft", "definition": {}, "createdAt": "2026-04-12T10:00:00Z", "updatedAt": "2026-04-12T10:00:00Z" }
+```
+
+### API-AUTO-003 启用自动化流程
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /automation/flows/{id}/activate |
+| 认证 | Bearer JWT |
+| 权限 | PERM-AUTO-MANAGE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "active" }
+```
+
+### API-AUTO-004 暂停自动化流程
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /automation/flows/{id}/pause |
+| 认证 | Bearer JWT |
+| 权限 | PERM-AUTO-MANAGE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "paused" }
+```
+
+### API-AUTO-005 获取执行记录
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /automation/flows/{id}/runs |
+| 认证 | Bearer JWT |
+| 权限 | PERM-AUTO-VIEW |
+| 阶段 | S2 |
+
+**查询参数**：`status`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "flowId": "uuid", "status": "succeeded", "startedAt": "2026-04-12T10:00:00Z", "finishedAt": "2026-04-12T10:00:01Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+### API-AUTO-006 重试失败执行
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /automation/runs/{id}/retry |
+| 认证 | Bearer JWT |
+| 权限 | PERM-AUTO-MANAGE |
+| 阶段 | S2 |
+
+**响应体**（200）：
+```json
+{ "id": "uuid", "status": "pending" }
+```

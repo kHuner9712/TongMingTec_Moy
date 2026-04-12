@@ -599,3 +599,184 @@ export interface CustomerStateSnapshot {
   createdAt: string;
   createdBy: string | null;
 }
+
+export type QuoteStatus =
+  | "draft"
+  | "pending_approval"
+  | "approved"
+  | "sent"
+  | "accepted"
+  | "rejected"
+  | "expired";
+
+export interface QuoteItem {
+  itemType: string;
+  refId?: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+}
+
+export interface Quote extends BaseEntity {
+  opportunityId: string;
+  customerId: string;
+  quoteNo: string;
+  currentVersionNo: number;
+  currency: string;
+  amount: number;
+  status: QuoteStatus;
+  validUntil: string | null;
+  sentAt: string | null;
+  acceptedAt: string | null;
+}
+
+export interface QuoteVersion extends BaseEntity {
+  quoteId: string;
+  versionNo: number;
+  payload: Record<string, unknown>;
+  totalAmount: number;
+}
+
+export interface QuoteApproval extends BaseEntity {
+  quoteId: string;
+  status: "pending" | "approved" | "rejected";
+  approverUserId: string | null;
+  comment: string | null;
+}
+
+export interface CreateQuoteDto {
+  opportunityId: string;
+  customerId: string;
+  currency?: string;
+  validUntil?: string;
+  items: QuoteItem[];
+}
+
+export interface UpdateQuoteDto {
+  validUntil?: string;
+  items?: QuoteItem[];
+  note?: string;
+  version: number;
+}
+
+export type ContractStatus =
+  | "draft"
+  | "pending_approval"
+  | "approved"
+  | "rejected"
+  | "signing"
+  | "active"
+  | "expired"
+  | "terminated";
+
+export interface Contract extends BaseEntity {
+  quoteId: string | null;
+  opportunityId: string;
+  customerId: string;
+  contractNo: string;
+  status: ContractStatus;
+  signedAt: string | null;
+  startsOn: string | null;
+  endsOn: string | null;
+}
+
+export interface ContractApproval extends BaseEntity {
+  contractId: string;
+  status: "pending" | "approved" | "rejected";
+  approverUserId: string | null;
+  comment: string | null;
+}
+
+export interface ContractDocument extends BaseEntity {
+  contractId: string;
+  fileUrl: string;
+  docType: string;
+  signProvider: string | null;
+  signStatus: string | null;
+}
+
+export interface CreateContractDto {
+  quoteId?: string;
+  opportunityId: string;
+  customerId: string;
+  startsOn?: string;
+  endsOn?: string;
+}
+
+export type OrderStatus =
+  | "draft"
+  | "confirmed"
+  | "active"
+  | "completed"
+  | "cancelled"
+  | "refunded";
+export type OrderType = "new" | "renewal" | "addon" | "refund";
+
+export interface OrderItem {
+  id: string;
+  orgId: string;
+  orderId: string;
+  itemType: string;
+  refId: string | null;
+  quantity: number;
+  unitPrice: number;
+  createdAt: string;
+}
+
+export interface Order extends BaseEntity {
+  contractId: string | null;
+  quoteId: string | null;
+  customerId: string;
+  orderNo: string;
+  orderType: OrderType;
+  status: OrderStatus;
+  currency: string;
+  totalAmount: number;
+  activatedAt: string | null;
+}
+
+export interface CreateOrderDto {
+  contractId?: string;
+  quoteId?: string;
+  customerId: string;
+  orderType?: OrderType;
+  currency?: string;
+  items: Array<{
+    itemType: string;
+    refId?: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+}
+
+export type PaymentStatus =
+  | "pending"
+  | "processing"
+  | "succeeded"
+  | "failed"
+  | "refunded"
+  | "voided";
+
+export interface Payment extends BaseEntity {
+  orderId: string;
+  customerId: string;
+  paymentNo: string;
+  paymentMethod: string | null;
+  status: PaymentStatus;
+  currency: string;
+  amount: number;
+  paidAt: string | null;
+  externalTxnId: string | null;
+  remark: string | null;
+}
+
+export interface CreatePaymentDto {
+  orderId: string;
+  customerId: string;
+  paymentMethod?: string;
+  currency?: string;
+  amount: number;
+  externalTxnId?: string;
+  remark?: string;
+}

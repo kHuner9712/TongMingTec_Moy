@@ -45,14 +45,16 @@
 | `TABLE-AUTO-004` | `automation_flows` | `S2 / S3 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 050` | `code:varchar[64]! idx; name:varchar[128]! idx; trigger_type:varchar[32]!=event idx enum(event|schedule|manual); status:varchar[16]!=draft idx enum(draft|active|paused|archived); definition_json:jsonb!={}; channel_id:uuid? idx fk(channels.id); is_dry_run:boolean!=false idx; last_published_at:timestamptz? idx` | `PK(id); UQ(org_id,code); FK(channel_id SET NULL/CASCADE); CHECK(status@SM-automation_flow); IDX(org_id,status,trigger_type,last_published_at)` | `允许软删除；已执行流程禁止物理删除；S2 可初始化流程模板，S3 启用执行器前补 trigger config` |
 | `TABLE-QT-001` | `quotes` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 053` | `opportunity_id:uuid! idx fk(opportunities.id); customer_id:uuid! idx fk(customers.id); quote_no:varchar[32]! uq idx; status:varchar[16]!=draft idx enum(draft|pending_approval|approved|sent|accepted|rejected|expired); current_version_no:int4!=1 idx; currency:varchar[8]!=CNY; total_amount:numeric[14,2]!=0 idx; valid_until:date? idx; sent_at:timestamptz? idx; accepted_at:timestamptz? idx` | `PK(id); UQ(org_id,quote_no); FK(opportunity_id/customer_id RESTRICT/CASCADE); CHECK(status@SM-quote); IDX(org_id,status,customer_id,valid_until)` | `允许软删除；已审批/已发送报价禁止物理删除；S2 初始化报价编号规则` |
 | `TABLE-CT-001` | `contracts` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 056` | `quote_id:uuid? idx fk(quotes.id); opportunity_id:uuid? idx fk(opportunities.id); customer_id:uuid! idx fk(customers.id); contract_no:varchar[32]! uq idx; status:varchar[16]!=draft idx enum(draft|pending_approval|approved|signing|active|expired|terminated); starts_on:date? idx; ends_on:date? idx; sign_provider:varchar[32]?; sign_status:varchar[16]? idx enum(pending|signed|rejected|expired); document_url:varchar[255]?` | `PK(id); UQ(org_id,contract_no); FK(quote_id/opportunity_id SET NULL/CASCADE, customer_id RESTRICT/CASCADE); CHECK(status@SM-contract, ends_on>=starts_on); IDX(org_id,status,customer_id,starts_on,ends_on)` | `允许软删除；active 合同禁止物理删除；S2 初始化合同编号与电子签 provider 映射` |
-| `TABLE-ORD-001` | `orders` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 059` | `contract_id:uuid? idx fk(contracts.id); quote_id:uuid? idx fk(quotes.id); customer_id:uuid! idx fk(customers.id); order_no:varchar[32]! uq idx; order_type:varchar[16]!=new idx enum(new|renewal|add_on|refund); status:varchar[16]!=draft idx enum(draft|confirmed|active|completed|cancelled|refunded); currency:varchar[8]!=CNY; total_amount:numeric[14,2]!=0 idx; activated_at:timestamptz? idx; fulfilled_at:timestamptz? idx` | `PK(id); UQ(org_id,order_no); FK(contract_id/quote_id SET NULL/CASCADE, customer_id RESTRICT/CASCADE); CHECK(status@SM-order); IDX(org_id,status,customer_id,order_type)` | `允许软删除；confirmed+ 订单禁止物理删除；S3 初始化订单号规则` |
+| `TABLE-ORD-001` | `orders` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 059` | `contract_id:uuid? idx fk(contracts.id); quote_id:uuid? idx fk(quotes.id); customer_id:uuid! idx fk(customers.id); order_no:varchar[32]! uq idx; order_type:varchar[16]!=new idx enum(new|renewal|add_on|refund); status:varchar[16]!=draft idx enum(draft|confirmed|active|completed|cancelled|refunded); currency:varchar[8]!=CNY; total_amount:numeric[14,2]!=0 idx; activated_at:timestamptz? idx; fulfilled_at:timestamptz? idx` | `PK(id); UQ(org_id,order_no); FK(contract_id/quote_id SET NULL/CASCADE, customer_id RESTRICT/CASCADE); CHECK(status@SM-order); IDX(org_id,status,customer_id,order_type)` | `允许软删除；confirmed+ 订单禁止物理删除；S2 初始化订单号规则` |
+| `TABLE-ORD-002` | `order_items` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `PROFILE-APPEND / 060` | `order_id:uuid! idx fk(orders.id); item_type:varchar[16]! idx enum(plan|addon|service); ref_id:uuid?; quantity:int4!=1; unit_price:numeric[14,2]!=0` | `PK(id); FK(order_id CASCADE/CASCADE); CHECK(item_type IN plan/addon/service); IDX(org_id,order_id)` | `禁止物理删除；跟随订单生命周期；无种子数据` |
 | `TABLE-PLAN-001` | `plans` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 061` | `code:varchar[64]! idx; name:varchar[64]! idx; billing_cycle:varchar[16]!=monthly idx enum(monthly|yearly); base_price:numeric[14,2]!=0 idx; currency:varchar[8]!=CNY; seat_limit:int4!=1; feature_flags_json:jsonb!={}; status:varchar[16]!=active idx enum(active|inactive|archived)` | `PK(id); UQ(org_id,code); CHECK(base_price>=0, seat_limit>=1); IDX(org_id,status,billing_cycle)` | `允许软删除；有 active subscription 引用时禁止删除；S3 至少初始化一个月付与年付套餐` |
 | `TABLE-PLAN-002` | `add_ons` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 062` | `plan_id:uuid? idx fk(plans.id); code:varchar[64]! idx; name:varchar[64]! idx; billing_type:varchar[16]!=one_time idx enum(one_time|recurring|usage); unit_price:numeric[14,2]!=0; currency:varchar[8]!=CNY; quota_delta_json:jsonb?; status:varchar[16]!=active idx enum(active|inactive|archived)` | `PK(id); UQ(org_id,code); FK(plan_id SET NULL/CASCADE); CHECK(unit_price>=0); IDX(org_id,status,plan_id,billing_type)` | `允许软删除；已有订单引用时禁止删除；S3 可初始化 AI/存储扩容包` |
-| `TABLE-SUB-001` | `subscriptions` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 066` | `order_id:uuid! idx fk(orders.id); customer_id:uuid! idx fk(customers.id); plan_id:uuid! idx fk(plans.id); status:varchar[16]!=trial idx enum(trial|active|overdue|suspended|expired|cancelled); starts_at:timestamptz!=now() idx; ends_at:timestamptz! idx; auto_renew:boolean!=true idx; seat_count:int4!=1 idx; used_count:int4!=0 idx; last_bill_at:timestamptz? idx` | `PK(id); FK(order_id/customer_id/plan_id RESTRICT/CASCADE); CHECK(status@SM-subscription, used_count<=seat_count); IDX(org_id,status,customer_id,ends_at)` | `允许软删除；历史订阅禁止物理删除；订单激活后创建首条 subscription` |
+| `TABLE-SUB-001` | `subscriptions` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 066` | `order_id:uuid! idx fk(orders.id); customer_id:uuid! idx fk(customers.id); plan_id:uuid! idx fk(plans.id); status:varchar[16]!=trial idx enum(trial|active|overdue|suspended|expired|cancelled); starts_at:timestamptz!=now() idx; ends_at:timestamptz! idx; auto_renew:boolean!=true idx; seat_count:int4!=1 idx; used_count:int4!=0 idx; last_bill_at:timestamptz? idx` | `PK(id); FK(order_id/customer_id/plan_id RESTRICT/CASCADE); CHECK(status@SM-subscription, used_count<=seat_count); IDX(org_id,status,customer_id,ends_at)` | `允许软删除；历史订阅禁止物理删除；订单激活后创建首条 subscription` |
+| `TABLE-SUB-002` | `subscription_seats` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 067` | `subscription_id:uuid! idx fk(subscriptions.id); seat_code:varchar[64]! idx; seat_count:int4!=0 idx; used_count:int4!=0 idx` | `PK(id); UQ(org_id,subscription_id,seat_code) WHERE deleted_at IS NULL; FK(subscription_id CASCADE/CASCADE); CHECK(seat_count>=0, used_count<=seat_count); IDX(org_id,subscription_id)` | `允许软删除；座位变更写审计；无种子数据` |
 | `TABLE-SUB-003` | `renewals` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 068` | `subscription_id:uuid! idx fk(subscriptions.id); contract_id:uuid? idx fk(contracts.id); renewal_no:varchar[32]! uq idx; status:varchar[16]!=draft idx enum(draft|pending|confirmed|paid|applied|cancelled); target_end_at:timestamptz! idx; quoted_amount:numeric[14,2]!=0; confirmed_at:timestamptz? idx; applied_at:timestamptz? idx` | `PK(id); UQ(org_id,renewal_no); FK(subscription_id RESTRICT/CASCADE, contract_id SET NULL/CASCADE); CHECK(status@SM-renewal); IDX(org_id,status,subscription_id,target_end_at)` | `允许软删除；已确认续费单禁止物理删除；合同到期提醒 job 可预创建 draft renewal` |
 | `TABLE-BILL-001` | `bills` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 069` | `subscription_id:uuid! idx fk(subscriptions.id); customer_id:uuid! idx fk(customers.id); bill_no:varchar[32]! uq idx; bill_type:varchar[16]!=subscription idx enum(subscription|usage|renewal|manual); status:varchar[16]!=draft idx enum(draft|open|paid|overdue|cancelled); currency:varchar[8]!=CNY; subtotal_amount:numeric[14,2]!=0; tax_amount:numeric[14,2]!=0; total_amount:numeric[14,2]!=0 idx; due_at:timestamptz! idx; paid_at:timestamptz? idx` | `PK(id); UQ(org_id,bill_no); FK(subscription_id/customer_id RESTRICT/CASCADE); CHECK(status@SM-bill, total_amount=subtotal_amount+tax_amount); IDX(org_id,status,customer_id,due_at)` | `允许软删除；open/paid/overdue 账单禁止物理删除；出账任务自动创建，迁移可回填历史账单` |
 | `TABLE-BILL-002` | `bill_items` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-APPEND / 070` | `bill_id:uuid! idx fk(bills.id); item_name:varchar[128]! idx; item_type:varchar[16]!=plan idx enum(plan|add_on|quota|tax|manual); quantity:numeric[12,4]!=1; unit_price:numeric[14,4]!=0; amount:numeric[14,2]!=0 idx; period_start:date? idx; period_end:date? idx` | `PK(id); FK(bill_id CASCADE/CASCADE); CHECK(quantity>=0, unit_price>=0, amount>=0); IDX(org_id,bill_id,item_type)` | `禁止物理删除；金额调整通过追加 adjustment item；出账时同步生成` |
-| `TABLE-PAY-001` | `payments` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 073` | `order_id:uuid? idx fk(orders.id); bill_id:uuid? idx fk(bills.id); subscription_id:uuid? idx fk(subscriptions.id); renewal_id:uuid? idx fk(renewals.id); payment_no:varchar[32]! uq idx; payment_scene:varchar[16]!=order idx enum(order|bill|subscription|renewal); channel:varchar[16]!=manual idx enum(alipay|wechat|bank|manual); status:varchar[16]!=pending idx enum(pending|processing|succeeded|failed|refunded|voided); amount:numeric[14,2]!=0 idx; currency:varchar[8]!=CNY; provider_ref:varchar[128]? uq idx; reconciled_at:timestamptz? idx` | `PK(id); UQ(org_id,payment_no/provider_ref); FK(order/bill/subscription/renewal SET NULL/CASCADE); CHECK(status@SM-payment); IDX(org_id,status,payment_scene,reconciled_at)` | `允许软删除；支付流水禁止物理删除；启用支付渠道时初始化 provider config` |
+| `TABLE-PAY-001` | `payments` | `S2 / S2 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 073` | `order_id:uuid? idx fk(orders.id); bill_id:uuid? idx fk(bills.id); subscription_id:uuid? idx fk(subscriptions.id); renewal_id:uuid? idx fk(renewals.id); payment_no:varchar[32]! uq idx; payment_scene:varchar[16]!=order idx enum(order|bill|subscription|renewal); channel:varchar[16]!=manual idx enum(alipay|wechat|bank|manual); status:varchar[16]!=pending idx enum(pending|processing|succeeded|failed|refunded|voided); amount:numeric[14,2]!=0 idx; currency:varchar[8]!=CNY; provider_ref:varchar[128]? uq idx; reconciled_at:timestamptz? idx` | `PK(id); UQ(org_id,payment_no/provider_ref); FK(order/bill/subscription/renewal SET NULL/CASCADE); CHECK(status@SM-payment); IDX(org_id,status,payment_scene,reconciled_at)` | `允许软删除；支付流水禁止物理删除；启用支付渠道时初始化 provider config` |
 | `TABLE-INV-001` | `invoices` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 074` | `bill_id:uuid? idx fk(bills.id); payment_id:uuid? idx fk(payments.id); invoice_no:varchar[32]? uq idx; title:varchar[128]! idx; tax_no:varchar[64]? idx; status:varchar[16]!=requested idx enum(requested|reviewing|issued|delivered|voided); amount:numeric[14,2]!=0 idx; currency:varchar[8]!=CNY; issued_at:timestamptz? idx; delivered_at:timestamptz? idx; download_url:varchar[255]?` | `PK(id); UQ(org_id,invoice_no) WHERE invoice_no IS NOT NULL; FK(bill_id/payment_id SET NULL/CASCADE); CHECK(status@SM-invoice); IDX(org_id,status,bill_id,issued_at)` | `允许软删除；已开具发票禁止物理删除；启用电子发票时初始化开票主体与税号模板` |
 | `TABLE-CSM-002` | `success_plans` | `S2 / S3 / S2,S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 076` | `customer_id:uuid! idx fk(customers.id); owner_user_id:uuid! idx fk(users.id); title:varchar[128]! idx; status:varchar[16]!=draft idx enum(draft|active|on_hold|completed|cancelled); goal_summary:text?; milestone_json:jsonb?; next_review_at:timestamptz? idx; last_review_note:varchar[255]?` | `PK(id); FK(customer_id/owner_user_id RESTRICT/CASCADE); IDX(org_id,status,customer_id,owner_user_id,next_review_at)` | `允许软删除；有任务/回访引用时禁止删除；S2 可初始化成功计划模板` |
 | `TABLE-INT-001` | `integrations` | `S3 / S3 / S3,S4 / implementation-ready` | `PROFILE-MUTABLE / 078` | `code:varchar[64]! idx; provider:varchar[64]! idx; category:varchar[32]!=crm idx enum(crm|erp|sign|email|payment|monitoring); auth_type:varchar[32]!=oauth2 idx enum(oauth2|token|basic|signature); status:varchar[16]!=draft idx enum(draft|active|paused|error|archived); config_json:jsonb!={}; last_verified_at:timestamptz? idx` | `PK(id); UQ(org_id,code); CHECK(status 配合集成生命周期); IDX(org_id,status,provider,category)` | `允许软删除；存在 flow/webhook/client 引用时禁止删除；S3 可初始化 provider 模板` |
@@ -73,3 +75,546 @@
 - 财务与审计相关表禁止物理删除；错误修正通过补偿流水或回滚批次完成，不通过硬删“回到过去”。
 - S1 租户初始化最少写入：`organizations/departments/users/roles/permissions/user_roles/role_permissions/channels`。
 - S3 商业化初始化最少写入：`plans/add_ons/deployment_profiles`；S4 国际化/私有化初始化最少写入：`locale_resources/region_policies/license_tokens`。
+
+## S2 成交与成交后衔接主干新增表
+
+### TABLE-QT-001 quotes
+
+```sql
+CREATE TABLE quotes (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  opportunity_id UUID NOT NULL,
+  customer_id UUID NOT NULL,
+  quote_no VARCHAR(32) NOT NULL,
+  current_version_no INT NOT NULL DEFAULT 1,
+  currency VARCHAR(8) NOT NULL DEFAULT 'CNY',
+  amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_quotes_org_no UNIQUE (org_id, quote_no) WHERE deleted_at IS NULL,
+  CONSTRAINT chk_quotes_status CHECK (status IN ('draft','pending_approval','approved','sent','accepted','rejected','expired'))
+);
+
+CREATE INDEX idx_quotes_org_status ON quotes(org_id, status, updated_at DESC);
+CREATE INDEX idx_quotes_org_opportunity ON quotes(org_id, opportunity_id);
+CREATE INDEX idx_quotes_org_customer ON quotes(org_id, customer_id);
+```
+
+### TABLE-QT-002 quote_versions
+
+```sql
+CREATE TABLE quote_versions (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  version_no INT NOT NULL,
+  payload JSONB NOT NULL,
+  total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT uq_quote_versions_org_quote_ver UNIQUE (org_id, quote_id, version_no)
+);
+
+CREATE INDEX idx_quote_versions_org_quote ON quote_versions(org_id, quote_id, version_no DESC);
+```
+
+### TABLE-QT-003 quote_approvals
+
+```sql
+CREATE TABLE quote_approvals (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  approver_user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  comment TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT chk_quote_approvals_status CHECK (status IN ('pending','approved','rejected'))
+);
+
+CREATE INDEX idx_quote_approvals_org_quote ON quote_approvals(org_id, quote_id);
+```
+
+### TABLE-CT-001 contracts
+
+```sql
+CREATE TABLE contracts (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  quote_id UUID NULL REFERENCES quotes(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  opportunity_id UUID NOT NULL,
+  customer_id UUID NOT NULL,
+  contract_no VARCHAR(32) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  signed_at TIMESTAMPTZ NULL,
+  starts_on DATE NULL,
+  ends_on DATE NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_contracts_org_no UNIQUE (org_id, contract_no) WHERE deleted_at IS NULL,
+  CONSTRAINT chk_contracts_status CHECK (status IN ('draft','pending_approval','approved','signing','active','expired','terminated'))
+);
+
+CREATE INDEX idx_contracts_org_status ON contracts(org_id, status, updated_at DESC);
+CREATE INDEX idx_contracts_org_customer ON contracts(org_id, customer_id);
+CREATE INDEX idx_contracts_org_opportunity ON contracts(org_id, opportunity_id);
+```
+
+### TABLE-CT-002 contract_approvals
+
+```sql
+CREATE TABLE contract_approvals (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  approver_user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  comment TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT chk_contract_approvals_status CHECK (status IN ('pending','approved','rejected'))
+);
+
+CREATE INDEX idx_contract_approvals_org_contract ON contract_approvals(org_id, contract_id);
+```
+
+### TABLE-CT-003 contract_documents
+
+```sql
+CREATE TABLE contract_documents (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  contract_id UUID NOT NULL REFERENCES contracts(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  file_url VARCHAR(255) NOT NULL,
+  doc_type VARCHAR(32) NOT NULL,
+  sign_provider VARCHAR(32) NULL,
+  sign_status VARCHAR(16) NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1)
+);
+
+CREATE INDEX idx_contract_documents_org_contract ON contract_documents(org_id, contract_id);
+```
+
+### TABLE-ORD-001 orders
+
+```sql
+CREATE TABLE orders (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  contract_id UUID NULL REFERENCES contracts(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  quote_id UUID NULL REFERENCES quotes(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  customer_id UUID NOT NULL,
+  order_no VARCHAR(32) NOT NULL,
+  order_type VARCHAR(16) NOT NULL DEFAULT 'new',
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  currency VARCHAR(8) NOT NULL DEFAULT 'CNY',
+  total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_orders_org_no UNIQUE (org_id, order_no) WHERE deleted_at IS NULL,
+  CONSTRAINT chk_orders_type CHECK (order_type IN ('new','renewal','addon','refund')),
+  CONSTRAINT chk_orders_status CHECK (status IN ('draft','confirmed','active','completed','cancelled','refunded'))
+);
+
+CREATE INDEX idx_orders_org_status ON orders(org_id, status, updated_at DESC);
+CREATE INDEX idx_orders_org_customer ON orders(org_id, customer_id);
+```
+
+### TABLE-ORD-002 order_items
+
+```sql
+CREATE TABLE order_items (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  item_type VARCHAR(16) NOT NULL,
+  ref_id UUID NULL,
+  quantity INT NOT NULL DEFAULT 1,
+  unit_price NUMERIC(14,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT chk_order_items_type CHECK (item_type IN ('plan','addon','service'))
+);
+
+CREATE INDEX idx_order_items_org_order ON order_items(org_id, order_id);
+```
+
+### TABLE-PAY-001 payments
+
+```sql
+CREATE TABLE payments (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  payment_scene VARCHAR(16) NOT NULL,
+  scene_id UUID NOT NULL,
+  payment_no VARCHAR(32) NOT NULL,
+  channel VARCHAR(32) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+  currency VARCHAR(8) NOT NULL DEFAULT 'CNY',
+  paid_at TIMESTAMPTZ NULL,
+  reconciled_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_payments_org_no UNIQUE (org_id, payment_no) WHERE deleted_at IS NULL,
+  CONSTRAINT chk_payments_scene CHECK (payment_scene IN ('order','bill','subscription','renewal')),
+  CONSTRAINT chk_payments_status CHECK (status IN ('pending','processing','succeeded','failed','refunded','voided'))
+);
+
+CREATE INDEX idx_payments_org_status ON payments(org_id, status, updated_at DESC);
+CREATE INDEX idx_payments_org_scene ON payments(org_id, payment_scene, scene_id);
+```
+
+### TABLE-SUB-001 subscriptions
+
+```sql
+CREATE TABLE subscriptions (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  customer_id UUID NOT NULL,
+  plan_id UUID NULL,
+  order_id UUID NULL REFERENCES orders(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  status VARCHAR(16) NOT NULL DEFAULT 'trial',
+  starts_at TIMESTAMPTZ NOT NULL,
+  ends_at TIMESTAMPTZ NOT NULL,
+  auto_renew BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT chk_subscriptions_status CHECK (status IN ('trial','active','overdue','suspended','expired','cancelled'))
+);
+
+CREATE INDEX idx_subscriptions_org_status ON subscriptions(org_id, status, updated_at DESC);
+CREATE INDEX idx_subscriptions_org_customer ON subscriptions(org_id, customer_id);
+```
+
+### TABLE-SUB-002 subscription_seats
+
+```sql
+CREATE TABLE subscription_seats (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  seat_code VARCHAR(64) NOT NULL,
+  seat_count INT NOT NULL DEFAULT 0,
+  used_count INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_sub_seats_org_sub_code UNIQUE (org_id, subscription_id, seat_code) WHERE deleted_at IS NULL
+);
+
+CREATE INDEX idx_sub_seats_org_subscription ON subscription_seats(org_id, subscription_id);
+```
+
+### TABLE-CSM-001 customer_health_scores
+
+```sql
+CREATE TABLE customer_health_scores (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  customer_id UUID NOT NULL,
+  score NUMERIC(8,2) NOT NULL DEFAULT 0,
+  level VARCHAR(16) NOT NULL DEFAULT 'medium',
+  factors JSONB NOT NULL DEFAULT '{}',
+  evaluated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT chk_health_level CHECK (level IN ('low','medium','high','critical'))
+);
+
+CREATE INDEX idx_health_org_customer ON customer_health_scores(org_id, customer_id);
+CREATE INDEX idx_health_org_level ON customer_health_scores(org_id, level);
+```
+
+### TABLE-CSM-002 success_plans
+
+```sql
+CREATE TABLE success_plans (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  customer_id UUID NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  owner_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  payload JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1)
+);
+
+CREATE INDEX idx_success_plans_org_customer ON success_plans(org_id, customer_id);
+```
+
+### TABLE-CSM-003 customer_return_visits
+
+```sql
+CREATE TABLE customer_return_visits (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  customer_id UUID NOT NULL,
+  visit_type VARCHAR(32) NOT NULL,
+  summary TEXT NOT NULL,
+  next_visit_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_return_visits_org_customer ON customer_return_visits(org_id, customer_id);
+```
+
+### TABLE-KB-001 knowledge_categories
+
+```sql
+CREATE TABLE knowledge_categories (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  code VARCHAR(64) NOT NULL,
+  name VARCHAR(64) NOT NULL,
+  parent_id UUID NULL REFERENCES knowledge_categories(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  sort_order INT NOT NULL DEFAULT 0,
+  status VARCHAR(16) NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_kb_categories_org_code UNIQUE (org_id, code) WHERE deleted_at IS NULL
+);
+
+CREATE INDEX idx_kb_categories_org_parent ON knowledge_categories(org_id, parent_id);
+```
+
+### TABLE-KB-002 knowledge_items
+
+```sql
+CREATE TABLE knowledge_items (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  category_id UUID NOT NULL REFERENCES knowledge_categories(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  title VARCHAR(255) NOT NULL,
+  content_md TEXT NOT NULL,
+  content_html TEXT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  keywords TEXT[] NULL,
+  source_type VARCHAR(16) NOT NULL DEFAULT 'manual',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT chk_kb_items_status CHECK (status IN ('draft','review','published','archived')),
+  CONSTRAINT chk_kb_items_source CHECK (source_type IN ('manual','import','ai'))
+);
+
+CREATE INDEX idx_kb_items_org_category ON knowledge_items(org_id, category_id);
+CREATE INDEX idx_kb_items_org_status ON knowledge_items(org_id, status, updated_at DESC);
+```
+
+### TABLE-KB-003 knowledge_reviews
+
+```sql
+CREATE TABLE knowledge_reviews (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  knowledge_item_id UUID NOT NULL REFERENCES knowledge_items(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  reviewer_user_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  comment TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT chk_kb_reviews_status CHECK (status IN ('pending','approved','rejected'))
+);
+
+CREATE INDEX idx_kb_reviews_org_item ON knowledge_reviews(org_id, knowledge_item_id);
+```
+
+### TABLE-DASH-001 metric_snapshots
+
+```sql
+CREATE TABLE metric_snapshots (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  metric_code VARCHAR(64) NOT NULL,
+  snapshot_at TIMESTAMPTZ NOT NULL,
+  dimensions JSONB NOT NULL DEFAULT '{}',
+  metric_value NUMERIC(18,4) NOT NULL DEFAULT 0,
+  source_type VARCHAR(32) NOT NULL DEFAULT 'realtime',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT chk_metric_source CHECK (source_type IN ('realtime','batch','materialized_view'))
+);
+
+CREATE INDEX idx_metric_snapshots_org_code_time ON metric_snapshots(org_id, metric_code, snapshot_at DESC);
+CREATE INDEX idx_metric_snapshots_org_time ON metric_snapshots(org_id, snapshot_at DESC);
+```
+
+### TABLE-AUTO-001 campaigns
+
+```sql
+CREATE TABLE campaigns (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  code VARCHAR(64) NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  objective VARCHAR(64) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  starts_at TIMESTAMPTZ NULL,
+  ends_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_campaigns_org_code UNIQUE (org_id, code) WHERE deleted_at IS NULL,
+  CONSTRAINT chk_campaigns_status CHECK (status IN ('draft','active','paused','completed','archived'))
+);
+
+CREATE INDEX idx_campaigns_org_status ON campaigns(org_id, status, updated_at DESC);
+```
+
+### TABLE-AUTO-002 segments
+
+```sql
+CREATE TABLE segments (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  code VARCHAR(64) NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  rule_json JSONB NOT NULL DEFAULT '{}',
+  status VARCHAR(16) NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_segments_org_code UNIQUE (org_id, code) WHERE deleted_at IS NULL
+);
+
+CREATE INDEX idx_segments_org_status ON segments(org_id, status, updated_at DESC);
+```
+
+### TABLE-AUTO-003 campaign_assets
+
+```sql
+CREATE TABLE campaign_assets (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  campaign_id UUID NULL REFERENCES campaigns(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  asset_type VARCHAR(32) NOT NULL,
+  title VARCHAR(128) NOT NULL,
+  content JSONB NOT NULL DEFAULT '{}',
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1)
+);
+
+CREATE INDEX idx_campaign_assets_org_campaign ON campaign_assets(org_id, campaign_id);
+```
+
+### TABLE-AUTO-004 automation_flows
+
+```sql
+CREATE TABLE automation_flows (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  code VARCHAR(64) NOT NULL,
+  name VARCHAR(128) NOT NULL,
+  trigger_type VARCHAR(32) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'draft',
+  definition JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  updated_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
+  version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
+  CONSTRAINT uq_automation_flows_org_code UNIQUE (org_id, code) WHERE deleted_at IS NULL,
+  CONSTRAINT chk_automation_flows_status CHECK (status IN ('draft','active','paused','archived'))
+);
+
+CREATE INDEX idx_automation_flows_org_status ON automation_flows(org_id, status, updated_at DESC);
+```
+
+### TABLE-AUTO-005 automation_runs
+
+```sql
+CREATE TABLE automation_runs (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  flow_id UUID NOT NULL REFERENCES automation_flows(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  trigger_payload JSONB NOT NULL DEFAULT '{}',
+  started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  finished_at TIMESTAMPTZ NULL,
+  error_code VARCHAR(64) NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_automation_runs_org_flow ON automation_runs(org_id, flow_id, started_at DESC);
+```
+
+### TABLE-AUTO-006 automation_steps
+
+```sql
+CREATE TABLE automation_steps (
+  id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+  org_id UUID NOT NULL REFERENCES organizations(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  run_id UUID NOT NULL REFERENCES automation_runs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  step_code VARCHAR(64) NOT NULL,
+  step_type VARCHAR(32) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  input_payload JSONB NOT NULL DEFAULT '{}',
+  output_payload JSONB NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NULL REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE INDEX idx_automation_steps_org_run ON automation_steps(org_id, run_id);
+```

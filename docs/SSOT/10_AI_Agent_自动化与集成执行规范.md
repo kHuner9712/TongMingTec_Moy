@@ -87,6 +87,27 @@
 - `rollback_strategy`
 - `takeover_strategy`
 
+### 3.3 Agent 可操作模块
+
+**报价（QT）**：
+- suggest：根据商机信息建议报价金额和明细
+- assist：自动生成报价草稿，人工确认后提交
+- auto：报价审批通过后自动发送
+
+**合同（CT）**：
+- suggest：根据报价建议合同条款
+- assist：自动生成合同草稿，人工确认后提交
+- approval：合同签署必须人工审批
+
+**订单（ORD）**：
+- suggest：建议从合同生成订单
+- assist：自动填充订单明细，人工确认
+- approval：订单确认必须人工审批
+
+**付款（PAY）**：
+- suggest：建议付款提醒
+- approval：付款确认必须人工审批
+
 ## 4. 执行模式
 
 | 模式       | 说明                             | 是否可直接落业务终态 |
@@ -160,6 +181,39 @@
 - 单 Agent 可以完成单资源判断。
 - 多资源、多模块、多终态变更必须通过 `Orchestrate Agent` + 审批链。
 - 任何跨模块事务都不得让 Agent 直接拼 SQL 或绕开 API。
+
+### 7.3 触发式自动化主干（AUTO）
+
+**阶段**：S2
+
+**触发类型**：
+- event：领域事件触发（如 opportunity.won, contract.signed, order.confirmed）
+- schedule：定时触发（Cron 表达式）
+- webhook：外部回调触发
+
+**基础节点类型**：
+- notify：发送通知（站内信/邮件/短信）
+- state_change：状态变更（调用状态机推进）
+- ai_action：AI 动作（调用 Agent 执行）
+
+**执行模型**：
+1. 触发器匹配 → 创建 automation_run（status=pending）
+2. 按步骤顺序执行 → 每步创建 automation_step
+3. 全部成功 → automation_run.status=succeeded
+4. 任一步骤失败 → automation_run.status=failed，记录 error_code
+5. 失败执行可手动重试
+
+**与成交链路的衔接**：
+- opportunity.won → 自动创建报价（suggest 模式）
+- contract.signed → 自动创建订单（assist 模式）
+- payment.succeeded → 自动激活订单（auto 模式）
+- order.activated → 自动开通订阅（auto 模式）
+- subscription.expiring → 自动发送续费提醒（notify 模式）
+
+**限制**：
+- S2 仅支持单步骤和双步骤流程，不支持复杂分支/循环
+- S2 不支持条件判断节点，条件逻辑由 AI Agent 处理
+- S2 不支持子流程调用
 
 ## 8. Approval Flow
 

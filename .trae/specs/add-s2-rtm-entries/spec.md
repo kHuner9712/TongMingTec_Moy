@@ -1,0 +1,47 @@
+# 04 需求追踪矩阵 S2 成交链路衔接补齐 Spec
+
+## Why
+
+上一轮在 03 文档中新增了 7 条成交链路衔接 REQ（REQ-QT-004/REQ-CT-005/REQ-ORD-004/REQ-CSM-005/REQ-AUTO-005/REQ-DASH-004/REQ-KB-005），但 04 的 RTM 总表尚未同步补齐，导致这些 REQ 无法闭环映射到 TABLE/SM/PERM/API/PAGE/TEST/ACPT。
+
+## What Changes
+
+- **在 4.4 节新增 4 条 RTM 行**：REQ-QT-004、REQ-CT-005、REQ-ORD-004、REQ-CSM-005
+- **在 4.2 节新增 1 条 RTM 行**：REQ-AUTO-005
+- **在 4.3 节新增 2 条 RTM 行**：REQ-DASH-004、REQ-KB-005
+- **在第 7 节补链表新增对应条目**：标记哪些字段已定义、哪些待 05/06/08/09/12 回写后补全
+- **不修改现有 RTM 行**
+
+## Impact
+
+- Affected specs: 04_需求追踪矩阵.md
+- Affected code: 无代码变更
+- 下游影响：新增 RTM 行可驱动 05/06/08/09/12 的实现级细化
+
+## ADDED Requirements
+
+### Requirement: 新增 7 条 RTM 行
+
+系统 SHALL 在 04 文档中为以下 7 条 REQ 补齐 RTM 映射：
+
+1. REQ-QT-004：报价审批后转合同 → TABLE-QT-001,TABLE-CT-001 / SM-quote,SM-contract / PERM-QT-MANAGE,PERM-CT-MANAGE / API-QT-005,API-CT-001 / PAGE-QT-002,PAGE-CT-001 / TEST-QT-004 / ACPT-QT-004
+2. REQ-CT-005：合同签署确认成交与转订单 → TABLE-CT-001,TABLE-OM-001,TABLE-ORD-001 / SM-contract,SM-opportunity,SM-order / PERM-CT-SIGN,PERM-OM-RESULT,PERM-ORD-MANAGE / API-CT-004,API-OM-006,API-ORD-001 / PAGE-CT-002,PAGE-OM-002,PAGE-ORD-001 / TEST-CT-005 / ACPT-CT-005
+3. REQ-ORD-004：订单-付款-订阅自动衔接 → TABLE-ORD-001,TABLE-PAY-001,TABLE-SUB-001 / SM-order,SM-payment,SM-subscription / PERM-ORD-ACTIVATE,PERM-PAY-MANAGE,PERM-SUB-MANAGE / API-ORD-003,API-PAY-001,API-SUB-001 / PAGE-ORD-002,PAGE-PAY-001,PAGE-SUB-001 / TEST-ORD-004 / ACPT-ORD-004
+4. REQ-CSM-005：成交后客户成功自动纳入 → TABLE-CSM-001,TABLE-CSM-002 / SM-customer / PERM-CSM-MANAGE / API-CSM-001,API-CSM-002 / PAGE-CSM-001,PAGE-CSM-003 / TEST-CSM-005 / ACPT-CSM-005
+5. REQ-AUTO-005：成交链路自动化触发器 → TABLE-AUTO-004,TABLE-AUTO-005 / SM-automation_flow / PERM-AUTO-MANAGE,PERM-AUTO-EXECUTE / API-AUTO-003,API-AUTO-007 / PAGE-AUTO-002,PAGE-AUTO-003 / TEST-AUTO-005 / ACPT-AUTO-005
+6. REQ-DASH-004：全链路经营结果看板 → TABLE-DASH-001 / - / PERM-DASH-VIEW / API-DASH-004 / PAGE-DASH-003 / TEST-DASH-004 / ACPT-DASH-004
+7. REQ-KB-005：知识库与会话工单AI集成 → TABLE-KB-002,TABLE-CNV-002,TABLE-TK-001 / SM-ai_task / PERM-KB-READ,PERM-AI-EXECUTE / API-KB-006,API-KB-007,API-AI-001 / PAGE-KB-001,PAGE-CNV-002,PAGE-TK-002 / TEST-KB-005 / ACPT-KB-005
+
+#### Scenario: RTM 闭环可追踪
+
+- **WHEN** 读者查看 04 文档
+- **THEN** 7 条新增 REQ 均有完整 RTM 映射
+- **AND** 可明确区分哪些字段已定义、哪些待 05/06/08/09/12 回写
+
+## MODIFIED Requirements
+
+无修改需求。
+
+## REMOVED Requirements
+
+无移除需求。

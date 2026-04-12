@@ -1,37 +1,53 @@
-import { lazy, Suspense, ReactNode } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from './stores/authStore';
-import Layout from './components/Layout';
-import PermissionGate from './components/PermissionGate';
-import { Spin } from 'antd';
+import { lazy, Suspense, ReactNode } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useAuthStore } from "./stores/authStore";
+import Layout from "./components/Layout";
+import PermissionGate from "./components/PermissionGate";
+import { Spin } from "antd";
 
-const Login = lazy(() => import('./pages/Login'));
-const Workbench = lazy(() => import('./pages/Workbench'));
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Customer360 = lazy(() => import('./pages/Customer360'));
-const Leads = lazy(() => import('./pages/Leads'));
-const Opportunities = lazy(() => import('./pages/Opportunities'));
-const OpportunityForecast = lazy(() => import('./pages/OpportunityForecast'));
-const Tickets = lazy(() => import('./pages/Tickets'));
-const Notifications = lazy(() => import('./pages/Notifications'));
-const AgentHub = lazy(() => import('./pages/AgentHub'));
-const Users = lazy(() => import('./pages/Users'));
-const Settings = lazy(() => import('./pages/Settings'));
+const Login = lazy(() => import("./pages/Login"));
+const Workbench = lazy(() => import("./pages/Workbench"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Customer360 = lazy(() => import("./pages/Customer360"));
+const Leads = lazy(() => import("./pages/Leads"));
+const Opportunities = lazy(() => import("./pages/Opportunities"));
+const OpportunityForecast = lazy(() => import("./pages/OpportunityForecast"));
+const Tickets = lazy(() => import("./pages/Tickets"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const AgentHub = lazy(() => import("./pages/AgentHub"));
+const Users = lazy(() => import("./pages/Users"));
+const Settings = lazy(() => import("./pages/Settings"));
 
-const Cockpit = lazy(() => import('./pages/Cockpit'));
-const CustomerWorkbench = lazy(() => import('./pages/workbench/CustomerWorkbench'));
-const ConversationWorkbench = lazy(() => import('./pages/workbench/ConversationWorkbench'));
-const AiRunsWorkbench = lazy(() => import('./pages/workbench/AiRunsWorkbench'));
-const ApprovalWorkbench = lazy(() => import('./pages/workbench/ApprovalWorkbench'));
-const RiskSignals = lazy(() => import('./pages/RiskSignals'));
+const Cockpit = lazy(() => import("./pages/Cockpit"));
+const CustomerWorkbench = lazy(
+  () => import("./pages/workbench/CustomerWorkbench"),
+);
+const ConversationWorkbench = lazy(
+  () => import("./pages/workbench/ConversationWorkbench"),
+);
+const AiRunsWorkbench = lazy(() => import("./pages/workbench/AiRunsWorkbench"));
+const ApprovalWorkbench = lazy(
+  () => import("./pages/workbench/ApprovalWorkbench"),
+);
+const RiskSignals = lazy(() => import("./pages/RiskSignals"));
+const Quotes = lazy(() => import("./pages/Quotes"));
+const QuoteDetail = lazy(() => import("./pages/QuoteDetail"));
+const Contracts = lazy(() => import("./pages/Contracts"));
+const ContractDetail = lazy(() => import("./pages/ContractDetail"));
+const Orders = lazy(() => import("./pages/Orders"));
+const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const Payments = lazy(() => import("./pages/Payments"));
+const PaymentDetail = lazy(() => import("./pages/PaymentDetail"));
 
 const PageLoader = () => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh'
-  }}>
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      height: "100vh",
+    }}
+  >
     <Spin size="large" />
   </div>
 );
@@ -66,7 +82,7 @@ function App() {
             path="cockpit"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Cockpit />, ['PERM-SYS-VIEW'])}
+                {withPermission(<Cockpit />, ["PERM-SYS-VIEW"])}
               </Suspense>
             }
           />
@@ -75,7 +91,7 @@ function App() {
             path="workbench/customer"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<CustomerWorkbench />, ['PERM-CM-VIEW'])}
+                {withPermission(<CustomerWorkbench />, ["PERM-CM-VIEW"])}
               </Suspense>
             }
           />
@@ -83,7 +99,7 @@ function App() {
             path="workbench/conversation"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<ConversationWorkbench />, ['PERM-CNV-VIEW'])}
+                {withPermission(<ConversationWorkbench />, ["PERM-CNV-VIEW"])}
               </Suspense>
             }
           />
@@ -91,7 +107,7 @@ function App() {
             path="workbench/ai-runs"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<AiRunsWorkbench />, ['PERM-AI-EXECUTE'])}
+                {withPermission(<AiRunsWorkbench />, ["PERM-AI-EXECUTE"])}
               </Suspense>
             }
           />
@@ -99,7 +115,7 @@ function App() {
             path="workbench/approvals"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<ApprovalWorkbench />, ['PERM-AI-APPROVE'])}
+                {withPermission(<ApprovalWorkbench />, ["PERM-AI-APPROVE"])}
               </Suspense>
             }
           />
@@ -108,7 +124,7 @@ function App() {
             path="customer-360/:id"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Customer360 />, ['PERM-CM-VIEW'])}
+                {withPermission(<Customer360 />, ["PERM-CM-VIEW"])}
               </Suspense>
             }
           />
@@ -117,20 +133,97 @@ function App() {
             path="risk-signals"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<RiskSignals />, ['PERM-CM-VIEW'])}
+                {withPermission(<RiskSignals />, ["PERM-CM-VIEW"])}
               </Suspense>
             }
           />
 
-          <Route path="customers" element={<Navigate to="/workbench/customer" replace />} />
-          <Route path="conversations" element={<Navigate to="/workbench/conversation" replace />} />
-          <Route path="approvals" element={<Navigate to="/workbench/approvals" replace />} />
+          <Route
+            path="quotes"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Quotes />, ["PERM-QT-MANAGE"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="quotes/:id"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<QuoteDetail />, ["PERM-QT-MANAGE"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="contracts"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Contracts />, ["PERM-CT-MANAGE"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="contracts/:id"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<ContractDetail />, ["PERM-CT-MANAGE"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="orders"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Orders />, ["PERM-ORD-MANAGE"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="orders/:id"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<OrderDetail />, ["PERM-ORD-MANAGE"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="payments"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Payments />, ["PERM-PAY-MANAGE"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="payments/:id"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<PaymentDetail />, ["PERM-PAY-MANAGE"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="customers"
+            element={<Navigate to="/workbench/customer" replace />}
+          />
+          <Route
+            path="conversations"
+            element={<Navigate to="/workbench/conversation" replace />}
+          />
+          <Route
+            path="approvals"
+            element={<Navigate to="/workbench/approvals" replace />}
+          />
 
           <Route
             path="agents"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<AgentHub />, ['PERM-AI-AGENT_MANAGE'])}
+                {withPermission(<AgentHub />, ["PERM-AI-AGENT_MANAGE"])}
               </Suspense>
             }
           />
@@ -139,7 +232,10 @@ function App() {
             path="dashboard"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Dashboard />, ['PERM-SYS-VIEW', 'PERM-DASH-VIEW'])}
+                {withPermission(<Dashboard />, [
+                  "PERM-SYS-VIEW",
+                  "PERM-DASH-VIEW",
+                ])}
               </Suspense>
             }
           />
@@ -148,10 +244,10 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<Leads />, [
-                  'PERM-LM-CREATE',
-                  'PERM-LM-ASSIGN',
-                  'PERM-LM-FOLLOW_UP',
-                  'PERM-LM-CONVERT',
+                  "PERM-LM-CREATE",
+                  "PERM-LM-ASSIGN",
+                  "PERM-LM-FOLLOW_UP",
+                  "PERM-LM-CONVERT",
                 ])}
               </Suspense>
             }
@@ -160,7 +256,7 @@ function App() {
             path="opportunities/forecast"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<OpportunityForecast />, ['PERM-OM-FORECAST'])}
+                {withPermission(<OpportunityForecast />, ["PERM-OM-FORECAST"])}
               </Suspense>
             }
           />
@@ -169,9 +265,9 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<Opportunities />, [
-                  'PERM-OM-CREATE',
-                  'PERM-OM-STAGE',
-                  'PERM-OM-RESULT',
+                  "PERM-OM-CREATE",
+                  "PERM-OM-STAGE",
+                  "PERM-OM-RESULT",
                 ])}
               </Suspense>
             }
@@ -180,7 +276,7 @@ function App() {
             path="tickets"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Tickets />, ['PERM-TK-VIEW'])}
+                {withPermission(<Tickets />, ["PERM-TK-VIEW"])}
               </Suspense>
             }
           />
@@ -188,7 +284,7 @@ function App() {
             path="notifications"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Notifications />, ['PERM-NTF-VIEW'])}
+                {withPermission(<Notifications />, ["PERM-NTF-VIEW"])}
               </Suspense>
             }
           />
@@ -196,7 +292,7 @@ function App() {
             path="users"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Users />, ['PERM-USR-MANAGE'])}
+                {withPermission(<Users />, ["PERM-USR-MANAGE"])}
               </Suspense>
             }
           />
@@ -204,7 +300,7 @@ function App() {
             path="settings"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Settings />, ['PERM-SYS-MANAGE'])}
+                {withPermission(<Settings />, ["PERM-SYS-MANAGE"])}
               </Suspense>
             }
           />
@@ -212,7 +308,7 @@ function App() {
             path="workbench"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Workbench />, ['PERM-SYS-VIEW'])}
+                {withPermission(<Workbench />, ["PERM-SYS-VIEW"])}
               </Suspense>
             }
           />

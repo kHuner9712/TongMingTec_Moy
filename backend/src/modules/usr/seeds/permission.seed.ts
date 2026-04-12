@@ -70,4 +70,21 @@ export const permissionSeeds: Array<{
 
   { permId: 'PERM-SYS-VIEW', module: 'sys', action: 'view', riskLevel: RiskLevel.P3, description: '仪表盘与系统配置查看' },
   { permId: 'PERM-SYS-MANAGE', module: 'sys', action: 'manage', riskLevel: RiskLevel.P1, description: '仪表盘与系统配置管理' },
+
+  { permId: 'PERM-QT-MANAGE', module: 'qt', action: 'manage', riskLevel: RiskLevel.P2, description: '报价管理（创建、编辑、查看）' },
+  { permId: 'PERM-QT-APPROVE', module: 'qt', action: 'approve', riskLevel: RiskLevel.P1, description: '报价审批' },
+  { permId: 'PERM-QT-SEND', module: 'qt', action: 'send', riskLevel: RiskLevel.P2, description: '报价发送' },
+
+  { permId: 'PERM-CT-MANAGE', module: 'ct', action: 'manage', riskLevel: RiskLevel.P2, description: '合同管理（创建、编辑、查看）' },
+  { permId: 'PERM-CT-APPROVE', module: 'ct', action: 'approve', riskLevel: RiskLevel.P1, description: '合同审批' },
+  { permId: 'PERM-CT-SIGN', module: 'ct', action: 'sign', riskLevel: RiskLevel.P0, description: '合同签署' },
+  { permId: 'PERM-CT-ARCHIVE', module: 'ct', action: 'archive', riskLevel: RiskLevel.P2, description: '合同归档/到期处理' },
+
+  { permId: 'PERM-ORD-MANAGE', module: 'ord', action: 'manage', riskLevel: RiskLevel.P2, description: '订单管理（创建、编辑、查看）' },
+  { permId: 'PERM-ORD-ACTIVATE', module: 'ord', action: 'activate', riskLevel: RiskLevel.P1, description: '订单激活' },
+
+  { permId: 'PERM-PAY-MANAGE', module: 'pay', action: 'manage', riskLevel: RiskLevel.P2, description: '付款管理（创建、查看、作废）' },
+  { permId: 'PERM-PAY-CONFIRM', module: 'pay', action: 'confirm', riskLevel: RiskLevel.P0, description: '付款确认/处理（高风险，需审批）' },
+  { permId: 'PERM-PAY-REFUND', module: 'pay', action: 'refund', riskLevel: RiskLevel.P0, description: '付款退款' },
+  { permId: 'PERM-PAY-RECONCILE', module: 'pay', action: 'reconcile', riskLevel: RiskLevel.P1, description: '付款对账（S3+）' },
 ];

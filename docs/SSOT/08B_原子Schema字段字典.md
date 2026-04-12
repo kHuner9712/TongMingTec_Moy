@@ -41,8 +41,8 @@
 | --- | --- |
 | `QT-quote` | `SCH-QT-LIST-QUERY(S2/S2/S2,S3,S4/implementation-ready)=page:int!=1; page_size:int!=20; customer_id:uuid?; status:string[16]? enum(draft|pending_approval|approved|sent|accepted|rejected|expired); valid_until_lte:date?; example={status:"pending_approval"}; map=quotes.customer_id/status/valid_until`<br>`SCH-QT-LIST-RESP(S2/S2/S2,S3,S4/implementation-ready)=items:array<{id,quote_no,opportunity_id,customer_id,status,total_amount,currency,valid_until?,current_version_no}>!; meta:SCH-LIST-META!; example={items:[{quote_no:"QT2026001",status:"draft"}]}; map=quotes.*`<br>`SCH-QT-CREATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=opportunity_id:uuid!; customer_id:uuid!; currency:string[8]!=CNY; valid_until:date?; items:array<{item_type:string!,item_ref_id?:uuid,description:string[128]!,quantity:numeric[12,4]!,unit_price:numeric[14,4]!,amount:numeric[14,2]!}>!; example={opportunity_id:"uuid",items:[{item_type:"plan",description:"专业版",quantity:1,unit_price:10000,amount:10000}]}; map=quotes.*,quote_items.*`<br>`SCH-QT-UPDATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=valid_until:date?; items:array<object>?; note:string[255]?; version:int!; example={valid_until:"2026-05-31",version:3}; map=quotes.valid_until/current_version_no/version`<br>`SCH-QT-DETAIL-RESP(S2/S2/S2,S3,S4/implementation-ready)=quote:{id,quote_no,opportunity_id,customer_id,status,current_version_no,currency,total_amount,valid_until?,sent_at?,accepted_at?,version}!; items:array<{id,item_type,description,quantity,unit_price,amount}>!; example={quote:{quote_no:"QT2026001",status:"approved"}}; map=quotes.*,quote_items.*`<br>`SCH-QT-SUBMIT-APPROVAL-REQ(S2/S2/S2,S3,S4/implementation-ready)=approver_ids:array<uuid>!; comment:string[255]?; version:int!; example={approver_ids:["uuid1","uuid2"],version:4}; map=quote_approval_requests.*`<br>`SCH-QT-SEND-REQ(S2/S2/S2,S3,S4/implementation-ready)=channel:string[16]! enum(email|wechat|portal); receiver:string[128]!; message:string[255]?; version:int!; example={channel:"email",receiver:"buyer@acme.com",version:5}; map=quotes.sent_at/send_logs.*` |
 | `CT-contract` | `SCH-CT-LIST-QUERY(S2/S2/S2,S3,S4/implementation-ready)=page:int!=1; page_size:int!=20; customer_id:uuid?; status:string[16]? enum(draft|pending_approval|approved|signing|active|expired|terminated); starts_on_gte:date?; ends_on_lte:date?; example={status:"signing"}; map=contracts.customer_id/status/starts_on/ends_on`<br>`SCH-CT-LIST-RESP(S2/S2/S2,S3,S4/implementation-ready)=items:array<{id,contract_no,quote_id?,customer_id,status,starts_on?,ends_on?,sign_status?}>!; meta:SCH-LIST-META!; example={items:[{contract_no:"CT2026001",status:"approved"}]}; map=contracts.*`<br>`SCH-CT-CREATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=quote_id:uuid?; opportunity_id:uuid?; customer_id:uuid!; starts_on:date?; ends_on:date?; sign_provider:string[32]?; document_url:string[255]?; example={quote_id:"uuid",customer_id:"uuid",sign_provider:"fadada"}; map=contracts.*`<br>`SCH-CT-UPDATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=starts_on:date?; ends_on:date?; document_url:string[255]?; version:int!; example={ends_on:"2027-04-30",version:3}; map=contracts.starts_on/ends_on/document_url/version`<br>`SCH-CT-DETAIL-RESP(S2/S2/S2,S3,S4/implementation-ready)=contract:{id,contract_no,quote_id?,opportunity_id?,customer_id,status,starts_on?,ends_on?,sign_provider?,sign_status?,document_url?,version}!; documents:array<{name,url,type}>?; example={contract:{contract_no:"CT2026001",status:"active"}}; map=contracts.*`<br>`SCH-CT-SUBMIT-APPROVAL-REQ(S2/S2/S2,S3,S4/implementation-ready)=approver_ids:array<uuid>!; comment:string[255]?; version:int!; example={approver_ids:["uuid"],version:2}; map=contract_approval_requests.*`<br>`SCH-CT-SIGN-REQ(S2/S3/S2,S3,S4/implementation-ready)=sign_provider:string[32]!; sign_payload:jsonb?; version:int!; example={sign_provider:"fadada",version:4}; map=contracts.sign_provider/sign_status/version`<br>`SCH-CT-EXPIRE-CHECK-REQ(S2/S3/S2,S3,S4/implementation-ready)=notify_before_days:int!=30; version:int!; example={notify_before_days:30,version:5}; map=contracts.ends_on/renewal_jobs.*` |
-| `ORD-plan-sub` | `SCH-ORD-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=page:int!=1; page_size:int!=20; customer_id:uuid?; status:string[16]? enum(draft|confirmed|active|completed|cancelled|refunded); order_type:string[16]?; example={status:"confirmed"}; map=orders.customer_id/status/order_type`<br>`SCH-ORD-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,order_no,customer_id,status,order_type,total_amount,currency,activated_at?}>!; meta:SCH-LIST-META!; example={items:[{order_no:"OD2026001",status:"active"}]}; map=orders.*`<br>`SCH-ORD-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=contract_id:uuid?; quote_id:uuid?; customer_id:uuid!; order_type:string[16]!=new; currency:string[8]!=CNY; items:array<{item_type:string!,item_ref_id?:uuid,description:string[128]!,quantity:numeric[12,4]!,unit_price:numeric[14,4]!,amount:numeric[14,2]!}>!; example={customer_id:"uuid",items:[{item_type:"plan",description:"专业版",quantity:1,unit_price:12000,amount:12000}]}; map=orders.*,order_items.*`<br>`SCH-ORD-UPDATE-REQ(S3/S3/S3,S4/implementation-ready)=items:array<object>?; note:string[255]?; version:int!; example={note:"补充增购项",version:2}; map=orders.version/order_items.*`<br>`SCH-ORD-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=order:{id,order_no,contract_id?,quote_id?,customer_id,status,order_type,total_amount,currency,activated_at?,fulfilled_at?,version}!; payments:array<{id,payment_no,status,amount,reconciled_at?}>?; example={order:{order_no:"OD2026001",status:"confirmed"}}; map=orders.*,payments.*`<br>`SCH-ORD-ACTIVATE-REQ(S3/S3/S3,S4/implementation-ready)=activation_mode:string[16]!=manual enum(manual|auto); effective_at:timestamptz?; version:int!; example={activation_mode:"auto",version:3}; map=orders.status/activated_at/subscriptions.*`<br>`SCH-ORD-REFUND-REQ(S3/S4/S3,S4/implementation-ready)=amount:numeric[14,2]!; reason:string[255]!; refund_mode:string!=original enum(original|balance|manual); version:int!; example={amount:1200,reason:"重复下单",version:4}; map=orders.status/payments.status/version`<br>`SCH-PLAN-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=status:string[16]?; billing_cycle:string[16]? enum(monthly|yearly); example={billing_cycle:"yearly"}; map=plans.status/billing_cycle`<br>`SCH-PLAN-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,code,name,billing_cycle,base_price,currency,seat_limit,status}>!; meta:SCH-LIST-META!; example={items:[{code:"pro_yearly",base_price:12000}]}; map=plans.*`<br>`SCH-PLAN-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=code:string[64]!; name:string[64]!; billing_cycle:string[16]!; base_price:numeric[14,2]!; currency:string[8]!=CNY; seat_limit:int!=1; feature_flags_json:jsonb!; example={code:"pro_yearly",billing_cycle:"yearly",base_price:12000,seat_limit:10}; map=plans.*`<br>`SCH-PLAN-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=plan:{id,code,name,billing_cycle,base_price,currency,seat_limit,feature_flags_json,status,version}!; example={plan:{code:"pro_yearly",status:"active"}}; map=plans.*`<br>`SCH-PLAN-ADDON-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=plan_id:uuid?; billing_type:string[16]? enum(one_time|recurring|usage); status:string[16]?; example={billing_type:"usage"}; map=add_ons.plan_id/billing_type/status`<br>`SCH-PLAN-ADDON-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,plan_id?,code,name,billing_type,unit_price,currency,status}>!; meta:SCH-LIST-META!; example={items:[{code:"ai_pack_1000",billing_type:"usage"}]}; map=add_ons.*`<br>`SCH-PLAN-ADDON-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=plan_id:uuid?; code:string[64]!; name:string[64]!; billing_type:string[16]!; unit_price:numeric[14,2]!; currency:string[8]!=CNY; quota_delta_json:jsonb?; example={code:"ai_pack_1000",billing_type:"usage",unit_price:199}; map=add_ons.*`<br>`SCH-PLAN-ADDON-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=add_on:{id,plan_id?,code,name,billing_type,unit_price,currency,quota_delta_json?,status,version}!; example={add_on:{code:"ai_pack_1000",status:"active"}}; map=add_ons.*`<br>`SCH-PLAN-QUOTA-POLICY-UPDATE-REQ(S3/S3/S3,S4/implementation-ready)=limits:jsonb!; overage_mode:string!=block enum(block|bill|notify); version:int!; example={limits:{ai_tokens:1000},overage_mode:"bill",version:2}; map=quota_policies.*`<br>`SCH-PLAN-QUOTA-POLICY-RESP(S3/S3/S3,S4/implementation-ready)=policy:{id,resource_code,limits,overage_mode,version}!; example={policy:{resource_code:"ai_tokens",overage_mode:"bill"}}; map=quota_policies.*`<br>`SCH-SUB-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=customer_id:uuid?; status:string[16]? enum(trial|active|overdue|suspended|expired|cancelled); auto_renew:boolean?; ends_at_lte:date?; example={status:"active"}; map=subscriptions.customer_id/status/auto_renew/ends_at`<br>`SCH-SUB-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,order_id,customer_id,plan_id,status,starts_at,ends_at,auto_renew,seat_count,used_count}>!; meta:SCH-LIST-META!; example={items:[{id:"uuid",status:"active",seat_count:20}]}; map=subscriptions.*`<br>`SCH-SUB-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=order_id:uuid!; customer_id:uuid!; plan_id:uuid!; starts_at:timestamptz?; ends_at:timestamptz!; auto_renew:boolean!=true; seat_count:int!=1; example={order_id:"uuid",customer_id:"uuid",plan_id:"uuid",ends_at:"2027-04-30T00:00:00Z"}; map=subscriptions.*`<br>`SCH-SUB-UPDATE-REQ(S3/S3/S3,S4/implementation-ready)=seat_count:int?; auto_renew:boolean?; ends_at:timestamptz?; version:int!; validation=seat_count>=used_count; example={seat_count:30,auto_renew:false,version:3}; map=subscriptions.seat_count/auto_renew/ends_at/version`<br>`SCH-SUB-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=subscription:{id,order_id,customer_id,plan_id,status,starts_at,ends_at,auto_renew,seat_count,used_count,last_bill_at?,version}!; renewals:array<{id,renewal_no,status,target_end_at,quoted_amount}>?; example={subscription:{id:"uuid",status:"active"}}; map=subscriptions.*,renewals.*`<br>`SCH-SUB-RENEW-REQ(S3/S3/S3,S4/implementation-ready)=target_end_at:timestamptz!; quoted_amount:numeric[14,2]?; contract_id:uuid?; version:int!; example={target_end_at:"2028-04-30T00:00:00Z",version:4}; map=renewals.target_end_at/quoted_amount`<br>`SCH-SUB-RENEW-RESP(S3/S3/S3,S4/implementation-ready)=renewal_id:uuid!; renewal_no:string[32]!; status:string!=draft; example={renewal_id:"uuid",renewal_no:"RN2026001",status:"draft"}; map=renewals.*`<br>`SCH-SUB-SUSPEND-REQ(S3/S4/S3,S4/implementation-ready)=reason:string[255]!; suspend_until:timestamptz?; version:int!; example={reason:"连续欠费",version:5}; map=subscriptions.status/version` |
-| `BILL-pay-invoice-csm` | `SCH-BILL-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=customer_id:uuid?; status:string[16]? enum(draft|open|paid|overdue|cancelled); due_at_lte:date?; bill_type:string[16]?; example={status:"open"}; map=bills.customer_id/status/due_at/bill_type`<br>`SCH-BILL-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,bill_no,subscription_id,customer_id,status,total_amount,currency,due_at,paid_at?}>!; meta:SCH-LIST-META!; example={items:[{bill_no:"BL2026001",status:"open"}]}; map=bills.*`<br>`SCH-BILL-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=subscription_id:uuid!; customer_id:uuid!; bill_type:string[16]!=subscription; billing_period:{start:date!,end:date!}!; items:array<{item_name:string[128]!,item_type:string!,quantity:numeric[12,4]!,unit_price:numeric[14,4]!,amount:numeric[14,2]!}>!; example={subscription_id:"uuid",billing_period:{start:"2026-04-01",end:"2026-04-30"}}; map=bills.*,bill_items.*`<br>`SCH-BILL-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=bill:{id,bill_no,subscription_id,customer_id,bill_type,status,subtotal_amount,tax_amount,total_amount,due_at,paid_at?,version}!; bill_items:array<{id,item_name,item_type,quantity,unit_price,amount,period_start?,period_end?}>!; example={bill:{bill_no:"BL2026001",status:"overdue"}}; map=bills.*,bill_items.*`<br>`SCH-BILL-EXPORT-RESP(S3/S3/S3,S4/implementation-ready)=bill_id:uuid!; file_url:string[255]!; file_format:string!=pdf enum(pdf|xlsx|csv); generated_at:timestamptz!; example={bill_id:"uuid",file_url:"https://.../bill.pdf"}; map=export_jobs.*`<br>`SCH-BILL-COLLECT-REQ(S3/S4/S3,S4/implementation-ready)=action:string[16]! enum(remind|escalate|suspend_subscription); channel:string[16]? enum(inbox|sms|email|manual); version:int!; example={action:"remind",channel:"email",version:4}; map=collection_jobs.*`<br>`SCH-PAY-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=order_id:uuid?; bill_id:uuid?; subscription_id:uuid?; renewal_id:uuid?; payment_scene:string[16]! enum(order|bill|subscription|renewal); channel:string[16]! enum(alipay|wechat|bank|manual); amount:numeric[14,2]!; currency:string[8]!=CNY; provider_payload:jsonb?; example={bill_id:"uuid",payment_scene:"bill",channel:"manual",amount:10000}; map=payments.*`<br>`SCH-PAY-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=payment:{id,payment_no,order_id?,bill_id?,subscription_id?,renewal_id?,payment_scene,channel,status,amount,currency,provider_ref?,reconciled_at?,version}!; example={payment:{payment_no:"PY2026001",status:"pending"}}; map=payments.*`<br>`SCH-PAY-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=status:string[16]? enum(pending|processing|succeeded|failed|refunded|voided); payment_scene:string[16]?; channel:string[16]?; example={status:"succeeded"}; map=payments.status/payment_scene/channel`<br>`SCH-PAY-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,payment_no,payment_scene,channel,status,amount,provider_ref?,reconciled_at?}>!; meta:SCH-LIST-META!; example={items:[{payment_no:"PY2026001",status:"succeeded"}]}; map=payments.*`<br>`SCH-PAY-RECONCILE-REQ(S3/S4/S3,S4/implementation-ready)=provider_ref:string[128]!; reconciled_at:timestamptz?; reconcile_note:string[255]?; version:int!; example={provider_ref:"wx_20260401_xxx",version:3}; map=payments.provider_ref/reconciled_at/version`<br>`SCH-INV-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=bill_id:uuid?; status:string[16]? enum(requested|reviewing|issued|delivered|voided); issued_at_gte:date?; example={status:"requested"}; map=invoices.bill_id/status/issued_at`<br>`SCH-INV-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,bill_id?,payment_id?,title,status,amount,currency,invoice_no?,issued_at?,delivered_at?}>!; meta:SCH-LIST-META!; example={items:[{title:"同明科技",status:"issued"}]}; map=invoices.*`<br>`SCH-INV-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=bill_id:uuid!; title:string[128]!; tax_no:string[64]?; amount:numeric[14,2]!; currency:string[8]!=CNY; receiver:jsonb?; example={bill_id:"uuid",title:"同明科技",tax_no:"9131..."}; map=invoices.*`<br>`SCH-INV-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=invoice:{id,bill_id?,payment_id?,invoice_no?,title,tax_no?,status,amount,currency,issued_at?,delivered_at?,download_url?,version}!; example={invoice:{id:"uuid",status:"issued"}}; map=invoices.*`<br>`SCH-INV-ISSUE-REQ(S3/S3/S3,S4/implementation-ready)=invoice_no:string[32]!; issued_at:timestamptz?; operator_note:string[255]?; version:int!; example={invoice_no:"FP2026001",version:2}; map=invoices.invoice_no/issued_at/version`<br>`SCH-INV-DELIVER-REQ(S3/S4/S3,S4/implementation-ready)=channel:string[16]! enum(email|portal|manual); receiver:string[128]!; message:string[255]?; version:int!; example={channel:"email",receiver:"finance@acme.com",version:3}; map=invoices.delivered_at/delivery_logs.*`<br>`SCH-CSM-HEALTH-RESP(S2/S2/S2,S3,S4/implementation-ready)=customer_id:uuid!; score:numeric[5,2]!; band:string[16]! enum(red|yellow|green); drivers:array<{code,label,weight,value}>!; example={customer_id:"uuid",score:78.5,band:"green"}; map=customer_health_snapshots.*`<br>`SCH-CSM-SUCCESS-PLAN-CREATE-REQ(S2/S3/S2,S3,S4/implementation-ready)=customer_id:uuid!; owner_user_id:uuid!; title:string[128]!; goal_summary:text?; milestone_json:jsonb?; next_review_at:timestamptz?; example={customer_id:"uuid",owner_user_id:"uuid",title:"Q2 续费保卫"}; map=success_plans.*`<br>`SCH-CSM-SUCCESS-PLAN-DETAIL-RESP(S2/S3/S2,S3,S4/implementation-ready)=success_plan:{id,customer_id,owner_user_id,title,status,goal_summary?,milestone_json?,next_review_at?,version}!; example={success_plan:{id:"uuid",status:"active"}}; map=success_plans.*`<br>`SCH-CSM-RENEWAL-WORKBENCH-QUERY(S2/S3/S2,S3,S4/implementation-ready)=target_end_lt:int!=30; owner_user_id:uuid?; risk_band:string[16]?; example={target_end_lt:30,risk_band:"red"}; map=renewal_workbench_cache.*`<br>`SCH-CSM-RENEWAL-WORKBENCH-RESP(S2/S3/S2,S3,S4/implementation-ready)=items:array<{subscription_id,customer_id,renewal_id?,target_end_at,health_score?,bill_status?,risk_band}>!; summary:{due_30d,overdue_count,high_risk_count}!; example={summary:{due_30d:18,high_risk_count:6}}; map=renewal_workbench_cache.*`<br>`SCH-CSM-EXPANSION-REQ(S2/S4/S2,S3,S4/implementation-ready)=signals:array<string>?; requested_products:array<string>?; example={signals:["usage_high","feature_gap"]}; map=customer_expansion_tasks.input`<br>`SCH-CSM-EXPANSION-RESP(S2/S4/S2,S3,S4/implementation-ready)=task_id:uuid!; suggested_add_ons:array<{add_on_id,reason,estimated_amount}>!; example={task_id:"uuid",suggested_add_ons:[{estimated_amount:1999}]}; map=customer_expansion_tasks.output` |
+| `ORD-plan-sub` | `SCH-ORD-LIST-QUERY(S2/S2/S2,S3,S4/implementation-ready)=page:int!=1; page_size:int!=20; customer_id:uuid?; status:string[16]? enum(draft|confirmed|active|completed|cancelled|refunded); order_type:string[16]?; example={status:"confirmed"}; map=orders.customer_id/status/order_type`<br>`SCH-ORD-LIST-RESP(S2/S2/S2,S3,S4/implementation-ready)=items:array<{id,order_no,customer_id,status,order_type,total_amount,currency,activated_at?}>!; meta:SCH-LIST-META!; example={items:[{order_no:"OD2026001",status:"active"}]}; map=orders.*`<br>`SCH-ORD-CREATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=contract_id:uuid?; quote_id:uuid?; customer_id:uuid!; order_type:string[16]!=new; currency:string[8]!=CNY; items:array<{item_type:string!,item_ref_id?:uuid,description:string[128]!,quantity:numeric[12,4]!,unit_price:numeric[14,4]!,amount:numeric[14,2]!}>!; example={customer_id:"uuid",items:[{item_type:"plan",description:"专业版",quantity:1,unit_price:12000,amount:12000}]}; map=orders.*,order_items.*`<br>`SCH-ORD-UPDATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=items:array<object>?; note:string[255]?; version:int!; example={note:"补充增购项",version:2}; map=orders.version/order_items.*`<br>`SCH-ORD-DETAIL-RESP(S2/S2/S2,S3,S4/implementation-ready)=order:{id,order_no,contract_id?,quote_id?,customer_id,status,order_type,total_amount,currency,activated_at?,fulfilled_at?,version}!; payments:array<{id,payment_no,status,amount,reconciled_at?}>?; example={order:{order_no:"OD2026001",status:"confirmed"}}; map=orders.*,payments.*`<br>`SCH-ORD-CONFIRM-REQ(S2/S2/S2,S3,S4/implementation-ready)=version:int!; example={version:2}; map=orders.status/version`<br>`SCH-ORD-ACTIVATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=activation_mode:string[16]!=manual enum(manual|auto); effective_at:timestamptz?; version:int!; example={activation_mode:"auto",version:3}; map=orders.status/activated_at/subscriptions.*`<br>`SCH-ORD-CANCEL-REQ(S2/S2/S2,S3,S4/implementation-ready)=reason:string[255]!; version:int!; example={reason:"客户取消",version:2}; map=orders.status/version`<br>`SCH-ORD-REFUND-REQ(S3/S4/S3,S4/implementation-ready)=amount:numeric[14,2]!; reason:string[255]!; refund_mode:string!=original enum(original|balance|manual); version:int!; example={amount:1200,reason:"重复下单",version:4}; map=orders.status/payments.status/version`<br>`SCH-PLAN-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=status:string[16]?; billing_cycle:string[16]? enum(monthly|yearly); example={billing_cycle:"yearly"}; map=plans.status/billing_cycle`<br>`SCH-PLAN-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,code,name,billing_cycle,base_price,currency,seat_limit,status}>!; meta:SCH-LIST-META!; example={items:[{code:"pro_yearly",base_price:12000}]}; map=plans.*`<br>`SCH-PLAN-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=code:string[64]!; name:string[64]!; billing_cycle:string[16]!; base_price:numeric[14,2]!; currency:string[8]!=CNY; seat_limit:int!=1; feature_flags_json:jsonb!; example={code:"pro_yearly",billing_cycle:"yearly",base_price:12000,seat_limit:10}; map=plans.*`<br>`SCH-PLAN-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=plan:{id,code,name,billing_cycle,base_price,currency,seat_limit,feature_flags_json,status,version}!; example={plan:{code:"pro_yearly",status:"active"}}; map=plans.*`<br>`SCH-PLAN-ADDON-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=plan_id:uuid?; billing_type:string[16]? enum(one_time|recurring|usage); status:string[16]?; example={billing_type:"usage"}; map=add_ons.plan_id/billing_type/status`<br>`SCH-PLAN-ADDON-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,plan_id?,code,name,billing_type,unit_price,currency,status}>!; meta:SCH-LIST-META!; example={items:[{code:"ai_pack_1000",billing_type:"usage"}]}; map=add_ons.*`<br>`SCH-PLAN-ADDON-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=plan_id:uuid?; code:string[64]!; name:string[64]!; billing_type:string[16]!; unit_price:numeric[14,2]!; currency:string[8]!=CNY; quota_delta_json:jsonb?; example={code:"ai_pack_1000",billing_type:"usage",unit_price:199}; map=add_ons.*`<br>`SCH-PLAN-ADDON-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=add_on:{id,plan_id?,code,name,billing_type,unit_price,currency,quota_delta_json?,status,version}!; example={add_on:{code:"ai_pack_1000",status:"active"}}; map=add_ons.*`<br>`SCH-PLAN-QUOTA-POLICY-UPDATE-REQ(S3/S3/S3,S4/implementation-ready)=limits:jsonb!; overage_mode:string!=block enum(block|bill|notify); version:int!; example={limits:{ai_tokens:1000},overage_mode:"bill",version:2}; map=quota_policies.*`<br>`SCH-PLAN-QUOTA-POLICY-RESP(S3/S3/S3,S4/implementation-ready)=policy:{id,resource_code,limits,overage_mode,version}!; example={policy:{resource_code:"ai_tokens",overage_mode:"bill"}}; map=quota_policies.*`<br>`SCH-SUB-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=customer_id:uuid?; status:string[16]? enum(trial|active|overdue|suspended|expired|cancelled); auto_renew:boolean?; ends_at_lte:date?; example={status:"active"}; map=subscriptions.customer_id/status/auto_renew/ends_at`<br>`SCH-SUB-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,order_id,customer_id,plan_id,status,starts_at,ends_at,auto_renew,seat_count,used_count}>!; meta:SCH-LIST-META!; example={items:[{id:"uuid",status:"active",seat_count:20}]}; map=subscriptions.*`<br>`SCH-SUB-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=order_id:uuid!; customer_id:uuid!; plan_id:uuid!; starts_at:timestamptz?; ends_at:timestamptz!; auto_renew:boolean!=true; seat_count:int!=1; example={order_id:"uuid",customer_id:"uuid",plan_id:"uuid",ends_at:"2027-04-30T00:00:00Z"}; map=subscriptions.*`<br>`SCH-SUB-UPDATE-REQ(S3/S3/S3,S4/implementation-ready)=seat_count:int?; auto_renew:boolean?; ends_at:timestamptz?; version:int!; validation=seat_count>=used_count; example={seat_count:30,auto_renew:false,version:3}; map=subscriptions.seat_count/auto_renew/ends_at/version`<br>`SCH-SUB-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=subscription:{id,order_id,customer_id,plan_id,status,starts_at,ends_at,auto_renew,seat_count,used_count,last_bill_at?,version}!; renewals:array<{id,renewal_no,status,target_end_at,quoted_amount}>?; example={subscription:{id:"uuid",status:"active"}}; map=subscriptions.*,renewals.*`<br>`SCH-SUB-RENEW-REQ(S3/S3/S3,S4/implementation-ready)=target_end_at:timestamptz!; quoted_amount:numeric[14,2]?; contract_id:uuid?; version:int!; example={target_end_at:"2028-04-30T00:00:00Z",version:4}; map=renewals.target_end_at/quoted_amount`<br>`SCH-SUB-RENEW-RESP(S3/S3/S3,S4/implementation-ready)=renewal_id:uuid!; renewal_no:string[32]!; status:string!=draft; example={renewal_id:"uuid",renewal_no:"RN2026001",status:"draft"}; map=renewals.*`<br>`SCH-SUB-SUSPEND-REQ(S3/S4/S3,S4/implementation-ready)=reason:string[255]!; suspend_until:timestamptz?; version:int!; example={reason:"连续欠费",version:5}; map=subscriptions.status/version` |
+| `BILL-pay-invoice-csm` | `SCH-BILL-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=customer_id:uuid?; status:string[16]? enum(draft|open|paid|overdue|cancelled); due_at_lte:date?; bill_type:string[16]?; example={status:"open"}; map=bills.customer_id/status/due_at/bill_type`<br>`SCH-BILL-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,bill_no,subscription_id,customer_id,status,total_amount,currency,due_at,paid_at?}>!; meta:SCH-LIST-META!; example={items:[{bill_no:"BL2026001",status:"open"}]}; map=bills.*`<br>`SCH-BILL-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=subscription_id:uuid!; customer_id:uuid!; bill_type:string[16]!=subscription; billing_period:{start:date!,end:date!}!; items:array<{item_name:string[128]!,item_type:string!,quantity:numeric[12,4]!,unit_price:numeric[14,4]!,amount:numeric[14,2]!}>!; example={subscription_id:"uuid",billing_period:{start:"2026-04-01",end:"2026-04-30"}}; map=bills.*,bill_items.*`<br>`SCH-BILL-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=bill:{id,bill_no,subscription_id,customer_id,bill_type,status,subtotal_amount,tax_amount,total_amount,due_at,paid_at?,version}!; bill_items:array<{id,item_name,item_type,quantity,unit_price,amount,period_start?,period_end?}>!; example={bill:{bill_no:"BL2026001",status:"overdue"}}; map=bills.*,bill_items.*`<br>`SCH-BILL-EXPORT-RESP(S3/S3/S3,S4/implementation-ready)=bill_id:uuid!; file_url:string[255]!; file_format:string!=pdf enum(pdf|xlsx|csv); generated_at:timestamptz!; example={bill_id:"uuid",file_url:"https://.../bill.pdf"}; map=export_jobs.*`<br>`SCH-BILL-COLLECT-REQ(S3/S4/S3,S4/implementation-ready)=action:string[16]! enum(remind|escalate|suspend_subscription); channel:string[16]? enum(inbox|sms|email|manual); version:int!; example={action:"remind",channel:"email",version:4}; map=collection_jobs.*`<br>`SCH-PAY-CREATE-REQ(S2/S2/S2,S3,S4/implementation-ready)=order_id:uuid?; bill_id:uuid?; subscription_id:uuid?; renewal_id:uuid?; payment_scene:string[16]! enum(order|bill|subscription|renewal); channel:string[16]! enum(alipay|wechat|bank|manual); amount:numeric[14,2]!; currency:string[8]!=CNY; provider_payload:jsonb?; example={bill_id:"uuid",payment_scene:"bill",channel:"manual",amount:10000}; map=payments.*`<br>`SCH-PAY-DETAIL-RESP(S2/S2/S2,S3,S4/implementation-ready)=payment:{id,payment_no,order_id?,bill_id?,subscription_id?,renewal_id?,payment_scene,channel,status,amount,currency,provider_ref?,reconciled_at?,version}!; example={payment:{payment_no:"PY2026001",status:"pending"}}; map=payments.*`<br>`SCH-PAY-LIST-QUERY(S2/S2/S2,S3,S4/implementation-ready)=status:string[16]? enum(pending|processing|succeeded|failed|refunded|voided); payment_scene:string[16]?; channel:string[16]?; example={status:"succeeded"}; map=payments.status/payment_scene/channel`<br>`SCH-PAY-LIST-RESP(S2/S2/S2,S3,S4/implementation-ready)=items:array<{id,payment_no,payment_scene,channel,status,amount,provider_ref?,reconciled_at?}>!; meta:SCH-LIST-META!; example={items:[{payment_no:"PY2026001",status:"succeeded"}]}; map=payments.*`<br>`SCH-PAY-RECONCILE-REQ(S3/S4/S3,S4/implementation-ready)=provider_ref:string[128]!; reconciled_at:timestamptz?; reconcile_note:string[255]?; version:int!; example={provider_ref:"wx_20260401_xxx",version:3}; map=payments.provider_ref/reconciled_at/version`<br>`SCH-INV-LIST-QUERY(S3/S3/S3,S4/implementation-ready)=bill_id:uuid?; status:string[16]? enum(requested|reviewing|issued|delivered|voided); issued_at_gte:date?; example={status:"requested"}; map=invoices.bill_id/status/issued_at`<br>`SCH-INV-LIST-RESP(S3/S3/S3,S4/implementation-ready)=items:array<{id,bill_id?,payment_id?,title,status,amount,currency,invoice_no?,issued_at?,delivered_at?}>!; meta:SCH-LIST-META!; example={items:[{title:"同明科技",status:"issued"}]}; map=invoices.*`<br>`SCH-INV-CREATE-REQ(S3/S3/S3,S4/implementation-ready)=bill_id:uuid!; title:string[128]!; tax_no:string[64]?; amount:numeric[14,2]!; currency:string[8]!=CNY; receiver:jsonb?; example={bill_id:"uuid",title:"同明科技",tax_no:"9131..."}; map=invoices.*`<br>`SCH-INV-DETAIL-RESP(S3/S3/S3,S4/implementation-ready)=invoice:{id,bill_id?,payment_id?,invoice_no?,title,tax_no?,status,amount,currency,issued_at?,delivered_at?,download_url?,version}!; example={invoice:{id:"uuid",status:"issued"}}; map=invoices.*`<br>`SCH-INV-ISSUE-REQ(S3/S3/S3,S4/implementation-ready)=invoice_no:string[32]!; issued_at:timestamptz?; operator_note:string[255]?; version:int!; example={invoice_no:"FP2026001",version:2}; map=invoices.invoice_no/issued_at/version`<br>`SCH-INV-DELIVER-REQ(S3/S4/S3,S4/implementation-ready)=channel:string[16]! enum(email|portal|manual); receiver:string[128]!; message:string[255]?; version:int!; example={channel:"email",receiver:"finance@acme.com",version:3}; map=invoices.delivered_at/delivery_logs.*`<br>`SCH-CSM-HEALTH-RESP(S2/S2/S2,S3,S4/implementation-ready)=customer_id:uuid!; score:numeric[5,2]!; band:string[16]! enum(red|yellow|green); drivers:array<{code,label,weight,value}>!; example={customer_id:"uuid",score:78.5,band:"green"}; map=customer_health_snapshots.*`<br>`SCH-CSM-SUCCESS-PLAN-CREATE-REQ(S2/S3/S2,S3,S4/implementation-ready)=customer_id:uuid!; owner_user_id:uuid!; title:string[128]!; goal_summary:text?; milestone_json:jsonb?; next_review_at:timestamptz?; example={customer_id:"uuid",owner_user_id:"uuid",title:"Q2 续费保卫"}; map=success_plans.*`<br>`SCH-CSM-SUCCESS-PLAN-DETAIL-RESP(S2/S3/S2,S3,S4/implementation-ready)=success_plan:{id,customer_id,owner_user_id,title,status,goal_summary?,milestone_json?,next_review_at?,version}!; example={success_plan:{id:"uuid",status:"active"}}; map=success_plans.*`<br>`SCH-CSM-RENEWAL-WORKBENCH-QUERY(S2/S3/S2,S3,S4/implementation-ready)=target_end_lt:int!=30; owner_user_id:uuid?; risk_band:string[16]?; example={target_end_lt:30,risk_band:"red"}; map=renewal_workbench_cache.*`<br>`SCH-CSM-RENEWAL-WORKBENCH-RESP(S2/S3/S2,S3,S4/implementation-ready)=items:array<{subscription_id,customer_id,renewal_id?,target_end_at,health_score?,bill_status?,risk_band}>!; summary:{due_30d,overdue_count,high_risk_count}!; example={summary:{due_30d:18,high_risk_count:6}}; map=renewal_workbench_cache.*`<br>`SCH-CSM-EXPANSION-REQ(S2/S4/S2,S3,S4/implementation-ready)=signals:array<string>?; requested_products:array<string>?; example={signals:["usage_high","feature_gap"]}; map=customer_expansion_tasks.input`<br>`SCH-CSM-EXPANSION-RESP(S2/S4/S2,S3,S4/implementation-ready)=task_id:uuid!; suggested_add_ons:array<{add_on_id,reason,estimated_amount}>!; example={task_id:"uuid",suggested_add_ons:[{estimated_amount:1999}]}; map=customer_expansion_tasks.output` |
 
 ## 5. 生态、多端、国际化与部署 Schema
 | 模块/资源 | Schema 定义 |
@@ -51,3 +51,272 @@
 | `PLT-terminal` | `SCH-PLT-PORTAL-HOME-RESP(S3/S3/S3,S4/implementation-ready)=cards:array<{code,title,count?,cta_path,status?}>!; ticket_digest:array<object>?; bill_digest:array<object>?; example={cards:[{code:"open_tickets",count:3,cta_path:"/portal/tickets"}]}; map=portal_home_cache.*`<br>`SCH-PLT-MOBILE-WORKSPACE-RESP(S3/S3/S3,S4/implementation-ready)=cards:array<{code,title,badge_count?,action_path}>!; pending_tasks:array<{task_id,title,due_at?}>?; conversation_alerts:array<{conversation_id,waiting_sec}>?; example={cards:[{code:"my_tasks",badge_count:5}]}; map=mobile_workspace_cache.*`<br>`SCH-PLT-MINIAPP-HOME-RESP(S3/S4/S3,S4/implementation-ready)=widgets:array<{code,title,data:json}>!; entry_links:array<{label,path}>!; example={widgets:[{code:"renewal_summary",data:{due_30d:8}}]}; map=miniapp_home_cache.*`<br>`SCH-PLT-TERMINAL-PROFILE-UPDATE-REQ(S3/S4/S3,S4/implementation-ready)=theme_json:jsonb?; navigation_json:jsonb?; feature_flags_json:jsonb?; status:string[16]? enum(draft|active|paused|archived); version:int!; example={feature_flags_json:{portal_invoice:true},version:2}; map=terminal_profiles.theme_json/navigation_json/feature_flags_json/status/version`<br>`SCH-PLT-TERMINAL-PROFILE-RESP(S3/S4/S3,S4/implementation-ready)=profile:{id,terminal_type,profile_code,name,theme_json,navigation_json,feature_flags_json,status,version}!; example={profile:{terminal_type:"portal",profile_code:"default"}}; map=terminal_profiles.*` |
 | `I18N-region` | `SCH-I18N-LOCALE-LIST-QUERY(S4/S4/S4/implementation-ready)=locale_code:string[16]?; namespace:string[64]?; status:string[16]?; keyword:string[128]?; example={locale_code:"zh-CN",namespace:"billing"}; map=locale_resources.locale_code/namespace/status/resource_key`<br>`SCH-I18N-LOCALE-LIST-RESP(S4/S4/S4/implementation-ready)=items:array<{id,locale_code,namespace,resource_key,text_value,status,version_tag?}>!; meta:SCH-LIST-META!; example={items:[{resource_key:"invoice.issue",status:"published"}]}; map=locale_resources.*`<br>`SCH-I18N-LOCALE-UPDATE-REQ(S4/S4/S4/implementation-ready)=text_value:text!; status:string[16]! enum(draft|reviewing|published|archived); version_tag:string[32]?; version:int!; example={text_value:"开具发票",status:"published",version:3}; map=locale_resources.text_value/status/version_tag/version`<br>`SCH-I18N-LOCALE-DETAIL-RESP(S4/S4/S4/implementation-ready)=resource:{id,locale_code,namespace,resource_key,text_value,status,version_tag?,version}!; example={resource:{locale_code:"en-US",resource_key:"invoice.issue"}}; map=locale_resources.*`<br>`SCH-I18N-REGION-LIST-QUERY(S4/S4/S4/implementation-ready)=region_code:string[16]?; currency:string[8]?; status:string[16]?; example={region_code:"CN"}; map=region_policies.region_code/currency/status`<br>`SCH-I18N-REGION-LIST-RESP(S4/S4/S4/implementation-ready)=items:array<{id,region_code,currency,timezone,tax_mode,data_residency,status}>!; meta:SCH-LIST-META!; example={items:[{region_code:"CN",currency:"CNY"}]}; map=region_policies.*`<br>`SCH-I18N-REGION-UPDATE-REQ(S4/S4/S4/implementation-ready)=currency:string[8]!; timezone:string[64]!; tax_mode:string[16]!; policy_json:jsonb!; version:int!; example={currency:"USD",timezone:"America/Los_Angeles",tax_mode:"sales_tax",version:2}; map=region_policies.currency/timezone/tax_mode/policy_json/version`<br>`SCH-I18N-REGION-DETAIL-RESP(S4/S4/S4/implementation-ready)=policy:{id,region_code,currency,timezone,tax_mode,data_residency,policy_json,status,version}!; example={policy:{region_code:"US",tax_mode:"sales_tax"}}; map=region_policies.*`<br>`SCH-I18N-CONSENT-CREATE-REQ(S4/S4/S4/implementation-ready)=subject_type:string[32]!; subject_id:uuid!; consent_type:string[32]!; status:string[16]! enum(granted|revoked); region_code:string[16]!; evidence_json:jsonb?; example={subject_type:"portal_user",subject_id:"uuid",consent_type:"privacy",status:"granted",region_code:"CN"}; map=consent_records.*`<br>`SCH-I18N-CONSENT-RESP(S4/S4/S4/implementation-ready)=consent_record:{id,subject_type,subject_id,consent_type,status,region_code,created_at}!; example={consent_record:{id:"uuid",status:"granted"}}; map=consent_records.*` |
 | `DEPLOY-profile-batch-license` | `SCH-DEPLOY-PROFILE-LIST-QUERY(S3/S4/S3,S4/implementation-ready)=deploy_mode:string[16]? enum(saas|onprem|hybrid); region_code:string[16]?; status:string[16]?; example={deploy_mode:"onprem"}; map=deployment_profiles.deploy_mode/region_code/status`<br>`SCH-DEPLOY-PROFILE-LIST-RESP(S3/S4/S3,S4/implementation-ready)=items:array<{id,profile_code,deploy_mode,region_code,domain,license_mode,status,last_check_at?}>!; meta:SCH-LIST-META!; example={items:[{profile_code:"cn-onprem",deploy_mode:"onprem"}]}; map=deployment_profiles.*`<br>`SCH-DEPLOY-PROFILE-UPDATE-REQ(S3/S4/S3,S4/implementation-ready)=domain:string[255]?; db_conn_secret_ref:string[128]?; storage_conn_secret_ref:string[128]?; status:string[16]? enum(draft|ready|deploying|live|error); version:int!; example={domain:"moy.example.cn",status:"ready",version:2}; map=deployment_profiles.domain/db_conn_secret_ref/storage_conn_secret_ref/status/version`<br>`SCH-DEPLOY-PROFILE-RESP(S3/S4/S3,S4/implementation-ready)=profile:{id,profile_code,deploy_mode,region_code,domain,license_mode,status,last_check_at?,version}!; example={profile:{profile_code:"cn-onprem",status:"live"}}; map=deployment_profiles.*`<br>`SCH-DEPLOY-MIGRATION-CREATE-REQ(S3/S4/S3,S4/implementation-ready)=deployment_profile_id:uuid!; from_version:string[32]!; to_version:string[32]!; dry_run:boolean!=false; rollback_plan:string[255]!; example={deployment_profile_id:"uuid",from_version:"3.2.0",to_version:"3.3.0",dry_run:true,rollback_plan:"snapshot+token"}; map=migration_batches.*`<br>`SCH-DEPLOY-MIGRATION-RESP(S3/S4/S3,S4/implementation-ready)=batch_id:uuid!; batch_no:string[32]!; status:string!=pending; example={batch_id:"uuid",batch_no:"MB20260401",status:"pending"}; map=migration_batches.*`<br>`SCH-DEPLOY-MIGRATION-DETAIL-RESP(S3/S4/S3,S4/implementation-ready)=batch:{id,batch_no,deployment_profile_id,from_version,to_version,status,executed_by?,started_at?,finished_at?,rollback_token?,version}!; steps:array<{name,status,started_at?,finished_at?,error_code?}>?; example={batch:{batch_no:"MB20260401",status:"rolled_back"}}; map=migration_batches.*,migration_batch_steps.*`<br>`SCH-DEPLOY-LICENSE-ACTIVATE-REQ(S3/S4/S3,S4/implementation-ready)=token_code:string[128]!; bound_fingerprint:string[255]!; seat_limit:int?; example={token_code:"LIC-XXXX",bound_fingerprint:"sha256:abcd"}; map=license_tokens.token_code/bound_fingerprint`<br>`SCH-DEPLOY-LICENSE-ACTIVATE-RESP(S3/S4/S3,S4/implementation-ready)=license:{id,license_type,status,seat_limit,expires_at?,activated_at?,bound_fingerprint}?; profile_status:string[16]?; example={license:{status:"activated",seat_limit:50},profile_status:"ready"}; map=license_tokens.*,deployment_profiles.status` |
+
+## 6. S2 新增模块 Schema（字段级展开）
+
+## QT 报价管理 Schema
+
+### QuoteCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| opportunityId | uuid | Y | - | FK:opportunities.id | 关联商机 |
+| customerId | uuid | Y | - | FK:customers.id | 客户 |
+| currency | string | N | CNY | len<=8 | 币种 |
+| items | QuoteItemInput[] | Y | - | minItems:1 | 报价明细 |
+
+### QuoteItemInput
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| itemType | string | Y | - | in:plan,addon,service | 明细类型 |
+| refId | uuid | N | - | - | 关联ID |
+| quantity | integer | N | 1 | min:1 | 数量 |
+| unitPrice | numeric(14,2) | N | 0 | min:0 | 单价 |
+
+### QuoteResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | uuid | 报价ID |
+| quoteNo | string(32) | 报价编号 |
+| opportunityId | uuid | 关联商机 |
+| customerId | uuid | 客户 |
+| currentVersionNo | integer | 当前版本号 |
+| currency | string(8) | 币种 |
+| amount | numeric(14,2) | 金额 |
+| status | string(16) | 状态 |
+| createdAt | timestamptz | 创建时间 |
+
+## CT 合同管理 Schema
+
+### ContractCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| quoteId | uuid | N | null | FK:quotes.id | 关联报价 |
+| opportunityId | uuid | Y | - | FK:opportunities.id | 关联商机 |
+| customerId | uuid | Y | - | FK:customers.id | 客户 |
+| startsOn | date | N | - | - | 合同开始日期 |
+| endsOn | date | N | - | - | 合同结束日期 |
+
+### ContractResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | uuid | 合同ID |
+| contractNo | string(32) | 合同编号 |
+| quoteId | uuid | 关联报价 |
+| opportunityId | uuid | 关联商机 |
+| customerId | uuid | 客户 |
+| status | string(16) | 状态 |
+| signedAt | timestamptz | 签署时间 |
+| startsOn | date | 开始日期 |
+| endsOn | date | 结束日期 |
+| createdAt | timestamptz | 创建时间 |
+
+## ORD 订单管理 Schema
+
+### OrderCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| contractId | uuid | N | null | FK:contracts.id | 关联合同 |
+| quoteId | uuid | N | null | FK:quotes.id | 关联报价 |
+| customerId | uuid | Y | - | FK:customers.id | 客户 |
+| orderType | string | N | new | in:new,renewal,addon,refund | 订单类型 |
+| items | OrderItemInput[] | Y | - | minItems:1 | 订单明细 |
+
+### OrderItemInput
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| itemType | string | Y | - | in:plan,addon,service | 明细类型 |
+| refId | uuid | N | - | - | 关联ID |
+| quantity | integer | N | 1 | min:1 | 数量 |
+| unitPrice | numeric(14,2) | N | 0 | min:0 | 单价 |
+
+### OrderResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | uuid | 订单ID |
+| orderNo | string(32) | 订单编号 |
+| contractId | uuid | 关联合同 |
+| quoteId | uuid | 关联报价 |
+| customerId | uuid | 客户 |
+| orderType | string(16) | 订单类型 |
+| status | string(16) | 状态 |
+| currency | string(8) | 币种 |
+| totalAmount | numeric(14,2) | 总金额 |
+| createdAt | timestamptz | 创建时间 |
+
+## PAY 付款确认 Schema
+
+### PaymentCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| paymentScene | string | Y | - | in:order,bill,subscription,renewal | 付款场景 |
+| sceneId | uuid | Y | - | - | 场景关联ID |
+| channel | string | Y | - | len<=32 | 付款渠道 |
+| amount | numeric(14,2) | Y | - | min:0.01 | 金额 |
+| currency | string | N | CNY | len<=8 | 币种 |
+
+### PaymentResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | uuid | 付款ID |
+| paymentNo | string(32) | 付款编号 |
+| paymentScene | string(16) | 付款场景 |
+| sceneId | uuid | 场景关联ID |
+| channel | string(32) | 付款渠道 |
+| status | string(16) | 状态 |
+| amount | numeric(14,2) | 金额 |
+| currency | string(8) | 币种 |
+| paidAt | timestamptz | 付款时间 |
+| createdAt | timestamptz | 创建时间 |
+
+## SUB 订阅管理 Schema
+
+### SubscriptionCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| customerId | uuid | Y | - | FK:customers.id | 客户 |
+| orderId | uuid | N | null | FK:orders.id | 关联订单 |
+| planId | uuid | N | null | - | 套餐ID |
+| startsAt | timestamptz | Y | - | - | 开始时间 |
+| endsAt | timestamptz | Y | - | after:startsAt | 结束时间 |
+| autoRenew | boolean | N | false | - | 自动续费 |
+
+### SubscriptionResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | uuid | 订阅ID |
+| customerId | uuid | 客户 |
+| orderId | uuid | 关联订单 |
+| planId | uuid | 套餐ID |
+| status | string(16) | 状态 |
+| startsAt | timestamptz | 开始时间 |
+| endsAt | timestamptz | 结束时间 |
+| autoRenew | boolean | 自动续费 |
+| createdAt | timestamptz | 创建时间 |
+
+## CSM 客户成功 Schema
+
+### HealthScoreResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | uuid | 健康度ID |
+| customerId | uuid | 客户 |
+| score | numeric(8,2) | 健康分 |
+| level | string(16) | 等级: low/medium/high/critical |
+| factors | jsonb | 因子明细 |
+| evaluatedAt | timestamptz | 评估时间 |
+
+### SuccessPlanCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| title | string(255) | Y | - | - | 计划标题 |
+| ownerUserId | uuid | Y | - | FK:users.id | 负责人 |
+| payload | jsonb | N | {} | - | 计划内容 |
+
+### ReturnVisitCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| visitType | string(32) | Y | - | - | 回访类型 |
+| summary | text | Y | - | - | 回访摘要 |
+| nextVisitAt | timestamptz | N | - | - | 下次回访时间 |
+
+## KB 知识库 Schema
+
+### KnowledgeCategoryCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| code | string(64) | Y | - | uq:org_id+code | 分类编码 |
+| name | string(64) | Y | - | - | 分类名称 |
+| parentId | uuid | N | null | FK:knowledge_categories.id | 父分类 |
+| sortOrder | integer | N | 0 | min:0 | 排序 |
+
+### KnowledgeItemCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| categoryId | uuid | Y | - | FK:knowledge_categories.id | 分类 |
+| title | string(255) | Y | - | - | 标题 |
+| contentMd | text | Y | - | - | Markdown 内容 |
+| keywords | string[] | N | - | - | 关键词 |
+| sourceType | string | N | manual | in:manual,import,ai | 来源类型 |
+
+### KnowledgeSearchSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| q | string | Y | - | minLen:1 | 搜索关键词 |
+| categoryId | uuid | N | - | - | 限定分类 |
+| page | integer | N | 1 | min:1 | 页码 |
+| pageSize | integer | N | 20 | min:1,max:100 | 每页条数 |
+
+## DASH 经营驾驶舱 Schema
+
+### SalesDashboardQuerySchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| period | string | N | month | in:week,month,quarter,year | 统计周期 |
+| ownerUserId | uuid | N | - | FK:users.id | 负责人筛选 |
+
+### ServiceDashboardResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| activeSubscriptions | integer | 活跃订阅数 |
+| expiringIn30Days | integer | 30天内到期数 |
+| healthDistribution | object | 健康度分布 |
+| pendingReturnVisits | integer | 待回访数 |
+
+## AUTO 触发式自动化 Schema
+
+### AutomationFlowCreateSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| code | string(64) | Y | - | uq:org_id+code | 流程编码 |
+| name | string(128) | Y | - | - | 流程名称 |
+| triggerType | string | Y | - | in:event,schedule,webhook | 触发类型 |
+| definition | jsonb | Y | - | - | 流程定义 |
+
+### AutomationFlowDefinitionSchema
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| trigger | object | Y | - | - | 触发器配置 |
+| trigger.event | string | N | - | - | 事件名（triggerType=event时必填） |
+| trigger.cron | string | N | - | - | Cron 表达式（triggerType=schedule时必填） |
+| steps | AutomationStepConfig[] | Y | - | minItems:1 | 步骤列表 |
+
+### AutomationStepConfig
+
+| 字段 | 类型 | 必填 | 默认值 | 校验规则 | 说明 |
+|---|---|---|---|---|---|
+| stepCode | string(64) | Y | - | - | 步骤编码 |
+| stepType | string | Y | - | in:notify,state_change,ai_action | 步骤类型 |
+| config | object | Y | - | - | 步骤配置 |
+
+### AutomationRunResponseSchema
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| id | uuid | 执行ID |
+| flowId | uuid | 流程ID |
+| status | string(16) | 状态: pending/running/succeeded/failed |
+| startedAt | timestamptz | 开始时间 |
+| finishedAt | timestamptz | 结束时间 |
+| errorCode | string(64) | 错误码 |

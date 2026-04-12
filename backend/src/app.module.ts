@@ -27,6 +27,10 @@ import { ApprovalCenterModule } from './modules/approval-center/approval-center.
 import { TakeoverCenterModule } from './modules/takeover-center/takeover-center.module';
 import { RollbackCenterModule } from './modules/rollback-center/rollback-center.module';
 import { AiRuntimeModule } from './modules/ai-runtime/ai-runtime.module';
+import { QtModule } from './modules/qt/qt.module';
+import { CtModule } from './modules/ct/ct.module';
+import { OrdModule } from './modules/ord/ord.module';
+import { PayModule } from './modules/pay/pay.module';
 
 import { WebSocketModule } from './common/gateway/websocket.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -94,6 +98,10 @@ import jwtConfig from './config/jwt.config';
     TakeoverCenterModule,
     RollbackCenterModule,
     AiRuntimeModule,
+    QtModule,
+    CtModule,
+    OrdModule,
+    PayModule,
     WebSocketModule,
   ],
   providers: [
