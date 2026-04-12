@@ -71,7 +71,10 @@
 ## 4. 发布门禁与迁移检查
 | 主题 | 可执行检查项 | 阻塞条件 |
 | --- | --- | --- |
-| `阶段发布门禁` | `S1=AUTH/CM/LM/OM/CNV/TK 主链 TEST+ACPT 全绿; S2=AI/QT/CT/CSM/AUTO 补齐; S3=ORD/SUB/BILL/PAY/INV/INT/PLT 补齐; S4=I18N/DEPLOY/字段权限/onprem 补齐` | `任一 required_in<=当前阶段 的 ACPT 未通过即阻塞发布` |
+| `S1 发布门禁` | `AUTH/CM/LM/OM/CNV/TK 主链 TEST+ACPT 全绿；4 条核心端到端链路可 UI 操作完成；多租户隔离验证通过；审计日志可查询；驾驶舱基础摘要可展示` | `任一 required_in<=S1 的 ACPT 未通过即阻塞 S1 发布` |
+| `S2 发布门禁` | `S1 门禁全部维持；AI/QT/CT/ORD/PAY/SUB/CSM/KB/DASH/AUTO 补齐 TEST+ACPT；成交链路 E2E 可 UI 操作完成；高风险动作审批强制生效；审批/接管/回滚流程可走通；成交转化率可采集` | `任一 required_in<=S2 的 ACPT 未通过即阻塞 S2 发布` |
+| `S3 发布门禁` | `S2 门禁全部维持；PLAN/BILL/INV/INT/PLT 补齐 TEST+ACPT；商业化闭环 E2E 可 UI 操作完成；欠费停服恢复链路可走通；AI auto 模式可用且受控` | `任一 required_in<=S3 的 ACPT 未通过即阻塞 S3 发布` |
+| `S4 发布门禁` | `S3 门禁全部维持；I18N/DEPLOY/字段权限补齐 TEST+ACPT；国际化全链路可走通；私有化部署+迁移+回滚可走通；六个结果指标全部可看板化` | `任一 required_in<=S4 的 ACPT 未通过即阻塞 S4 发布` |
 | `migration 演练` | `核对 deployment_profile=ready; 备份快照完成; dry_run batch 成功; rollback_plan 已评审; migration_batches 有 batch_no/rollback_token` | `dry_run 失败、快照缺失、rollback_plan 缺失、批次无审计记录` |
 | `rollback 前置` | `确认无不可逆 DDL; 财务表仅补偿不硬删; 对外 provider 回调已暂停或可幂等重放; license/token 不会重复绑定` | `存在不可逆 DDL 未备份、支付/发票已外发且无补偿方案` |
 | `onprem 额外检查` | `license offline/online 模式匹配; secret_ref 已在目标机房下发; region/data residency 合规; 本地对象存储与备份演练通过` | `license 未激活、secret 缺失、数据驻留不满足、备份恢复未验证` |

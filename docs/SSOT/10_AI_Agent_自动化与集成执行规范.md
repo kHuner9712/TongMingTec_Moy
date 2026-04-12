@@ -124,6 +124,13 @@
 - `Quality Agent`：`auto`
 - `Orchestrate Agent`：`approval`
 
+阶段约束：
+- S1 阶段：仅允许 suggest 模式
+- S2 阶段：允许 suggest + assist + approval 模式
+- S3 阶段：允许 suggest + assist + auto + approval 模式
+- S4 阶段：允许全部模式
+- 详细治理要求见第 13 节
+
 ## 5. Prompt / Template 规范
 
 - Prompt 必须模板化存储，不允许代码内散落硬编码长 Prompt。
@@ -327,7 +334,45 @@
 - 集成重试积压
 - Webhook 投递失败
 
-## 13. 与其他主文档的关系
+## 13. AI 执行治理与阶段关系
+
+### 13.1 阶段治理总表
+
+| 阶段 | 允许的执行模式 | 强制审批动作 | 必须支持接管 | 必须支持回滚 | 必须审计 |
+| --- | --- | --- | --- | --- | --- |
+| S1 | suggest | 无强制 | 可用非强制 | 可用非强制 | 全部 AI 动作 |
+| S2 | suggest + assist + approval | 合同签署/订单确认/付款确认 | 强制 | 强制 | 全部 AI 动作 |
+| S3 | suggest + assist + auto + approval | P0/P1 风险动作 | 强制 | 强制 | 全部 AI 动作 |
+| S4 | 全部模式 | P0 风险动作+字段权限回滚 | 强制 | 强制 | 全部 AI 动作+可观测 |
+
+### 13.2 阶段约束说明
+
+**S1**：
+- AI 仅允许 suggest 模式，所有 AI 输出必须经人工确认后落地
+- 审批中心（APC）可用但非强制，crud_ready 级别
+- 接管/回滚能力可用但非强制，crud_ready 级别
+- 所有 AI 动作必须写入审计日志
+
+**S2**：
+- 新增 assist 和 approval 模式
+- 高风险动作（合同签署、订单确认、付款确认）必须经过 approval 模式审批后才可执行
+- 审批中心必须升级至 workflow_ready
+- 接管/回滚必须升级至 workflow_ready
+- AI Agent Registry 必须支持 activate/pause/archive
+
+**S3**：
+- 新增 auto 模式，但仅限低风险动作（如质检、标签建议、提醒创建）
+- P0/P1 风险动作（发票开具、支付对账、权限回滚、停服）必须经过 approval 模式
+- AI 质检可用（Quality Agent auto 模式）
+- 回滚/接管必须 production_ready
+
+**S4**：
+- 全部四种执行模式可用
+- 规模化 AI 编排（Orchestrate Agent）必须经过 approval 模式
+- AI 审计与可观测性必须 production_ready
+- 字段权限回滚必须审批
+
+## 14. 与其他主文档的关系
 
 - 表结构：见 `05`
 - 状态机：见 `06`
