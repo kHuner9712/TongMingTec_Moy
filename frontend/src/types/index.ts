@@ -843,3 +843,66 @@ export interface CustomerReturnVisit extends BaseEntity {
   summary: string;
   nextVisitAt: string | null;
 }
+
+export type KnowledgeItemStatus = "draft" | "review" | "published" | "archived";
+
+export interface KnowledgeCategory extends BaseEntity {
+  code: string;
+  name: string;
+  parentId: string | null;
+  sortOrder: number;
+  status: string;
+}
+
+export interface KnowledgeItem extends BaseEntity {
+  categoryId: string | null;
+  title: string;
+  contentMd: string;
+  contentHtml: string | null;
+  status: KnowledgeItemStatus;
+  keywords: string[] | null;
+  sourceType: string;
+}
+
+export interface KnowledgeReview extends BaseEntity {
+  knowledgeItemId: string;
+  status: string;
+  reviewerUserId: string;
+  comment: string | null;
+}
+
+export interface CreateKnowledgeCategoryDto {
+  code: string;
+  name: string;
+  parentId?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateKnowledgeCategoryDto {
+  name?: string;
+  parentId?: string | null;
+  sortOrder?: number;
+}
+
+export interface CreateKnowledgeItemDto {
+  categoryId?: string | null;
+  title: string;
+  contentMd: string;
+  keywords?: string[];
+  sourceType?: string;
+}
+
+export interface UpdateKnowledgeItemDto {
+  title?: string;
+  contentMd?: string;
+  keywords?: string[];
+  categoryId?: string | null;
+  status?: KnowledgeItemStatus;
+  version: number;
+}
+
+export interface ReviewKnowledgeItemDto {
+  decision: "approved" | "rejected";
+  comment?: string;
+  version: number;
+}

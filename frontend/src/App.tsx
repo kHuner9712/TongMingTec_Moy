@@ -41,6 +41,8 @@ const PaymentDetail = lazy(() => import("./pages/PaymentDetail"));
 const Subscriptions = lazy(() => import("./pages/Subscriptions"));
 const SubscriptionDetail = lazy(() => import("./pages/SubscriptionDetail"));
 const CustomerHealth = lazy(() => import("./pages/CustomerHealth"));
+const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
+const KnowledgeManage = lazy(() => import("./pages/KnowledgeManage"));
 
 const PageLoader = () => (
   <div
@@ -231,6 +233,22 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<CustomerHealth />, ["PERM-CSM-VIEW"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="knowledge"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<KnowledgeBase />, ["PERM-KB-READ"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="knowledge/manage"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<KnowledgeManage />, ["PERM-KB-MANAGE"])}
               </Suspense>
             }
           />
