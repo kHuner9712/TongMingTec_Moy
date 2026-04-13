@@ -135,8 +135,20 @@ export default function SubscriptionDetail() {
             {STATUS_CONFIG[subscription.status]?.text || subscription.status}
           </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="客户ID">{subscription.customerId}</Descriptions.Item>
-        <Descriptions.Item label="关联订单">{subscription.orderId || "-"}</Descriptions.Item>
+        <Descriptions.Item label="客户">
+          {subscription.customerId ? (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/customer-360/${subscription.customerId}`)}>
+              查看客户
+            </Button>
+          ) : "-"}
+        </Descriptions.Item>
+        <Descriptions.Item label="关联订单">
+          {subscription.orderId ? (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/orders/${subscription.orderId}`)}>
+              查看订单
+            </Button>
+          ) : "-"}
+        </Descriptions.Item>
         <Descriptions.Item label="套餐ID">{subscription.planId || "-"}</Descriptions.Item>
         <Descriptions.Item label="席位数">
           {subscription.seatCount}

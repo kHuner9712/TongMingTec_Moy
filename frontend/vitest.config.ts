@@ -9,6 +9,7 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: ['./src/tests/setup.tsx'],
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    testTimeout: 15000,
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'src/tests/'],

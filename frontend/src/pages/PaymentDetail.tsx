@@ -117,8 +117,20 @@ export default function PaymentDetail() {
             {STATUS_CONFIG[payment.status]?.text || payment.status}
           </Tag>
         </Descriptions.Item>
-        <Descriptions.Item label="关联订单">{payment.orderId}</Descriptions.Item>
-        <Descriptions.Item label="客户ID">{payment.customerId}</Descriptions.Item>
+        <Descriptions.Item label="关联订单">
+          {payment.orderId ? (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/orders/${payment.orderId}`)}>
+              查看订单
+            </Button>
+          ) : "-"}
+        </Descriptions.Item>
+        <Descriptions.Item label="客户">
+          {payment.customerId ? (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/customer-360/${payment.customerId}`)}>
+              查看客户
+            </Button>
+          ) : "-"}
+        </Descriptions.Item>
         <Descriptions.Item label="付款方式">{payment.paymentMethod || "-"}</Descriptions.Item>
         <Descriptions.Item label="金额">¥{(payment.amount || 0).toLocaleString()}</Descriptions.Item>
         <Descriptions.Item label="币种">{payment.currency}</Descriptions.Item>

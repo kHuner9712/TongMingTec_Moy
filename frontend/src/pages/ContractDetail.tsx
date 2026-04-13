@@ -18,10 +18,12 @@ import {
   CheckCircleOutlined,
   ReloadOutlined,
   FileProtectOutlined,
+  ShoppingOutlined,
 } from "@ant-design/icons";
 import { useQuery, useMutation } from "react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { contractApi } from "../services/contract";
+import { orderApi } from "../services/order";
 import { ContractStatus } from "../types";
 import dayjs from "dayjs";
 import { usePermission } from "../hooks/usePermission";
@@ -62,6 +64,25 @@ export default function ContractDetail() {
   const [signForm] = Form.useForm();
   const [terminateForm] = Form.useForm();
   const [versionConflict, setVersionConflict] = useState<string | null>(null);
+
+  const createOrderMutation = useMutation(
+    () =>
+      orderApi.createFromContract({
+        contractId: id!,
+        customerId: contract?.customerId || "",
+        quoteId: contract?.quoteId || undefined,
+      }),
+    {
+      onSuccess: (data) => {
+        message.success("订单已创建");
+        navigate(`/orders/${data.id}`);
+      },
+      onError: (error: unknown) => {
+        const err = error as { message?: string };
+        message.error(err?.message || "创建订单失败");
+      },
+    },
+  );
 
   const { data, isLoading, refetch } = useQuery(
     ["contract", id],
@@ -308,6 +329,15 @@ export default function ContractDetail() {
                 终止合同
               </Button>
             )}
+            {contract.status === "active" && can("PERM-ORD-MANAGE") && (
+              <Button
+                icon={<ShoppingOutlined />}
+                onClick={() => createOrderMutation.mutate()}
+                loading={createOrderMutation.isLoading}
+              >
+                转订单
+              </Button>
+            )}
             {contract.quoteId && (
               <Button onClick={() => navigate(`/quotes/${contract.quoteId}`)}>
                 查看关联报价
@@ -337,6 +367,20 @@ export default function ContractDetail() {
             {contract.quoteId ? (
               <Button type="link" size="small" onClick={() => navigate(`/quotes/${contract.quoteId}`)}>
                 查看报价
+              </Button>
+            ) : "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="客户">
+            {contract.customerId ? (
+              <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/customer-360/${contract.customerId}`)}>
+                查看客户
+              </Button>
+            ) : "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="商机">
+            {contract.opportunityId ? (
+              <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate("/opportunities")}>
+                查看商机
               </Button>
             ) : "-"}
           </Descriptions.Item>

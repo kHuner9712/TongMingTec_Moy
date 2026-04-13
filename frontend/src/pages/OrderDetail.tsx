@@ -1,4 +1,4 @@
-import { Descriptions, Card, Tag, Steps, Button, Space, message, Spin } from "antd";
+import { Descriptions, Card, Tag, Steps, Button, Space, message, Spin, Popconfirm, Table } from "antd";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { orderApi } from "../services/order";
@@ -110,9 +110,27 @@ export default function OrderDetail() {
         <Descriptions.Item label="类型">
           {order.orderType === "new" ? "新购" : order.orderType === "renewal" ? "续费" : order.orderType === "addon" ? "增购" : "退款"}
         </Descriptions.Item>
-        <Descriptions.Item label="客户ID">{order.customerId}</Descriptions.Item>
-        <Descriptions.Item label="关联合同">{order.contractId || "-"}</Descriptions.Item>
-        <Descriptions.Item label="关联报价">{order.quoteId || "-"}</Descriptions.Item>
+        <Descriptions.Item label="客户">
+          {order.customerId ? (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/customer-360/${order.customerId}`)}>
+              查看客户
+            </Button>
+          ) : "-"}
+        </Descriptions.Item>
+        <Descriptions.Item label="关联合同">
+          {order.contractId ? (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/contracts/${order.contractId}`)}>
+              查看合同
+            </Button>
+          ) : "-"}
+        </Descriptions.Item>
+        <Descriptions.Item label="关联报价">
+          {order.quoteId ? (
+            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/quotes/${order.quoteId}`)}>
+              查看报价
+            </Button>
+          ) : "-"}
+        </Descriptions.Item>
         <Descriptions.Item label="金额">¥{(order.totalAmount || 0).toLocaleString()}</Descriptions.Item>
         <Descriptions.Item label="币种">{order.currency}</Descriptions.Item>
         <Descriptions.Item label="激活时间">
@@ -125,26 +143,18 @@ export default function OrderDetail() {
 
       {items.length > 0 && (
         <Card title="订单明细" style={{ marginTop: 16 }} size="small">
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ background: "#fafafa" }}>
-                <th style={{ padding: 8, border: "1px solid #f0f0f0" }}>类型</th>
-                <th style={{ padding: 8, border: "1px solid #f0f0f0" }}>关联ID</th>
-                <th style={{ padding: 8, border: "1px solid #f0f0f0" }}>数量</th>
-                <th style={{ padding: 8, border: "1px solid #f0f0f0" }}>单价</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr key={item.id}>
-                  <td style={{ padding: 8, border: "1px solid #f0f0f0" }}>{item.itemType}</td>
-                  <td style={{ padding: 8, border: "1px solid #f0f0f0" }}>{item.refId || "-"}</td>
-                  <td style={{ padding: 8, border: "1px solid #f0f0f0" }}>{item.quantity}</td>
-                  <td style={{ padding: 8, border: "1px solid #f0f0f0" }}>¥{item.unitPrice.toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table
+            rowKey="id"
+            dataSource={items}
+            pagination={false}
+            size="small"
+            columns={[
+              { title: "类型", dataIndex: "itemType", key: "itemType" },
+              { title: "关联ID", dataIndex: "refId", key: "refId", render: (v: string) => v || "-" },
+              { title: "数量", dataIndex: "quantity", key: "quantity" },
+              { title: "单价", dataIndex: "unitPrice", key: "unitPrice", render: (v: number) => `¥${v.toLocaleString()}` },
+            ]}
+          />
         </Card>
       )}
 
@@ -165,9 +175,11 @@ export default function OrderDetail() {
           </Button>
         )}
         {["draft", "confirmed"].includes(order.status) && can("PERM-ORD-MANAGE") && (
-          <Button danger onClick={() => cancelMutation.mutate(order.id)} loading={cancelMutation.isLoading}>
-            取消订单
-          </Button>
+          <Popconfirm title="确认取消订单？此操作不可撤销" onConfirm={() => cancelMutation.mutate(order.id)}>
+            <Button danger loading={cancelMutation.isLoading}>
+              取消订单
+            </Button>
+          </Popconfirm>
         )}
       </Space>
     </Card>

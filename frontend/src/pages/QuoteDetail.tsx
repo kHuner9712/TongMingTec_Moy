@@ -286,6 +286,20 @@ export default function QuoteDetail() {
           <Descriptions.Item label="发送时间">
             {quote.sentAt ? dayjs(quote.sentAt).format("YYYY-MM-DD HH:mm") : "-"}
           </Descriptions.Item>
+          <Descriptions.Item label="客户">
+            {quote.customerId ? (
+              <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate(`/customer-360/${quote.customerId}`)}>
+                查看客户
+              </Button>
+            ) : "-"}
+          </Descriptions.Item>
+          <Descriptions.Item label="商机">
+            {quote.opportunityId ? (
+              <Button type="link" size="small" style={{ padding: 0 }} onClick={() => navigate("/opportunities")}>
+                查看商机
+              </Button>
+            ) : "-"}
+          </Descriptions.Item>
           <Descriptions.Item label="创建时间">
             {dayjs(quote.createdAt).format("YYYY-MM-DD HH:mm:ss")}
           </Descriptions.Item>
