@@ -34,6 +34,7 @@ import { OrdModule } from './modules/ord/ord.module';
 import { PayModule } from './modules/pay/pay.module';
 import { SubModule } from './modules/sub/sub.module';
 import { CsmModule } from './modules/csm/csm.module';
+import { KbModule } from './modules/kb/kb.module';
 import { DealChainModule } from './modules/deal-chain/deal-chain.module';
 
 import { WebSocketModule } from './common/gateway/websocket.module';
@@ -109,6 +110,7 @@ import jwtConfig from './config/jwt.config';
     PayModule,
     SubModule,
     CsmModule,
+    KbModule,
     DealChainModule,
     WebSocketModule,
   ],
