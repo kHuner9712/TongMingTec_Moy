@@ -39,6 +39,7 @@ const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const Payments = lazy(() => import("./pages/Payments"));
 const PaymentDetail = lazy(() => import("./pages/PaymentDetail"));
 const Subscriptions = lazy(() => import("./pages/Subscriptions"));
+const CustomerHealth = lazy(() => import("./pages/CustomerHealth"));
 
 const PageLoader = () => (
   <div
@@ -212,6 +213,15 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<Subscriptions />, ["PERM-SUB-MANAGE"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="workbench/csm/health"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<CustomerHealth />, ["PERM-CSM-VIEW"])}
               </Suspense>
             }
           />

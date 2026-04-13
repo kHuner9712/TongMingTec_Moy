@@ -811,3 +811,35 @@ export interface CreateSubscriptionDto {
   autoRenew?: boolean;
   seatCount?: number;
 }
+
+export type HealthLevel = "low" | "medium" | "high" | "critical";
+
+export interface CustomerHealthScore extends BaseEntity {
+  customerId: string;
+  score: number;
+  level: HealthLevel;
+  factors: Record<string, unknown>;
+  evaluatedAt: string;
+}
+
+export type SuccessPlanStatus =
+  | "draft"
+  | "active"
+  | "on_hold"
+  | "completed"
+  | "cancelled";
+
+export interface SuccessPlan extends BaseEntity {
+  customerId: string;
+  title: string;
+  status: SuccessPlanStatus;
+  ownerUserId: string;
+  payload: Record<string, unknown>;
+}
+
+export interface CustomerReturnVisit extends BaseEntity {
+  customerId: string;
+  visitType: string;
+  summary: string;
+  nextVisitAt: string | null;
+}

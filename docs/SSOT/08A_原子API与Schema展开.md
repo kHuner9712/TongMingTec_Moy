@@ -746,14 +746,38 @@
 
 ## SUB 订阅管理
 
-### API-SUB-001 开通订阅
+### API-SUB-001 订阅列表
+
+| 字段 | 值 |
+|---|---|
+| 方法 | GET |
+| 路径 | /subscriptions |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-MANAGE |
+| 阶段 | S2 |
+
+**查询参数**：`status`, `customerId`, `page`, `pageSize`
+
+**响应体**（200）：
+```json
+{
+  "items": [
+    { "id": "uuid", "customerId": "uuid", "status": "active", "startsAt": "2026-05-01T00:00:00Z", "endsAt": "2027-04-30T23:59:59Z", "createdAt": "2026-04-12T10:00:00Z" }
+  ],
+  "total": 1,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
+### API-SUB-002 开通订阅
 
 | 字段 | 值 |
 |---|---|
 | 方法 | POST |
 | 路径 | /subscriptions |
 | 认证 | Bearer JWT |
-| 权限 | PERM-SUB-CREATE |
+| 权限 | PERM-SUB-MANAGE |
 | 阶段 | S2 |
 
 **请求体**：
@@ -764,7 +788,8 @@
   "planId": "uuid|null",
   "startsAt": "2026-05-01T00:00:00Z",
   "endsAt": "2027-04-30T23:59:59Z",
-  "autoRenew": false
+  "autoRenew": false,
+  "seatCount": 1
 }
 ```
 
@@ -779,18 +804,19 @@
   "startsAt": "2026-05-01T00:00:00Z",
   "endsAt": "2027-04-30T23:59:59Z",
   "autoRenew": false,
+  "seatCount": 1,
   "createdAt": "2026-04-12T10:00:00Z"
 }
 ```
 
-### API-SUB-002 获取订阅详情
+### API-SUB-003 获取订阅详情
 
 | 字段 | 值 |
 |---|---|
 | 方法 | GET |
 | 路径 | /subscriptions/{id} |
 | 认证 | Bearer JWT |
-| 权限 | PERM-SUB-VIEW |
+| 权限 | PERM-SUB-MANAGE |
 | 阶段 | S2 |
 
 **响应体**（200）：
@@ -804,88 +830,101 @@
   "startsAt": "2026-05-01T00:00:00Z",
   "endsAt": "2027-04-30T23:59:59Z",
   "autoRenew": false,
+  "seatCount": 1,
+  "usedCount": 0,
+  "lastBillAt": null,
   "seats": [],
   "createdAt": "2026-04-12T10:00:00Z",
   "updatedAt": "2026-04-12T10:00:00Z"
 }
 ```
 
-### API-SUB-003 暂停订阅
+### API-SUB-004 更新订阅
+
+| 字段 | 值 |
+|---|---|
+| 方法 | PUT |
+| 路径 | /subscriptions/{id} |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-MANAGE |
+| 阶段 | S2 |
+
+**请求体**：
+```json
+{
+  "seatCount": 5,
+  "autoRenew": true,
+  "endsAt": "2027-12-31T23:59:59Z",
+  "version": 1
+}
+```
+
+**响应体**（200）：
+```json
+{
+  "id": "uuid",
+  "customerId": "uuid",
+  "status": "active",
+  "seatCount": 5,
+  "autoRenew": true,
+  "version": 2,
+  "updatedAt": "2026-04-12T10:00:00Z"
+}
+```
+
+### API-SUB-005 续费订阅
+
+| 字段 | 值 |
+|---|---|
+| 方法 | POST |
+| 路径 | /subscriptions/{id}/renew |
+| 认证 | Bearer JWT |
+| 权限 | PERM-SUB-RENEW |
+| 阶段 | S3 |
+
+**请求体**：
+```json
+{
+  "targetEndAt": "2028-04-30T23:59:59Z",
+  "quotedAmount": 12000.00,
+  "contractId": "uuid|null",
+  "version": 1
+}
+```
+
+**响应体**（202）：
+```json
+{
+  "renewalId": "uuid",
+  "renewalNo": "RNW-2026-00001",
+  "status": "draft"
+}
+```
+
+### API-SUB-006 暂停订阅
 
 | 字段 | 值 |
 |---|---|
 | 方法 | POST |
 | 路径 | /subscriptions/{id}/suspend |
 | 认证 | Bearer JWT |
-| 权限 | PERM-SUB-MANAGE |
-| 阶段 | S2 |
+| 权限 | PERM-SUB-SUSPEND |
+| 阶段 | S3 |
 
 **请求体**：
 ```json
-{ "reason": "string" }
+{
+  "reason": "欠费停服",
+  "suspendUntil": "2026-06-30T23:59:59Z",
+  "version": 1
+}
 ```
-
-**响应体**（200）：
-```json
-{ "id": "uuid", "status": "suspended" }
-```
-
-### API-SUB-004 恢复订阅
-
-| 字段 | 值 |
-|---|---|
-| 方法 | POST |
-| 路径 | /subscriptions/{id}/resume |
-| 认证 | Bearer JWT |
-| 权限 | PERM-SUB-MANAGE |
-| 阶段 | S2 |
-
-**响应体**（200）：
-```json
-{ "id": "uuid", "status": "active" }
-```
-
-### API-SUB-005 取消订阅
-
-| 字段 | 值 |
-|---|---|
-| 方法 | POST |
-| 路径 | /subscriptions/{id}/cancel |
-| 认证 | Bearer JWT |
-| 权限 | PERM-SUB-MANAGE |
-| 阶段 | S2 |
-
-**请求体**：
-```json
-{ "reason": "string" }
-```
-
-**响应体**（200）：
-```json
-{ "id": "uuid", "status": "cancelled" }
-```
-
-### API-SUB-006 订阅列表
-
-| 字段 | 值 |
-|---|---|
-| 方法 | GET |
-| 路径 | /subscriptions |
-| 认证 | Bearer JWT |
-| 权限 | PERM-SUB-VIEW |
-| 阶段 | S2 |
-
-**查询参数**：`status`, `customerId`, `page`, `pageSize`
 
 **响应体**（200）：
 ```json
 {
-  "items": [
-    { "id": "uuid", "customerId": "uuid", "status": "active", "startsAt": "2026-05-01T00:00:00Z", "endsAt": "2027-04-30T23:59:59Z", "createdAt": "2026-04-12T10:00:00Z" }
-  ],
-  "total": 1,
-  "page": 1,
-  "pageSize": 20
+  "id": "uuid",
+  "status": "suspended"
 }
 ```
 

@@ -66,3 +66,26 @@ export function contractSigned(params: {
     orgId: params.orgId,
   };
 }
+
+export function contractExpiryWarning(params: {
+  orgId: string;
+  contractId: string;
+  contractNo: string;
+  customerId: string;
+  endsOn: string;
+  daysUntilExpiry: number;
+}): DomainEvent {
+  return {
+    eventType: 'contract.expiry_warning',
+    aggregateType: 'contract',
+    aggregateId: params.contractId,
+    payload: {
+      contractNo: params.contractNo,
+      customerId: params.customerId,
+      endsOn: params.endsOn,
+      daysUntilExpiry: params.daysUntilExpiry,
+    },
+    occurredAt: new Date(),
+    orgId: params.orgId,
+  };
+}
