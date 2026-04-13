@@ -31,6 +31,8 @@ import { QtModule } from './modules/qt/qt.module';
 import { CtModule } from './modules/ct/ct.module';
 import { OrdModule } from './modules/ord/ord.module';
 import { PayModule } from './modules/pay/pay.module';
+import { SubModule } from './modules/sub/sub.module';
+import { DealChainModule } from './modules/deal-chain/deal-chain.module';
 
 import { WebSocketModule } from './common/gateway/websocket.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -102,6 +104,8 @@ import jwtConfig from './config/jwt.config';
     CtModule,
     OrdModule,
     PayModule,
+    SubModule,
+    DealChainModule,
     WebSocketModule,
   ],
   providers: [

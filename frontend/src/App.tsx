@@ -38,6 +38,7 @@ const Orders = lazy(() => import("./pages/Orders"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
 const Payments = lazy(() => import("./pages/Payments"));
 const PaymentDetail = lazy(() => import("./pages/PaymentDetail"));
+const Subscriptions = lazy(() => import("./pages/Subscriptions"));
 
 const PageLoader = () => (
   <div
@@ -202,6 +203,15 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<PaymentDetail />, ["PERM-PAY-MANAGE"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="subscriptions"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Subscriptions />, ["PERM-SUB-MANAGE"])}
               </Suspense>
             }
           />

@@ -780,3 +780,34 @@ export interface CreatePaymentDto {
   externalTxnId?: string;
   remark?: string;
 }
+
+export type SubscriptionStatus =
+  | "trial"
+  | "active"
+  | "overdue"
+  | "suspended"
+  | "expired"
+  | "cancelled";
+
+export interface Subscription extends BaseEntity {
+  orderId: string | null;
+  customerId: string;
+  planId: string | null;
+  status: SubscriptionStatus;
+  startsAt: string;
+  endsAt: string;
+  autoRenew: boolean;
+  seatCount: number;
+  usedCount: number;
+  lastBillAt: string | null;
+}
+
+export interface CreateSubscriptionDto {
+  customerId: string;
+  orderId?: string;
+  planId?: string;
+  startsAt: string;
+  endsAt: string;
+  autoRenew?: boolean;
+  seatCount?: number;
+}
