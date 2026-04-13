@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Contract } from './entities/contract.entity';
 import { NtfService } from '../ntf/ntf.service';
 import { EventBusService } from '../../common/events/event-bus.service';
@@ -16,6 +17,20 @@ export class ContractExpiryScheduler {
     private readonly ntfService: NtfService,
     private readonly eventBus: EventBusService,
   ) {}
+
+  @Cron('0 8 * * *', { name: 'contract-expiry-warning' })
+  async handleDailyExpiryWarning(): Promise<void> {
+    this.logger.log('Running daily contract expiry warning check...');
+    const notified = await this.checkAndNotifyExpiringContracts(30);
+    this.logger.log(`Daily expiry warning: ${notified} contracts notified`);
+  }
+
+  @Cron('0 2 * * *', { name: 'contract-auto-expire' })
+  async handleDailyAutoExpire(): Promise<void> {
+    this.logger.log('Running daily contract auto-expire check...');
+    const expired = await this.expireOverdueContracts();
+    this.logger.log(`Daily auto-expire: ${expired} contracts expired`);
+  }
 
   async checkAndNotifyExpiringContracts(warningDays: number = 30): Promise<number> {
     const now = new Date();
@@ -71,10 +86,6 @@ export class ContractExpiryScheduler {
         );
       }
     }
-
-    this.logger.log(
-      `Contract expiry check: ${contracts.length} expiring, ${notifiedCount} notified`,
-    );
 
     return notifiedCount;
   }

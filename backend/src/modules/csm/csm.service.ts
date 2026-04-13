@@ -8,11 +8,29 @@ import { Repository } from 'typeorm';
 import { CustomerHealthScore, HealthLevel } from './entities/customer-health-score.entity';
 import { SuccessPlan, SuccessPlanStatus } from './entities/success-plan.entity';
 import { CustomerReturnVisit } from './entities/customer-return-visit.entity';
+import { IntentService } from '../cmem/services/intent.service';
+import { RiskService } from '../cmem/services/risk.service';
 import {
   CreateSuccessPlanDto,
   UpdateSuccessPlanDto,
   CreateReturnVisitDto,
 } from './dto/csm.dto';
+
+const INTENT_SCORE_MAP: Record<string, number> = {
+  purchase: 15,
+  renewal: 10,
+  inquiry: 5,
+  engagement: 5,
+  complaint: -15,
+  churn_risk: -20,
+};
+
+const RISK_SCORE_MAP: Record<string, number> = {
+  low: 0,
+  medium: -10,
+  high: -20,
+  critical: -30,
+};
 
 @Injectable()
 export class CsmService {
@@ -23,6 +41,8 @@ export class CsmService {
     private planRepository: Repository<SuccessPlan>,
     @InjectRepository(CustomerReturnVisit)
     private visitRepository: Repository<CustomerReturnVisit>,
+    private readonly intentService: IntentService,
+    private readonly riskService: RiskService,
   ) {}
 
   async findHealthScores(
@@ -69,13 +89,60 @@ export class CsmService {
     const factors: Record<string, unknown> = {};
     let score = 50;
 
-    const existing = await this.healthRepository.findOne({
-      where: { customerId, orgId, deletedAt: null as unknown as undefined },
+    try {
+      const latestIntent = await this.intentService.getLatestIntent(customerId, orgId);
+      if (latestIntent) {
+        const intentDelta = INTENT_SCORE_MAP[latestIntent.intentType] || 0;
+        score += intentDelta;
+        factors['intentType'] = latestIntent.intentType;
+        factors['intentConfidence'] = latestIntent.confidence;
+        factors['intentDelta'] = intentDelta;
+      }
+    } catch {
+      factors['intentError'] = 'intent_service_unavailable';
+    }
+
+    try {
+      const latestRiskLevel = await this.riskService.getLatestRiskLevel(customerId, orgId);
+      if (latestRiskLevel) {
+        const riskDelta = RISK_SCORE_MAP[latestRiskLevel] || 0;
+        score += riskDelta;
+        factors['riskLevel'] = latestRiskLevel;
+        factors['riskDelta'] = riskDelta;
+      }
+    } catch {
+      factors['riskError'] = 'risk_service_unavailable';
+    }
+
+    const recentVisits = await this.visitRepository.count({
+      where: { customerId, orgId } as any,
     });
+    if (recentVisits > 0) {
+      const visitBonus = Math.min(recentVisits * 3, 15);
+      score += visitBonus;
+      factors['visitCount'] = recentVisits;
+      factors['visitBonus'] = visitBonus;
+    }
+
+    const activePlan = await this.planRepository.findOne({
+      where: { customerId, orgId, status: 'active' as SuccessPlanStatus, deletedAt: null as unknown as undefined },
+    });
+    if (activePlan) {
+      score += 10;
+      factors['hasActivePlan'] = true;
+      factors['planBonus'] = 10;
+    }
+
+    score = Math.max(0, Math.min(100, score));
 
     const level = this.calculateLevel(score);
     factors['autoEvaluated'] = true;
     factors['evaluatedAt'] = new Date().toISOString();
+    factors['baseScore'] = 50;
+
+    const existing = await this.healthRepository.findOne({
+      where: { customerId, orgId, deletedAt: null as unknown as undefined },
+    });
 
     if (existing) {
       await this.healthRepository.update(existing.id, {

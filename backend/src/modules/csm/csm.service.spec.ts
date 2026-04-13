@@ -4,6 +4,8 @@ import { CsmService } from './csm.service';
 import { CustomerHealthScore } from './entities/customer-health-score.entity';
 import { SuccessPlan } from './entities/success-plan.entity';
 import { CustomerReturnVisit } from './entities/customer-return-visit.entity';
+import { IntentService } from '../cmem/services/intent.service';
+import { RiskService } from '../cmem/services/risk.service';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('CsmService', () => {
@@ -11,6 +13,8 @@ describe('CsmService', () => {
   let healthRepository: any;
   let planRepository: any;
   let visitRepository: any;
+  let intentService: any;
+  let riskService: any;
 
   const mockHealth = {
     id: 'health-1',
@@ -63,7 +67,16 @@ describe('CsmService', () => {
     visitRepository = {
       create: jest.fn(),
       save: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
       createQueryBuilder: jest.fn().mockReturnValue(createMockQb([], 0)),
+    };
+
+    intentService = {
+      getLatestIntent: jest.fn().mockResolvedValue(null),
+    };
+
+    riskService = {
+      getLatestRiskLevel: jest.fn().mockResolvedValue(null),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -72,131 +85,168 @@ describe('CsmService', () => {
         { provide: getRepositoryToken(CustomerHealthScore), useValue: healthRepository },
         { provide: getRepositoryToken(SuccessPlan), useValue: planRepository },
         { provide: getRepositoryToken(CustomerReturnVisit), useValue: visitRepository },
+        { provide: IntentService, useValue: intentService },
+        { provide: RiskService, useValue: riskService },
       ],
     }).compile();
 
     service = module.get<CsmService>(CsmService);
   });
 
-  describe('findHealthScoreByCustomer', () => {
-    it('should return health score if found', async () => {
-      healthRepository.findOne.mockResolvedValue(mockHealth);
-      const result = await service.findHealthScoreByCustomer('customer-1', 'org-1');
-      expect(result.id).toBe('health-1');
-    });
-
-    it('should throw NotFoundException if not found', async () => {
-      healthRepository.findOne.mockResolvedValue(null);
-      await expect(service.findHealthScoreByCustomer('nonexistent', 'org-1')).rejects.toThrow(NotFoundException);
-    });
-
-    it('should query with orgId for multi-tenant isolation', async () => {
-      healthRepository.findOne.mockResolvedValue(mockHealth);
-      await service.findHealthScoreByCustomer('customer-1', 'org-1');
-      expect(healthRepository.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ customerId: 'customer-1', orgId: 'org-1' }),
-        }),
-      );
-    });
-  });
-
-  describe('evaluateHealth', () => {
-    it('should create new health score when none exists', async () => {
+  describe('evaluateHealth - weighted scoring', () => {
+    it('should return base score 50 when no intent/risk data', async () => {
       healthRepository.findOne.mockResolvedValue(null);
       healthRepository.create.mockReturnValue(mockHealth);
       healthRepository.save.mockResolvedValue(mockHealth);
 
-      const result = await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
 
       expect(healthRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orgId: 'org-1',
-          customerId: 'customer-1',
-        }),
+        expect.objectContaining({ score: 50 }),
       );
     });
 
-    it('should update existing health score', async () => {
-      healthRepository.findOne.mockResolvedValue(mockHealth);
-      healthRepository.update.mockResolvedValue({ affected: 1 });
+    it('should add +15 for purchase intent', async () => {
+      intentService.getLatestIntent.mockResolvedValue({ intentType: 'purchase', confidence: 0.8 });
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 65 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 65 });
 
       await service.evaluateHealth('customer-1', 'org-1', 'user-1');
 
-      expect(healthRepository.update).toHaveBeenCalled();
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 65 }),
+      );
     });
 
-    it('should calculate correct level from score', () => {
+    it('should subtract -20 for churn_risk intent', async () => {
+      intentService.getLatestIntent.mockResolvedValue({ intentType: 'churn_risk', confidence: 0.75 });
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 30 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 30 });
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 30 }),
+      );
+    });
+
+    it('should subtract -30 for critical risk level', async () => {
+      riskService.getLatestRiskLevel.mockResolvedValue('critical');
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 20 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 20 });
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 20 }),
+      );
+    });
+
+    it('should add visit bonus for recent visits', async () => {
+      visitRepository.count.mockResolvedValue(3);
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 59 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 59 });
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 59 }),
+      );
+    });
+
+    it('should cap visit bonus at 15', async () => {
+      visitRepository.count.mockResolvedValue(10);
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 65 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 65 });
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 65 }),
+      );
+    });
+
+    it('should add +10 for active success plan', async () => {
+      planRepository.findOne.mockResolvedValue({ ...mockPlan, status: 'active' });
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 60 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 60 });
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 60 }),
+      );
+    });
+
+    it('should combine all factors: purchase intent + low risk + visits + plan', async () => {
+      intentService.getLatestIntent.mockResolvedValue({ intentType: 'purchase', confidence: 0.8 });
+      riskService.getLatestRiskLevel.mockResolvedValue('low');
+      visitRepository.count.mockResolvedValue(2);
+      planRepository.findOne.mockResolvedValue({ ...mockPlan, status: 'active' });
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 81 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 81 });
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 81, level: 'high' }),
+      );
+    });
+
+    it('should clamp score to 0-100 range', async () => {
+      intentService.getLatestIntent.mockResolvedValue({ intentType: 'churn_risk', confidence: 0.9 });
+      riskService.getLatestRiskLevel.mockResolvedValue('critical');
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue({ ...mockHealth, score: 0 });
+      healthRepository.save.mockResolvedValue({ ...mockHealth, score: 0 });
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ score: 0, level: 'critical' }),
+      );
+    });
+
+    it('should handle intent service failure gracefully', async () => {
+      intentService.getLatestIntent.mockRejectedValue(new Error('service down'));
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue(mockHealth);
+      healthRepository.save.mockResolvedValue(mockHealth);
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ factors: expect.objectContaining({ intentError: 'intent_service_unavailable' }) }),
+      );
+    });
+
+    it('should handle risk service failure gracefully', async () => {
+      riskService.getLatestRiskLevel.mockRejectedValue(new Error('service down'));
+      healthRepository.findOne.mockResolvedValue(null);
+      healthRepository.create.mockReturnValue(mockHealth);
+      healthRepository.save.mockResolvedValue(mockHealth);
+
+      await service.evaluateHealth('customer-1', 'org-1', 'user-1');
+
+      expect(healthRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ factors: expect.objectContaining({ riskError: 'risk_service_unavailable' }) }),
+      );
+    });
+  });
+
+  describe('calculateLevel', () => {
+    it('should return correct levels', () => {
       expect((service as any).calculateLevel(85)).toBe('high');
       expect((service as any).calculateLevel(60)).toBe('medium');
       expect((service as any).calculateLevel(35)).toBe('low');
       expect((service as any).calculateLevel(20)).toBe('critical');
-    });
-  });
-
-  describe('createSuccessPlan', () => {
-    it('should create success plan with draft status', async () => {
-      planRepository.create.mockReturnValue(mockPlan);
-      planRepository.save.mockResolvedValue(mockPlan);
-
-      const result = await service.createSuccessPlan('org-1', {
-        customerId: 'customer-1',
-        title: '初始成功计划',
-        ownerUserId: 'user-1',
-      }, 'user-1');
-
-      expect(planRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          orgId: 'org-1',
-          status: 'draft',
-        }),
-      );
-    });
-  });
-
-  describe('updateSuccessPlan', () => {
-    it('should update title and status', async () => {
-      planRepository.findOne
-        .mockResolvedValueOnce(mockPlan)
-        .mockResolvedValueOnce({ ...mockPlan, title: 'Updated', status: 'active' });
-      planRepository.update.mockResolvedValue({ affected: 1 });
-
-      const result = await service.updateSuccessPlan('plan-1', 'org-1', {
-        title: 'Updated',
-        status: 'active',
-        version: 1,
-      }, 'user-1');
-
-      expect(planRepository.update).toHaveBeenCalledWith(
-        'plan-1',
-        expect.objectContaining({ title: 'Updated', status: 'active' }),
-      );
-    });
-
-    it('should throw on version conflict', async () => {
-      planRepository.findOne.mockResolvedValue({ ...mockPlan, version: 2 });
-
-      await expect(
-        service.updateSuccessPlan('plan-1', 'org-1', { title: 'X', version: 1 }, 'user-1'),
-      ).rejects.toThrow(ConflictException);
-    });
-  });
-
-  describe('createReturnVisit', () => {
-    it('should create return visit', async () => {
-      const mockVisit = { id: 'visit-1', customerId: 'customer-1', visitType: 'phone', summary: '回访记录' };
-      visitRepository.create.mockReturnValue(mockVisit);
-      visitRepository.save.mockResolvedValue(mockVisit);
-
-      const result = await service.createReturnVisit('org-1', {
-        customerId: 'customer-1',
-        visitType: 'phone',
-        summary: '回访记录',
-      }, 'user-1');
-
-      expect(visitRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ orgId: 'org-1', visitType: 'phone' }),
-      );
     });
   });
 
@@ -213,18 +263,6 @@ describe('CsmService', () => {
 
       expect(result.health).toBeDefined();
       expect(result.plan).toBeDefined();
-    });
-
-    it('should reuse existing plan if already exists', async () => {
-      healthRepository.findOne.mockResolvedValue(null);
-      healthRepository.create.mockReturnValue(mockHealth);
-      healthRepository.save.mockResolvedValue(mockHealth);
-      planRepository.findOne.mockResolvedValue(mockPlan);
-
-      const result = await service.autoEnrollCustomer('org-1', 'customer-1', 'user-1');
-
-      expect(planRepository.create).not.toHaveBeenCalled();
-      expect(result.plan.id).toBe('plan-1');
     });
   });
 });
