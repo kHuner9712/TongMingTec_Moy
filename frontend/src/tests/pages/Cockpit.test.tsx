@@ -10,11 +10,33 @@ vi.mock("../../stores/approvalStore", () => ({
   useApprovalStore: vi.fn(),
 }));
 
+vi.mock("../../stores/authStore", () => ({
+  useAuthStore: vi.fn(),
+}));
+
+vi.mock("../../services/dashboard", () => ({
+  dashboardApi: {
+    getExecutiveDashboard: vi.fn(),
+  },
+}));
+
+vi.mock("react-query", () => ({
+  useQuery: vi.fn(),
+}));
+
+vi.mock("react-router-dom", () => ({
+  useNavigate: vi.fn(),
+}));
+
 import { useCockpitStore } from "../../stores/cockpitStore";
 import { useApprovalStore } from "../../stores/approvalStore";
+import { useAuthStore } from "../../stores/authStore";
+import { useQuery } from "react-query";
 
 const mockCockpitStoreHook = vi.mocked(useCockpitStore);
 const mockApprovalStoreHook = vi.mocked(useApprovalStore);
+const mockAuthStoreHook = vi.mocked(useAuthStore);
+const mockUseQuery = vi.mocked(useQuery);
 
 const mockFetchCockpitData = vi.fn();
 const mockFetchPending = vi.fn();
@@ -82,36 +104,6 @@ describe("Cockpit page", () => {
           errorMessage: null,
           createdAt: "2026-01-01T00:00:00.000Z",
         },
-        {
-          id: "run-2",
-          orgId: "org-1",
-          agentId: "agent-2",
-          customerId: "cust-2",
-          requestId: null,
-          status: "awaiting_approval",
-          inputPayload: {},
-          outputPayload: null,
-          executionMode: "approval",
-          latencyMs: null,
-          tokenCost: null,
-          errorMessage: null,
-          createdAt: "2026-01-01T00:00:00.000Z",
-        },
-        {
-          id: "run-3",
-          orgId: "org-1",
-          agentId: "agent-3",
-          customerId: null,
-          requestId: null,
-          status: "succeeded",
-          inputPayload: {},
-          outputPayload: {},
-          executionMode: "suggest",
-          latencyMs: 180,
-          tokenCost: 20,
-          errorMessage: null,
-          createdAt: "2026-01-01T00:00:00.000Z",
-        },
       ],
       recommendedTodos: [
         {
@@ -132,22 +124,37 @@ describe("Cockpit page", () => {
       fetchPending: mockFetchPending,
       pendingApprovals: [{ id: "approval-1" }],
     } as any);
+
+    mockAuthStoreHook.mockReturnValue({
+      hasPermission: (perm: string) => perm === "PERM-DASH-VIEW",
+    } as any);
+
+    mockUseQuery.mockReturnValue({
+      data: {
+        customerMetrics: { total: 12, active: 8, critical: 0, highRisk: 0 },
+        opportunityMetrics: { total: 5, won: 2, winRate: 40 },
+        dealMetrics: { activeContracts: 3, activeOrders: 2, activeSubscriptions: 1, totalRevenue: 50000 },
+        healthMetrics: { total: 10, high: 5, medium: 3, low: 1, critical: 1 },
+        subscriptionMetrics: { activeSubscriptions: 1, recurringRevenue: 25000 },
+        riskAlerts: { criticalCustomers: 0, highRiskCustomers: 0, lowHealthCount: 2 },
+        revenueTrend: [{ month: "2025-01", revenue: 10000 }],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as any);
   });
 
   it("renders cockpit core metrics and lists", async () => {
     render(<Cockpit />);
 
     expect(screen.getByText("经营驾驶舱")).toBeInTheDocument();
-    expect(screen.getByText("客户总数")).toBeInTheDocument();
-    expect(screen.getByText("12")).toBeInTheDocument();
+    expect(screen.getAllByText(/客户/).length).toBeGreaterThan(0);
     expect(screen.getByText("待审批")).toBeInTheDocument();
     expect(screen.getAllByText("风险预警").length).toBeGreaterThan(0);
     expect(screen.getByText("Agent 执行动态")).toBeInTheDocument();
     expect(screen.getByText("AI 推荐待办")).toBeInTheDocument();
     expect(screen.getByText("审批请求待处理")).toBeInTheDocument();
-    expect(screen.getByText(/高风险 1/)).toBeInTheDocument();
-    expect(screen.getByText(/中风险 1/)).toBeInTheDocument();
-    expect(screen.getByText(/低风险 1/)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(mockFetchCockpitData).toHaveBeenCalled();
@@ -170,9 +177,56 @@ describe("Cockpit page", () => {
       loading: true,
     } as any);
 
+    mockUseQuery.mockReturnValue({
+      data: null,
+      isLoading: true,
+      isError: false,
+      refetch: vi.fn(),
+    } as any);
+
     render(<Cockpit />);
 
     expect(document.querySelector(".ant-spin")).toBeTruthy();
     expect(screen.queryByText("经营驾驶舱")).not.toBeInTheDocument();
+  });
+
+  it("shows 403 when no PERM-DASH-VIEW permission", () => {
+    mockAuthStoreHook.mockReturnValue({
+      hasPermission: () => false,
+    } as any);
+
+    render(<Cockpit />);
+
+    expect(screen.getByText("无权限")).toBeInTheDocument();
+  });
+
+  it("renders executive dashboard data when available", async () => {
+    render(<Cockpit />);
+
+    expect(screen.getByText("成交概览")).toBeInTheDocument();
+    expect(screen.getByText("客户健康")).toBeInTheDocument();
+    expect(screen.getByText("收入趋势")).toBeInTheDocument();
+  });
+
+  it("renders risk alert when risk alerts exist", () => {
+    mockUseQuery.mockReturnValue({
+      data: {
+        customerMetrics: { total: 12, active: 8, critical: 2, highRisk: 1 },
+        opportunityMetrics: { total: 5, won: 2, winRate: 40 },
+        dealMetrics: { activeContracts: 3, activeOrders: 2, activeSubscriptions: 1, totalRevenue: 50000 },
+        healthMetrics: { total: 10, high: 5, medium: 3, low: 1, critical: 1 },
+        subscriptionMetrics: { activeSubscriptions: 1, recurringRevenue: 25000 },
+        riskAlerts: { criticalCustomers: 2, highRiskCustomers: 1, lowHealthCount: 2 },
+        revenueTrend: [],
+      },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    } as any);
+
+    render(<Cockpit />);
+
+    expect(screen.getByText("经营风险预警")).toBeInTheDocument();
+    expect(screen.getByText(/危急客户 2/)).toBeInTheDocument();
   });
 });

@@ -19,6 +19,10 @@ const Users = lazy(() => import("./pages/Users"));
 const Settings = lazy(() => import("./pages/Settings"));
 
 const Cockpit = lazy(() => import("./pages/Cockpit"));
+const SalesDashboard = lazy(() => import("./pages/dashboard/SalesDashboard"));
+const ServiceDashboard = lazy(
+  () => import("./pages/dashboard/ServiceDashboard"),
+);
 const CustomerWorkbench = lazy(
   () => import("./pages/workbench/CustomerWorkbench"),
 );
@@ -43,6 +47,7 @@ const SubscriptionDetail = lazy(() => import("./pages/SubscriptionDetail"));
 const CustomerHealth = lazy(() => import("./pages/CustomerHealth"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const KnowledgeManage = lazy(() => import("./pages/KnowledgeManage"));
+const Automation = lazy(() => import("./pages/Automation"));
 
 const PageLoader = () => (
   <div
@@ -87,7 +92,24 @@ function App() {
             path="cockpit"
             element={
               <Suspense fallback={<PageLoader />}>
-                {withPermission(<Cockpit />, ["PERM-SYS-VIEW"])}
+                {withPermission(<Cockpit />, ["PERM-DASH-VIEW"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="dashboards/sales"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<SalesDashboard />, ["PERM-DASH-VIEW"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="dashboards/service"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<ServiceDashboard />, ["PERM-DASH-VIEW"])}
               </Suspense>
             }
           />
@@ -249,6 +271,14 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<KnowledgeManage />, ["PERM-KB-MANAGE"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="automation"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Automation />, ["PERM-AUTO-MANAGE"])}
               </Suspense>
             }
           />

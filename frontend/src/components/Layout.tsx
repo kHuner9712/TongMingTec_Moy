@@ -18,6 +18,10 @@ import {
   ShoppingCartOutlined,
   FileProtectOutlined,
   AccountBookOutlined,
+  SafetyCertificateOutlined,
+  HeartOutlined,
+  BookOutlined,
+  FormOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 import { useApprovalStore } from "../stores/approvalStore";
@@ -47,7 +51,25 @@ const menuItems: MenuGroupWithPermission[] = [
         key: "/cockpit",
         icon: <DashboardOutlined />,
         label: "Cockpit",
-        permission: "PERM-SYS-VIEW",
+        permission: "PERM-DASH-VIEW",
+      },
+    ],
+  },
+  {
+    type: "group",
+    label: "Dashboards",
+    children: [
+      {
+        key: "/dashboards/sales",
+        icon: <PhoneOutlined />,
+        label: "Sales Dashboard",
+        permission: "PERM-DASH-VIEW",
+      },
+      {
+        key: "/dashboards/service",
+        icon: <CustomerServiceOutlined />,
+        label: "Service Dashboard",
+        permission: "PERM-DASH-VIEW",
       },
     ],
   },
@@ -155,6 +177,48 @@ const menuItems: MenuGroupWithPermission[] = [
   },
   {
     type: "group",
+    label: "Post-Sales",
+    children: [
+      {
+        key: "/subscriptions",
+        icon: <SafetyCertificateOutlined />,
+        label: "Subscriptions",
+        permission: "PERM-SUB-MANAGE",
+      },
+      {
+        key: "/workbench/csm/health",
+        icon: <HeartOutlined />,
+        label: "Customer Health",
+        permission: "PERM-CSM-VIEW",
+      },
+      {
+        key: "/automation",
+        icon: <ThunderboltOutlined />,
+        label: "Automation",
+        permission: "PERM-AUTO-MANAGE",
+      },
+    ],
+  },
+  {
+    type: "group",
+    label: "Knowledge",
+    children: [
+      {
+        key: "/knowledge",
+        icon: <BookOutlined />,
+        label: "Knowledge Base",
+        permission: "PERM-KB-READ",
+      },
+      {
+        key: "/knowledge/manage",
+        icon: <FormOutlined />,
+        label: "Knowledge Manage",
+        permission: "PERM-KB-MANAGE",
+      },
+    ],
+  },
+  {
+    type: "group",
     label: "System",
     children: [
       {
@@ -197,6 +261,8 @@ export default function Layout() {
   const getSelectedKeys = () => {
     const path = location.pathname;
     if (path === "/cockpit") return ["/cockpit"];
+    if (path.startsWith("/dashboards/sales")) return ["/dashboards/sales"];
+    if (path.startsWith("/dashboards/service")) return ["/dashboards/service"];
     if (
       path.startsWith("/workbench/customer") ||
       path.startsWith("/customer-360")
@@ -217,6 +283,11 @@ export default function Layout() {
     if (path.startsWith("/contracts")) return ["/contracts"];
     if (path.startsWith("/orders")) return ["/orders"];
     if (path.startsWith("/payments")) return ["/payments"];
+    if (path.startsWith("/subscriptions")) return ["/subscriptions"];
+    if (path.startsWith("/workbench/csm/health"))
+      return ["/workbench/csm/health"];
+    if (path.startsWith("/knowledge/manage")) return ["/knowledge/manage"];
+    if (path.startsWith("/knowledge")) return ["/knowledge"];
     return [path];
   };
 
