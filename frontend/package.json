@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
     "test": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:responsibility": "playwright test e2e/result-responsibility-chain.spec.ts --project=chromium"
   },
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
