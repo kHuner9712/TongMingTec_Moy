@@ -200,6 +200,36 @@ export class OrdService {
     return this.findOrderById(id, orgId);
   }
 
+  async markSubscriptionOpened(
+    orderId: string,
+    orgId: string,
+    openedAt: Date,
+    actorId: string,
+  ): Promise<void> {
+    await this.trySetHandoverTimestamp(
+      orderId,
+      orgId,
+      'subscriptionOpenedAt',
+      openedAt,
+      actorId,
+    );
+  }
+
+  async markDeliveryStarted(
+    orderId: string,
+    orgId: string,
+    startedAt: Date,
+    actorId: string,
+  ): Promise<void> {
+    await this.trySetHandoverTimestamp(
+      orderId,
+      orgId,
+      'deliveryStartedAt',
+      startedAt,
+      actorId,
+    );
+  }
+
   async completeOrder(id: string, orgId: string, userId: string, version?: number): Promise<Order> {
     const order = await this.findOrderById(id, orgId);
     const expectedVersion = this.resolveExpectedVersion(order.version, version);
@@ -298,5 +328,31 @@ export class OrdService {
     }
     if (providedVersion !== currentVersion) throw new ConflictException('CONFLICT_VERSION');
     return providedVersion;
+  }
+
+  private async trySetHandoverTimestamp(
+    orderId: string,
+    orgId: string,
+    field: 'subscriptionOpenedAt' | 'deliveryStartedAt',
+    occurredAt: Date,
+    actorId: string,
+  ): Promise<void> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId, orgId, deletedAt: null as unknown as undefined },
+      select: ['id', 'orgId', 'version', field],
+    });
+
+    if (!order || order[field]) {
+      return;
+    }
+
+    await this.orderRepository.update(
+      { id: orderId, orgId, version: order.version, deletedAt: IsNull() },
+      {
+        [field]: occurredAt,
+        updatedBy: actorId,
+        version: () => 'version + 1',
+      } as any,
+    );
   }
 }

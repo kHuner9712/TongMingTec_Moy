@@ -106,3 +106,16 @@ export class SuccessPlanListQueryDto extends PageQueryDto {
   @IsUUID()
   customerId?: string;
 }
+
+export class ReturnVisitListQueryDto extends PageQueryDto {
+  @ApiPropertyOptional({ example: 'a808204d-40a4-4a2f-8a5d-f86c06a8bc42' })
+  @IsOptional()
+  @IsUUID()
+  customerId?: string;
+
+  @ApiPropertyOptional({ example: 'quarterly_review' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  visitType?: string;
+}

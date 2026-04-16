@@ -47,6 +47,9 @@ const SubscriptionDetail = lazy(() => import("./pages/SubscriptionDetail"));
 const Deliveries = lazy(() => import("./pages/Deliveries"));
 const DeliveryDetail = lazy(() => import("./pages/DeliveryDetail"));
 const CustomerHealth = lazy(() => import("./pages/CustomerHealth"));
+const SuccessPlanList = lazy(() => import("./pages/SuccessPlanList"));
+const SuccessPlanDetail = lazy(() => import("./pages/SuccessPlanDetail"));
+const ReturnVisitList = lazy(() => import("./pages/ReturnVisitList"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const KnowledgeManage = lazy(() => import("./pages/KnowledgeManage"));
 const Automation = lazy(() => import("./pages/Automation"));
@@ -282,6 +285,39 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<CustomerHealth />, ["PERM-CSM-VIEW"])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="workbench/csm/plans"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<SuccessPlanList />, [
+                  "PERM-CSM-VIEW",
+                  "PERM-CSM-MANAGE",
+                ])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="workbench/csm/plans/:id"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<SuccessPlanDetail />, [
+                  "PERM-CSM-VIEW",
+                  "PERM-CSM-MANAGE",
+                ])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="workbench/csm/visits"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<ReturnVisitList />, [
+                  "PERM-CSM-VIEW",
+                  "PERM-CSM-MANAGE",
+                ])}
               </Suspense>
             }
           />

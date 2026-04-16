@@ -7,6 +7,7 @@ import { Conversation } from '../cnv/entities/conversation.entity';
 import { Contract } from '../ct/entities/contract.entity';
 import { Order } from '../ord/entities/order.entity';
 import { Ticket } from '../tk/entities/ticket.entity';
+import { EventBusService } from '../../common/events/event-bus.service';
 
 type MockQb = {
   select: jest.Mock;
@@ -67,6 +68,10 @@ describe('DashService', () => {
     createQueryBuilder: jest.fn().mockImplementation(() => createMockQb()),
   };
 
+  const eventBus = {
+    publish: jest.fn(),
+  };
+
   beforeEach(async () => {
     metricRepo = {
       create: jest.fn(),
@@ -83,6 +88,7 @@ describe('DashService', () => {
         { provide: getRepositoryToken(Contract), useValue: contractRepo },
         { provide: getRepositoryToken(Order), useValue: orderRepo },
         { provide: getRepositoryToken(Ticket), useValue: ticketRepo },
+        { provide: EventBusService, useValue: eventBus },
       ],
     }).compile();
 

@@ -183,8 +183,41 @@ export class AutoController {
     @Query('page') page: number,
     @Query('page_size') pageSize: number,
   ) {
-    const result = await this.flowService.findRuns(orgId, id, page || 1, pageSize || 20);
+    const result = await this.flowService.findRuns(
+      orgId,
+      { flowId: id },
+      page || 1,
+      pageSize || 20,
+    );
     return { items: result.items, total: result.total };
+  }
+
+  @Get('runs')
+  @Permissions('PERM-AUTO-MANAGE')
+  @ApiOperation({ summary: '查询自动化运行记录（全局）' })
+  async listRuns(
+    @CurrentUser('orgId') orgId: string,
+    @Query('flow_id') flowId: string | undefined,
+    @Query('status') status: string | undefined,
+    @Query('page') page: number,
+    @Query('page_size') pageSize: number,
+  ) {
+    const result = await this.flowService.findRuns(
+      orgId,
+      { flowId, status },
+      page || 1,
+      pageSize || 20,
+    );
+    return {
+      items: result.items,
+      meta: {
+        page: page || 1,
+        page_size: pageSize || 20,
+        total: result.total,
+        total_pages: Math.ceil(result.total / (pageSize || 20)),
+        has_next: result.total > (page || 1) * (pageSize || 20),
+      },
+    };
   }
 
   @Get('runs/:runId/steps')
@@ -195,5 +228,47 @@ export class AutoController {
     @CurrentUser('orgId') orgId: string,
   ) {
     return this.flowService.findRunSteps(orgId, runId);
+  }
+
+  @Post('runs/:runId/takeover')
+  @Permissions('PERM-AUTO-EXECUTE')
+  @ApiOperation({ summary: '人工接管自动化运行' })
+  async takeoverRun(
+    @Param('runId') runId: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.flowService.takeoverRun(runId, orgId, userId, body.reason);
+  }
+
+  @Post('runs/:runId/confirm')
+  @Permissions('PERM-AUTO-EXECUTE')
+  @ApiOperation({ summary: '人工确认自动化运行结果' })
+  async confirmRun(
+    @Param('runId') runId: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: { note?: string },
+  ) {
+    return this.flowService.confirmRun(runId, orgId, userId, body.note);
+  }
+
+  @Get('templates')
+  @Permissions('PERM-AUTO-MANAGE')
+  @ApiOperation({ summary: '获取自动化推荐模板' })
+  async listTemplates(@CurrentUser('orgId') orgId: string) {
+    return this.flowService.listTemplates(orgId);
+  }
+
+  @Post('templates/:code/install')
+  @Permissions('PERM-AUTO-MANAGE')
+  @ApiOperation({ summary: '安装自动化推荐模板' })
+  async installTemplate(
+    @Param('code') code: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.flowService.installTemplate(orgId, code, userId);
   }
 }

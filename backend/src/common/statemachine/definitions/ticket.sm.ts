@@ -18,6 +18,8 @@ export const ticketStateMachine = new StateMachine<TicketStatus>({
     { from: "assigned", to: "processing" },
     { from: "assigned", to: "closed" },
     { from: "processing", to: "resolved" },
+    { from: "resolved", to: "processing" },
     { from: "resolved", to: "closed" },
+    { from: "closed", to: "processing" },
   ],
 });

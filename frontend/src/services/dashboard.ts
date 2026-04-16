@@ -23,6 +23,7 @@ export type DashboardMetricStatus =
 export type DashboardMetricTrend = 'up' | 'down' | 'flat';
 export type DashboardMetricPerformance = 'improved' | 'worsened' | 'stable';
 export type DashboardDataQuality = 'ready' | 'proxy' | 'missing';
+export type DashboardQualityCategory = 'actual' | 'proxy' | 'coverage_limited';
 
 export interface DashboardActionSuggestion {
   code: string;
@@ -38,6 +39,7 @@ export interface DashboardMetricSource {
   formula: string;
   description: string;
   dataQuality: DashboardDataQuality;
+  qualityCategory: DashboardQualityCategory;
   governanceNotes: string[];
 }
 

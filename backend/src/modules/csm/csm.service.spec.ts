@@ -7,6 +7,7 @@ import { CustomerReturnVisit } from './entities/customer-return-visit.entity';
 import { IntentService } from '../cmem/services/intent.service';
 import { RiskService } from '../cmem/services/risk.service';
 import { NotFoundException, ConflictException } from '@nestjs/common';
+import { DlvService } from '../dlv/dlv.service';
 
 describe('CsmService', () => {
   let service: CsmService;
@@ -15,6 +16,7 @@ describe('CsmService', () => {
   let visitRepository: any;
   let intentService: any;
   let riskService: any;
+  let dlvService: any;
 
   const mockHealth = {
     id: 'health-1',
@@ -79,6 +81,18 @@ describe('CsmService', () => {
       getLatestRiskLevel: jest.fn().mockResolvedValue(null),
     };
 
+    dlvService = {
+      getCustomerDeliverySummary: jest.fn().mockResolvedValue({
+        totalDeliveries: 0,
+        activeDeliveries: 0,
+        blockedDeliveries: 0,
+        acceptedDeliveries: 0,
+        achievedOutcomes: 0,
+        partialOutcomes: 0,
+        pendingRisks: 0,
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CsmService,
@@ -87,6 +101,7 @@ describe('CsmService', () => {
         { provide: getRepositoryToken(CustomerReturnVisit), useValue: visitRepository },
         { provide: IntentService, useValue: intentService },
         { provide: RiskService, useValue: riskService },
+        { provide: DlvService, useValue: dlvService },
       ],
     }).compile();
 

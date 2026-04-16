@@ -9,6 +9,7 @@ import {
   CreateReturnVisitDto,
   HealthListQueryDto,
   SuccessPlanListQueryDto,
+  ReturnVisitListQueryDto,
 } from './dto/csm.dto';
 import { PageQueryDto } from '../../common/dto/pagination.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -66,7 +67,7 @@ export class CsmController {
   }
 
   @Get('plans')
-  @Permissions('PERM-CSM-MANAGE')
+  @Permissions('PERM-CSM-VIEW')
   @ApiOperation({ summary: '分页查询成功计划' })
   async listSuccessPlans(
     @CurrentUser('orgId') orgId: string,
@@ -91,7 +92,7 @@ export class CsmController {
   }
 
   @Get('plans/:id')
-  @Permissions('PERM-CSM-MANAGE')
+  @Permissions('PERM-CSM-VIEW')
   @ApiOperation({ summary: '获取成功计划详情' })
   async getSuccessPlan(
     @Param('id') id: string,
@@ -132,6 +133,41 @@ export class CsmController {
     @Body() dto: CreateReturnVisitDto,
   ) {
     return this.csmService.createReturnVisit(orgId, dto, userId);
+  }
+
+  @Get('visits')
+  @Permissions('PERM-CSM-VIEW')
+  @ApiOperation({ summary: 'List return visits with optional customer/type filters' })
+  async listReturnVisitsGlobal(
+    @CurrentUser('orgId') orgId: string,
+    @Query() query: ReturnVisitListQueryDto,
+  ) {
+    const { items, total } = await this.csmService.findReturnVisitsGlobal(
+      orgId,
+      { customerId: query.customerId, visitType: query.visitType },
+      query.page || 1,
+      query.page_size || 20,
+    );
+    return {
+      items,
+      meta: {
+        page: query.page || 1,
+        page_size: query.page_size || 20,
+        total,
+        total_pages: Math.ceil(total / (query.page_size || 20)),
+        has_next: total > (query.page || 1) * (query.page_size || 20),
+      },
+    };
+  }
+
+  @Get('visits/detail/:id')
+  @Permissions('PERM-CSM-VIEW')
+  @ApiOperation({ summary: 'Get return visit detail by id' })
+  async getReturnVisit(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+  ) {
+    return this.csmService.findReturnVisitById(id, orgId);
   }
 
   @Get('visits/:customerId')

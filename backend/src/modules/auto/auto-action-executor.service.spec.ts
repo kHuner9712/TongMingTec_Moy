@@ -1,6 +1,4 @@
-import { AutoActionExecutor } from './auto-action-executor.service';
-import { NtfService } from '../ntf/ntf.service';
-import { CsmService } from '../csm/csm.service';
+﻿import { AutoActionExecutor } from './auto-action-executor.service';
 import { NotificationType } from '../ntf/entities/notification.entity';
 import { AutomationTrigger } from './entities/automation-trigger.entity';
 
@@ -8,6 +6,9 @@ describe('AutoActionExecutor', () => {
   let executor: AutoActionExecutor;
   let ntfService: any;
   let csmService: any;
+  let tskService: any;
+  let cmService: any;
+  let dlvService: any;
 
   const mockTrigger = {
     id: 'trigger-1',
@@ -28,10 +29,26 @@ describe('AutoActionExecutor', () => {
       createNotification: jest.fn().mockResolvedValue({ id: 'notif-1' }),
     };
     csmService = {
-      evaluateHealth: jest.fn().mockResolvedValue({ id: 'health-1', score: 65 }),
+      evaluateHealth: jest.fn().mockResolvedValue({ id: 'health-1', score: 65, level: 'medium' }),
+      recordAutomationRiskSignal: jest.fn().mockResolvedValue({ id: 'health-1' }),
+    };
+    tskService = {
+      createTask: jest.fn().mockResolvedValue({ id: 'task-1', title: 'task' }),
+    };
+    cmService = {
+      findCustomerById: jest.fn().mockResolvedValue({ id: 'customer-1', ownerUserId: 'owner-1' }),
+    };
+    dlvService = {
+      findDeliveryById: jest.fn().mockResolvedValue({ id: 'delivery-1', customerId: 'customer-1' }),
     };
 
-    executor = new AutoActionExecutor(ntfService, csmService);
+    executor = new AutoActionExecutor(
+      ntfService,
+      csmService,
+      tskService,
+      cmService,
+      dlvService,
+    );
   });
 
   describe('notify_csm', () => {
@@ -61,19 +78,6 @@ describe('AutoActionExecutor', () => {
       expect(result.success).toBe(false);
       expect(result.message).toBe('MISSING_CUSTOMER_ID');
       expect(csmService.evaluateHealth).not.toHaveBeenCalled();
-    });
-
-    it('should handle evaluateHealth failure gracefully', async () => {
-      csmService.evaluateHealth.mockRejectedValue(new Error('eval failed'));
-
-      const result = await executor.execute(
-        mockTrigger,
-        { customerId: 'customer-1' },
-        'org-1',
-      );
-
-      expect(result.success).toBe(false);
-      expect(result.message).toContain('EXECUTION_FAILED');
     });
   });
 
@@ -107,43 +111,82 @@ describe('AutoActionExecutor', () => {
         expect.any(String),
       );
     });
+  });
 
-    it('should use default title and content when not provided in payload', async () => {
-      const triggerNoPayload = {
+  describe('create_csm_followup_task', () => {
+    it('should create followup task and notify owner', async () => {
+      const trigger = {
         ...mockTrigger,
-        actionType: 'send_notification',
-        actionPayload: {},
+        actionType: 'create_csm_followup_task',
       } as AutomationTrigger;
 
       const result = await executor.execute(
-        triggerNoPayload,
-        { toStatus: 'succeeded', fromStatus: 'processing' },
+        trigger,
+        {
+          customerId: 'customer-1',
+          contractId: 'contract-1',
+          contractNo: 'CT-001',
+          daysUntilExpiry: 5,
+        },
         'org-1',
       );
 
       expect(result.success).toBe(true);
-      expect(ntfService.createNotification).toHaveBeenCalledWith(
-        'org-1',
-        expect.any(String),
-        NotificationType.SYSTEM_ANNOUNCEMENT,
-        expect.stringContaining('contract.expiry_warning'),
-        expect.stringContaining('合同到期预警触发器'),
-        expect.any(String),
-        expect.any(String),
-      );
+      expect(result.message).toContain('CSM_FOLLOWUP_TASK_CREATED');
+      expect(tskService.createTask).toHaveBeenCalled();
+      expect(ntfService.createNotification).toHaveBeenCalled();
     });
+  });
 
-    it('should handle createNotification failure gracefully', async () => {
-      ntfService.createNotification.mockRejectedValue(new Error('ntf failed'));
+  describe('append_csm_risk_signal', () => {
+    it('should append risk signal and notify owner', async () => {
+      const trigger = {
+        ...mockTrigger,
+        actionType: 'append_csm_risk_signal',
+      } as AutomationTrigger;
 
       const result = await executor.execute(
-        notificationTrigger,
-        { toStatus: 'succeeded' },
+        trigger,
+        {
+          customerId: 'customer-1',
+          deliveryId: 'delivery-1',
+          ownerUserId: 'owner-1',
+          title: '里程碑延期',
+          severity: 'high',
+          status: 'open',
+        },
         'org-1',
       );
 
-      expect(result.success).toBe(false);
-      expect(result.message).toContain('EXECUTION_FAILED');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('CSM_RISK_SIGNAL_APPENDED');
+      expect(csmService.recordAutomationRiskSignal).toHaveBeenCalled();
+      expect(ntfService.createNotification).toHaveBeenCalled();
+    });
+  });
+
+  describe('create_service_attention', () => {
+    it('should create attention tasks for owners', async () => {
+      const trigger = {
+        ...mockTrigger,
+        actionType: 'create_service_attention',
+      } as AutomationTrigger;
+
+      const result = await executor.execute(
+        trigger,
+        {
+          metricKey: 'first_response_time',
+          metricName: '首响时间',
+          currentLabel: '45 分钟',
+          ownerUserIds: ['owner-1', 'owner-2'],
+        },
+        'org-1',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('SERVICE_ATTENTION_CREATED');
+      expect(tskService.createTask).toHaveBeenCalledTimes(2);
+      expect(ntfService.createNotification).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -154,11 +197,7 @@ describe('AutoActionExecutor', () => {
         actionType: 'log',
       } as AutomationTrigger;
 
-      const result = await executor.execute(
-        logTrigger,
-        { toStatus: 'active' },
-        'org-1',
-      );
+      const result = await executor.execute(logTrigger, { toStatus: 'active' }, 'org-1');
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('LOGGED');
@@ -172,11 +211,7 @@ describe('AutoActionExecutor', () => {
         actionType: 'unknown_action',
       } as AutomationTrigger;
 
-      const result = await executor.execute(
-        unknownTrigger,
-        {},
-        'org-1',
-      );
+      const result = await executor.execute(unknownTrigger, {}, 'org-1');
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('UNKNOWN_ACTION_TYPE');

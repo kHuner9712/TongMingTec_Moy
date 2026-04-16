@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { OmService } from './om.service';
 import { Opportunity, OpportunityStage, OpportunityResult } from './entities/opportunity.entity';
 import { OpportunityStageHistory } from './entities/opportunity-stage-history.entity';
+import { Conversation } from '../cnv/entities/conversation.entity';
 import { EventBusService } from '../../common/events/event-bus.service';
 import { NotFoundException, ConflictException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
@@ -10,6 +11,7 @@ describe('OmService', () => {
   let service: OmService;
   let opportunityRepository: any;
   let historyRepository: any;
+  let conversationRepository: any;
   let eventBus: any;
 
   const mockOpportunity = {
@@ -51,6 +53,10 @@ describe('OmService', () => {
       find: jest.fn(),
     };
 
+    conversationRepository = {
+      findOne: jest.fn(),
+    };
+
     eventBus = { publish: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -58,6 +64,7 @@ describe('OmService', () => {
         OmService,
         { provide: getRepositoryToken(Opportunity), useValue: opportunityRepository },
         { provide: getRepositoryToken(OpportunityStageHistory), useValue: historyRepository },
+        { provide: getRepositoryToken(Conversation), useValue: conversationRepository },
         { provide: EventBusService, useValue: eventBus },
       ],
     }).compile();
@@ -100,6 +107,50 @@ describe('OmService', () => {
           ownerUserId: 'user-1',
         }),
       );
+    });
+
+    it('should validate source conversation under same customer', async () => {
+      conversationRepository.findOne.mockResolvedValue({
+        id: 'conv-1',
+        orgId: 'org-1',
+        customerId: 'customer-1',
+      });
+      opportunityRepository.create.mockReturnValue(mockOpportunity);
+      opportunityRepository.save.mockResolvedValue(mockOpportunity);
+
+      await service.createOpportunity(
+        'org-1',
+        {
+          name: '娴嬭瘯鍟嗘満',
+          customerId: 'customer-1',
+          sourceConversationId: 'conv-1',
+        } as any,
+        'user-1',
+      );
+
+      expect(conversationRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 'conv-1', orgId: 'org-1' },
+      });
+    });
+
+    it('should reject mismatched source conversation customer', async () => {
+      conversationRepository.findOne.mockResolvedValue({
+        id: 'conv-1',
+        orgId: 'org-1',
+        customerId: 'customer-other',
+      });
+
+      await expect(
+        service.createOpportunity(
+          'org-1',
+          {
+            name: '娴嬭瘯鍟嗘満',
+            customerId: 'customer-1',
+            sourceConversationId: 'conv-1',
+          } as any,
+          'user-1',
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

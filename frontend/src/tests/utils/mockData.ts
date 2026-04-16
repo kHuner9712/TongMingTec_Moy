@@ -165,6 +165,7 @@ export const mockOpportunities: Opportunity[] = [
     orgId: 'org-1',
     customerId: 'customer-1',
     leadId: null,
+    sourceConversationId: null,
     ownerUserId: 'user-1',
     name: '测试商机A',
     amount: 100000,

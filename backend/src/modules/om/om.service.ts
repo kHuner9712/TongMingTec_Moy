@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Opportunity, OpportunityStage, OpportunityResult } from './entities/opportunity.entity';
 import { OpportunityStageHistory } from './entities/opportunity-stage-history.entity';
+import { Conversation } from '../cnv/entities/conversation.entity';
 import { opportunityStateMachine } from '../../common/statemachine/definitions/opportunity.sm';
 import { EventBusService } from '../../common/events/event-bus.service';
 import { opportunityStageChanged, opportunityResultSet } from '../../common/events/opportunity-events';
@@ -28,6 +29,8 @@ export class OmService {
     private opportunityRepository: Repository<Opportunity>,
     @InjectRepository(OpportunityStageHistory)
     private historyRepository: Repository<OpportunityStageHistory>,
+    @InjectRepository(Conversation)
+    private conversationRepository: Repository<Conversation>,
     private readonly eventBus: EventBusService,
   ) {}
 
@@ -77,6 +80,20 @@ export class OmService {
     data: Partial<Opportunity>,
     userId: string,
   ): Promise<Opportunity> {
+    if (data.sourceConversationId) {
+      const sourceConversation = await this.conversationRepository.findOne({
+        where: { id: data.sourceConversationId, orgId },
+      });
+
+      if (!sourceConversation || !sourceConversation.customerId) {
+        throw new BadRequestException('PARAM_INVALID');
+      }
+
+      if (data.customerId !== sourceConversation.customerId) {
+        throw new BadRequestException('PARAM_INVALID');
+      }
+    }
+
     const opp = this.opportunityRepository.create({
       ...data,
       orgId,

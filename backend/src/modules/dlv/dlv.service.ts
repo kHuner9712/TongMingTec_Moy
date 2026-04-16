@@ -586,8 +586,14 @@ export class DlvService {
         orgId,
         deliveryId,
         riskId: saved.id,
+        customerId: delivery.customerId,
+        ownerUserId: saved.ownerUserId,
+        title: saved.title,
         severity: saved.severity,
         status: saved.status,
+        contractId: delivery.contractId,
+        orderId: delivery.orderId,
+        subscriptionId: delivery.subscriptionId,
         actorType: userId === SYSTEM_USER_ID ? 'system' : 'user',
         actorId: userId,
       }),
@@ -615,7 +621,7 @@ export class DlvService {
     dto: UpdateRiskDto,
     userId: string,
   ): Promise<DeliveryRisk> {
-    await this.findDeliveryById(deliveryId, orgId);
+    const delivery = await this.findDeliveryById(deliveryId, orgId);
 
     const risk = await this.riskRepository.findOne({
       where: { id, deliveryId, orgId, deletedAt: null as unknown as undefined },
@@ -651,8 +657,14 @@ export class DlvService {
         orgId,
         deliveryId,
         riskId: updated.id,
+        customerId: delivery.customerId,
+        ownerUserId: updated.ownerUserId,
+        title: updated.title,
         severity: updated.severity,
         status: updated.status,
+        contractId: delivery.contractId,
+        orderId: delivery.orderId,
+        subscriptionId: delivery.subscriptionId,
         actorType: userId === SYSTEM_USER_ID ? 'system' : 'user',
         actorId: userId,
       }),

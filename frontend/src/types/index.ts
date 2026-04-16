@@ -114,6 +114,7 @@ export type OpportunityResult = "won" | "lost";
 export interface Opportunity extends BaseEntity {
   customerId: string;
   leadId: string | null;
+  sourceConversationId: string | null;
   ownerUserId: string;
   name: string;
   amount: number;
@@ -327,6 +328,7 @@ export interface UpdateLeadDto {
 export interface CreateOpportunityDto {
   customerId: string;
   leadId?: string;
+  sourceConversationId?: string;
   name: string;
   amount?: number;
   currency?: string;
@@ -735,6 +737,8 @@ export interface Order extends BaseEntity {
   currency: string;
   totalAmount: number;
   activatedAt: string | null;
+  subscriptionOpenedAt: string | null;
+  deliveryStartedAt: string | null;
 }
 
 export interface CreateOrderDto {

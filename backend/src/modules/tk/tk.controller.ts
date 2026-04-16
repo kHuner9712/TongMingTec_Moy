@@ -78,6 +78,17 @@ class CloseDto {
   version: number;
 }
 
+class ReopenDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  reason?: string;
+
+  @IsInt()
+  @Min(1)
+  version: number;
+}
+
 @Controller('tickets')
 export class TkController {
   constructor(private readonly tkService: TkService) {}
@@ -179,6 +190,23 @@ export class TkController {
       id,
       orgId,
       dto.closeReason || '',
+      userId,
+      dto.version,
+    );
+  }
+
+  @Post(':id/reopen')
+  @Permissions('PERM-TK-REOPEN')
+  async reopenTicket(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: ReopenDto,
+  ) {
+    return this.tkService.reopen(
+      id,
+      orgId,
+      dto.reason || '',
       userId,
       dto.version,
     );

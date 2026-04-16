@@ -75,4 +75,17 @@ export const csmApi = {
   ): Promise<PaginatedResponse<CustomerReturnVisit>> => {
     return api.get(`/csm/visits/${customerId}`, { params });
   },
+
+  listReturnVisitsGlobal: async (params?: {
+    page?: number;
+    page_size?: number;
+    customerId?: string;
+    visitType?: string;
+  }): Promise<PaginatedResponse<CustomerReturnVisit>> => {
+    return api.get('/csm/visits', { params });
+  },
+
+  getReturnVisit: async (id: string): Promise<CustomerReturnVisit> => {
+    return api.get(`/csm/visits/detail/${id}`);
+  },
 };

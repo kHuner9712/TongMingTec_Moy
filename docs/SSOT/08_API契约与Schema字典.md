@@ -154,11 +154,11 @@
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | API-CNV-001~004 | `GET /conversations` `GET /conversations/{id}` `GET /conversations/{id}/messages` `POST /conversations/{id}/messages` | S1 | `SCH-PATH-ID / SCH-CNV-* / SCH-CNV-* / SCH-HEADER-AUTH` | `SCH-CNV-LIST` / `SCH-CNV-DETAIL` / `SCH-CNV-MESSAGES` | `200/201/400/403` | `PERM-CNV-VIEW/SEND` | SELF/TEAM/ORG | 发送是 | 发送是 | `version` | `CONVERSATION_* / MESSAGE_SEND` | `EX-CNV-001` |
 | API-CNV-005~010 | `POST /conversations/{id}/accept` `POST /conversations/{id}/transfer` `POST /conversations/{id}/close` `POST /conversations/{id}/tickets` `GET /conversations/monitor` `POST /conversations/{id}/rating` | S1/S2 | `SCH-PATH-ID / SCH-CNV-ACTION / SCH-CNV-RATING / SCH-HEADER-AUTH` | `SCH-CNV-DETAIL` / `SCH-TK-DETAIL` / `SCH-CNV-RATING` | `200/201/400/403/409` | `PERM-CNV-*` | SELF/TEAM/ORG | 是 | 转工单是 | `version` | `CONVERSATION_ACCEPT/TRANSFER/CLOSE/CREATE_TICKET/RATE` | `EX-CNV-002` |
-| API-TK-001~009 | `GET /tickets` `POST /tickets` `GET /tickets/{id}` `POST /tickets/{id}/assign` `POST /tickets/{id}/start` `POST /tickets/{id}/resolve` `POST /tickets/{id}/close` `PUT /sla-configs/{id}` `GET /tickets/metrics` | S1/S2 | `SCH-PATH-ID / SCH-TK-* / SCH-TK-* / SCH-HEADER-AUTH` | `SCH-TK-*` | `200/201/400/403/409` | `PERM-TK-*` | SELF/TEAM/ORG | 是 | 创建是 | `version` | `TICKET_* / SLA_CONFIG_*` | `EX-TK-001` |
+| API-TK-001~010 | `GET /tickets` `POST /tickets` `GET /tickets/{id}` `POST /tickets/{id}/assign` `POST /tickets/{id}/start` `POST /tickets/{id}/resolve` `POST /tickets/{id}/close` `POST /tickets/{id}/reopen` `PUT /sla-configs/{id}` `GET /tickets/metrics` | S1/S2 | `SCH-PATH-ID / SCH-TK-* / SCH-TK-* / SCH-HEADER-AUTH` | `SCH-TK-*` | `200/201/400/403/409` | `PERM-TK-*` | SELF/TEAM/ORG | 是 | 创建是 | `version` | `TICKET_* / SLA_CONFIG_*` | `EX-TK-001` |
 | API-TSK-001~005 | `GET /tasks` `POST /tasks` `PUT /tasks/{id}` `POST /tasks/{id}/status` `POST /tasks/{id}/remind` | S1 | `SCH-PATH-ID / SCH-TSK-* / SCH-TSK-* / SCH-HEADER-AUTH` | `SCH-TSK-*` | `200/201/400/403/409` | `PERM-TSK-*` | SELF/TEAM/ORG | 是 | 创建/提醒是 | `version` | `TASK_*` | `EX-TSK-001` |
 | API-NTF-001~003 | `GET /notifications` `POST /notifications/{id}/read` `PUT /notification-preferences` | S1/S2 | `SCH-PATH-ID / SCH-NTF-* / SCH-NTF-* / SCH-HEADER-AUTH` | `SCH-NTF-*` | `200/400/403` | `PERM-NTF-*` | SELF | 是 | 否 | `version` | `NOTIFICATION_LIST/READ/PREFERENCE_UPDATE` | `EX-NTF-001` |
 | API-KB-001~006 | `GET /knowledge/items` `GET /knowledge/items/{id}` `POST /knowledge/items` `PUT /knowledge/items/{id}` `POST /knowledge/items/{id}/review` `POST /knowledge/ask` | S2 | `SCH-PATH-ID / SCH-KB-* / SCH-KB-* / SCH-HEADER-AUTH` | `SCH-KB-*` | `200/201/400/403/409` | `PERM-KB-*` | ORG/PORTAL | 是 | 创建/提问是 | `version` | `KNOWLEDGE_* / KNOWLEDGE_ASK` | `EX-KB-001` |
-| API-DASH-001~003 | `GET /dashboards/sales` `GET /dashboards/service` `GET /dashboards/executive` | S2 | `- / SCH-DASH-QUERY / - / SCH-HEADER-AUTH` | `SCH-DASH-*` | `200/400/403` | `PERM-DASH-VIEW` | TEAM/ORG | 否 | 否 | - | `DASHBOARD_VIEW` | `EX-DASH-001` |
+| API-DASH-001~003 | `GET /dashboards/sales` `GET /dashboards/service` `GET /dashboards/executive` | S2 | `- / SCH-DASH-QUERY / - / SCH-HEADER-AUTH` | `SCH-DASH-*`（含 `source.dataQuality/source.qualityCategory/governanceNotes`） | `200/400/403` | `PERM-DASH-VIEW` | TEAM/ORG | 否 | 否 | - | `DASHBOARD_VIEW` | `EX-DASH-001` |
 
 ### 5.4 商机、报价、合同、订单、客户成功
 | API-ID | Method / Path | introduced_in | Path / Query / Body / Header | Response | 成功 / 失败 | 权限 | 数据范围 | 事务 | 幂等 | 并发 | 审计动作 | 示例 |
@@ -168,6 +168,10 @@
 | API-CT-001~005 | `GET/POST /contracts` `GET/PUT /contracts/{id}` `POST /contracts/{id}/submit-approval` `POST /contracts/{id}/sign` `POST /contracts/{id}/expire-check` | S2 | `SCH-PATH-ID / SCH-CT-* / SCH-CT-* / SCH-HEADER-AUTH` | `SCH-CT-*` | `200/201/400/403/409` | `PERM-CT-*` | SELF/TEAM/ORG | 是 | 创建/签署是 | `version` | `CONTRACT_*` | `EX-CT-001` |
 | API-ORD-001~004 | `GET/POST /orders` `GET/PUT /orders/{id}` `POST /orders/{id}/activate` `POST /orders/{id}/refund` | S2 | `SCH-PATH-ID / SCH-ORD-* / SCH-ORD-* / SCH-HEADER-AUTH` | `SCH-ORD-*` | `200/201/400/403/409` | `PERM-ORD-*` | ORG | 是 | 创建/激活/退款是 | `version` | `ORDER_*` | `EX-ORD-001` |
 | API-CSM-001~004 | `GET /customers/{id}/health` `GET/POST /success-plans` `GET /renewals/workbench` `POST /customers/{id}/expansion-recommendations` | S2 | `SCH-PATH-ID / SCH-CSM-* / SCH-CSM-* / SCH-HEADER-AUTH` | `SCH-CSM-*` | `200/201/400/403` | `PERM-CSM-*` | TEAM/ORG | 是 | 创建/推荐是 | `version` | `CSM_*` | `EX-CSM-001` |
+
+补充说明（2026-04）：
+- `POST /opportunities` 支持可选字段 `sourceConversationId`，用于 `conversation -> opportunity` 强归因（同租户且需与 `customerId` 一致）。
+- `POST /tickets/{id}/reopen` 用于 `resolved/closed -> processing` 的兼容回开流程，要求 `version` 并写入 `ticket_logs.action=reopened`。
 
 ### 5.5 AI、商业化、集成与多端
 | API-ID | Method / Path | introduced_in | Path / Query / Body / Header | Response | 成功 / 失败 | 权限 | 数据范围 | 事务 | 幂等 | 并发 | 审计动作 | 示例 |
@@ -192,7 +196,7 @@
 | `conversation.message.created` | API-CNV-004 | `WS-conversation-message-created` | 新消息 |
 | `conversation.status.changed` | API-CNV-005/006/007 | `WS-conversation-status-changed` | 接入/转接/关闭 |
 | `ticket.created` | API-CNV-008,API-TK-002 | `WS-ticket-created` | 新工单 |
-| `ticket.status.changed` | API-TK-004~007 | `WS-ticket-status-changed` | 工单流转 |
+| `ticket.status.changed` | API-TK-004~008 | `WS-ticket-status-changed` | 工单流转（含 reopen） |
 | `notification.created` | 系统通知创建器 | `WS-notification-created` | 新通知 |
 | `ai.task.status.changed` | AI worker | `WS-ai-task-status-changed` | AI 任务变化 |
 | `bill.status.changed` | API-BILL-001~004, API-PAY-001 | `WS-bill-status-changed` | 账单状态变化 |

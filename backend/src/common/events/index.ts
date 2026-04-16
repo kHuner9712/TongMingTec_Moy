@@ -27,3 +27,4 @@ export {
 } from "./contract-events";
 export { orderStatusChanged } from "./order-events";
 export { paymentStatusChanged } from "./payment-events";
+export { dashboardMetricAnomaly } from "./dashboard-events";

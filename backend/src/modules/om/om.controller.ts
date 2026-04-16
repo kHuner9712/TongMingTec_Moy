@@ -33,6 +33,10 @@ class CreateOpportunityDto {
   @IsUUID()
   leadId?: string;
 
+  @IsOptional()
+  @IsUUID()
+  sourceConversationId?: string;
+
   @IsString()
   @MaxLength(128)
   name: string;

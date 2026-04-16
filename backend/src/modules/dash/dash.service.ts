@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { MetricSnapshot } from './entities/metric-snapshot.entity';
@@ -7,6 +7,8 @@ import { Conversation } from '../cnv/entities/conversation.entity';
 import { Contract } from '../ct/entities/contract.entity';
 import { Order } from '../ord/entities/order.entity';
 import { Ticket } from '../tk/entities/ticket.entity';
+import { EventBusService } from '../../common/events/event-bus.service';
+import { dashboardMetricAnomaly } from '../../common/events/dashboard-events';
 
 export type DashboardRange = '7d' | '30d' | '90d';
 export type DashboardBoardType = 'executive' | 'sales' | 'service';
@@ -17,6 +19,7 @@ type MetricStatus = 'healthy' | 'warning' | 'critical' | 'insufficient_data';
 type MetricTrend = 'up' | 'down' | 'flat';
 type MetricPerformance = 'improved' | 'worsened' | 'stable';
 type DataQuality = 'ready' | 'proxy' | 'missing';
+type DataQualityCategory = 'actual' | 'proxy' | 'coverage_limited';
 
 type IndicatorKey =
   | 'first_response_time'
@@ -42,6 +45,7 @@ interface MetricStat {
   value: number;
   sampleSize: number;
   coverage?: number;
+  directNumerator?: number;
 }
 
 interface DashboardActionSuggestion {
@@ -58,6 +62,7 @@ interface DashboardMetricSource {
   formula: string;
   description: string;
   dataQuality: DataQuality;
+  qualityCategory: DataQualityCategory;
   governanceNotes: string[];
 }
 
@@ -148,6 +153,7 @@ const REQUIRED_MODULES: string[] = [
   'CT',
   'ORD',
   'SUB',
+  'DLV',
   'TK',
   'CSM',
 ];
@@ -258,6 +264,7 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
       formula: 'AVG(first_response_at - created_at)',
       description: '统计会话创建到首次响应的平均分钟数。',
       dataQuality: 'ready',
+      qualityCategory: 'actual',
       governanceNotes: [],
     },
     actions: [
@@ -287,6 +294,7 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
       formula: '漏跟进开放线索 / 开放线索',
       description: '统计超过48小时未跟进的开放线索占比。',
       dataQuality: 'ready',
+      qualityCategory: 'actual',
       governanceNotes: [],
     },
     actions: [
@@ -313,16 +321,19 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
       modules: ['CNV', 'OM'],
       tables: ['conversations', 'opportunities'],
       fields: [
+        'conversations.id',
         'conversations.customer_id',
-        'conversations.created_at',
+        'opportunities.source_conversation_id',
         'opportunities.customer_id',
         'opportunities.created_at',
       ],
-      formula: '14天内由会话客户创建商机的会话数 / 有客户标识会话数',
-      description: '基于客户维度关联，评估会话向商机推进效率。',
+      formula:
+        '优先按 source_conversation_id 强归因，缺失时回退 customer_id + 14天窗口代理归因',
+      description: '评估会话向商机推进效率，强归因覆盖不足时自动降级为代理口径。',
       dataQuality: 'proxy',
+      qualityCategory: 'proxy',
       governanceNotes: [
-        '当前使用 customer_id + 14天窗口推断，缺少 conversation_id -> opportunity_id 的强归因字段。',
+        '已引入 opportunities.source_conversation_id，历史数据缺失映射时仍会回退代理口径。',
       ],
     },
     actions: [
@@ -352,6 +363,7 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
       formula: 'AVG(contracts.signed_at - quotes.sent_at)',
       description: '统计报价发出后到合同激活（签署完成）的平均小时数。',
       dataQuality: 'ready',
+      qualityCategory: 'actual',
       governanceNotes: [],
     },
     actions: [
@@ -375,19 +387,18 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
     direction: 'lower_is_better',
     threshold: { warning: 48, critical: 120 },
     source: {
-      modules: ['ORD', 'SUB', 'CSM'],
-      tables: ['orders', 'subscriptions', 'delivery_orders'],
+      modules: ['ORD', 'SUB', 'DLV'],
+      tables: ['orders'],
       fields: [
         'orders.activated_at',
-        'subscriptions.starts_at',
-        'delivery_orders.started_at',
-        'delivery_orders.order_id',
+        'orders.subscription_opened_at',
+        'orders.delivery_started_at',
       ],
-      formula:
-        'AVG(MIN(subscriptions.starts_at, delivery_orders.started_at) - orders.activated_at)',
+      formula: 'AVG(MIN(subscription_opened_at, delivery_started_at) - activated_at)',
       description:
-        '统计订单激活后到订阅开通或交付启动（取最早）的平均小时数。',
+        '统计订单激活后到订阅开通或交付启动（取最早）的平均小时数，基于订单沉淀时间字段计算。',
       dataQuality: 'ready',
+      qualityCategory: 'actual',
       governanceNotes: [],
     },
     actions: [
@@ -415,10 +426,11 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
       tables: ['tickets', 'ticket_logs'],
       fields: ['tickets.resolved_at', 'tickets.created_at', 'ticket_logs.action'],
       formula: '一次闭环解决工单 / 窗口期工单总数',
-      description: '统计窗口内工单首次闭环解决比例。',
-      dataQuality: 'proxy',
+      description: '统计窗口内一次解决且未发生 reopened 的工单占比。',
+      dataQuality: 'ready',
+      qualityCategory: 'actual',
       governanceNotes: [
-        '当前状态机无 reopened 状态，首次解决按“一次闭环”代理计算，后续需补 reopen 事件。',
+        'reopen 事件已接入，2026-04 之前历史窗口可能仍偏乐观。',
       ],
     },
     actions: [
@@ -443,11 +455,17 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
     threshold: { warning: 90, critical: 80 },
     source: {
       modules: ['TK'],
-      tables: ['tickets'],
-      fields: ['tickets.sla_due_at', 'tickets.resolved_at', 'tickets.created_at'],
-      formula: 'resolved_at <= sla_due_at 的工单 / 配置SLA的工单',
-      description: '统计窗口内配置SLA工单的达标比例。',
+      tables: ['tickets', 'ticket_logs'],
+      fields: [
+        'tickets.sla_due_at',
+        'tickets.resolved_at',
+        'tickets.created_at',
+        'ticket_logs.action=reopened',
+      ],
+      formula: 'resolved_at <= sla_due_at 且未发生 reopened 的工单 / 配置SLA的工单',
+      description: '统计窗口内配置SLA工单的一次达标比例。',
       dataQuality: 'ready',
+      qualityCategory: 'actual',
       governanceNotes: [],
     },
     actions: [
@@ -469,6 +487,9 @@ const INDICATOR_DEFINITIONS: Record<IndicatorKey, IndicatorDefinition> = {
 
 @Injectable()
 export class DashService {
+  private readonly anomalyThrottle = new Map<string, number>();
+  private readonly ANOMALY_THROTTLE_MS = 30 * 60 * 1000;
+
   constructor(
     @InjectRepository(MetricSnapshot)
     private readonly metricRepo: Repository<MetricSnapshot>,
@@ -482,6 +503,7 @@ export class DashService {
     private readonly orderRepo: Repository<Order>,
     @InjectRepository(Ticket)
     private readonly ticketRepo: Repository<Ticket>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   async getDashboardSummary(
@@ -570,6 +592,7 @@ export class DashService {
     const anomalies = this.buildAnomalies(selectedIndicators);
     const dataGovernance = this.buildDataGovernance(selectedIndicators);
     const moduleCoverage = this.buildModuleCoverage(selectedIndicators);
+    await this.publishAnomalyEvents(orgId, range, anomalies, selectedIndicators);
 
     return {
       board,
@@ -688,11 +711,35 @@ export class DashService {
       ),
     ]);
 
-    return this.buildIndicator(
-      'conversation_to_opportunity_rate',
-      current,
-      previous,
-    );
+    const extraNotes: string[] = [];
+    let qualityCategoryOverride: DataQualityCategory | undefined;
+    let dataQualityOverride: DataQuality | undefined;
+
+    if (current.sampleSize === 0) {
+      qualityCategoryOverride = 'coverage_limited';
+      dataQualityOverride = 'missing';
+      extraNotes.push('当前窗口没有可归因会话样本。');
+    } else if (current.coverage !== undefined) {
+      const directShare = this.round(current.coverage, 1);
+      extraNotes.push(
+        `强归因占比 ${directShare}%（source_conversation_id 命中 / 已转化会话）。`,
+      );
+
+      if (directShare >= 80) {
+        qualityCategoryOverride = 'actual';
+        dataQualityOverride = 'ready';
+      } else {
+        qualityCategoryOverride = 'proxy';
+        dataQualityOverride = 'proxy';
+        extraNotes.push('强归因覆盖不足，仍有部分样本使用 customer + 14天 代理口径。');
+      }
+    }
+
+    return this.buildIndicator('conversation_to_opportunity_rate', current, previous, {
+      extraGovernanceNotes: extraNotes,
+      qualityCategoryOverride,
+      dataQualityOverride,
+    });
   }
 
   private async buildQuoteContractCycleIndicator(
@@ -733,9 +780,12 @@ export class DashService {
     ]);
 
     const extraNotes: string[] = [];
-    let qualityOverride: DataQuality | undefined;
+    let qualityCategoryOverride: DataQualityCategory | undefined;
+    let dataQualityOverride: DataQuality | undefined;
 
     if (current.sampleSize === 0) {
+      qualityCategoryOverride = 'coverage_limited';
+      dataQualityOverride = 'missing';
       extraNotes.push(
         '当前窗口无可用开通/交接样本，需补齐订单激活后的订阅或交付启动数据。',
       );
@@ -748,12 +798,14 @@ export class DashService {
           1,
         )}%，部分订单缺少开通或交付启动时间。`,
       );
-      qualityOverride = 'proxy';
+      qualityCategoryOverride = 'coverage_limited';
+      dataQualityOverride = 'proxy';
     }
 
     return this.buildIndicator('post_deal_handover_time', current, previous, {
       extraGovernanceNotes: extraNotes,
-      qualityOverride,
+      qualityCategoryOverride,
+      dataQualityOverride,
     });
   }
 
@@ -879,19 +931,43 @@ export class DashService {
       .addSelect(
         `SUM(
           CASE
-            WHEN EXISTS (
-              SELECT 1
-              FROM opportunities o
-              WHERE o.org_id = c.org_id
-                AND o.deleted_at IS NULL
-                AND o.customer_id = c.customer_id
-                AND o.created_at >= c.created_at
-                AND o.created_at < c.created_at + interval '14 days'
+            WHEN (
+              EXISTS (
+                SELECT 1
+                FROM opportunities o_direct
+                WHERE o_direct.org_id = c.org_id
+                  AND o_direct.deleted_at IS NULL
+                  AND o_direct.source_conversation_id = c.id
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM opportunities o_proxy
+                WHERE o_proxy.org_id = c.org_id
+                  AND o_proxy.deleted_at IS NULL
+                  AND o_proxy.customer_id = c.customer_id
+                  AND o_proxy.created_at >= c.created_at
+                  AND o_proxy.created_at < c.created_at + interval '14 days'
+              )
             )
             THEN 1 ELSE 0
           END
         )`,
         'numerator',
+      )
+      .addSelect(
+        `SUM(
+          CASE
+            WHEN EXISTS (
+              SELECT 1
+              FROM opportunities o_direct
+              WHERE o_direct.org_id = c.org_id
+                AND o_direct.deleted_at IS NULL
+                AND o_direct.source_conversation_id = c.id
+            )
+            THEN 1 ELSE 0
+          END
+        )`,
+        'directNumerator',
       )
       .where('c.org_id = :orgId', { orgId })
       .andWhere('c.deleted_at IS NULL')
@@ -900,14 +976,18 @@ export class DashService {
         startAt,
         endAt,
       })
-      .getRawOne<{ sample: string; numerator: string }>();
+      .getRawOne<{ sample: string; numerator: string; directNumerator: string }>();
 
     const sample = this.toInt(raw?.sample);
     const numerator = this.toInt(raw?.numerator);
+    const directNumerator = this.toInt(raw?.directNumerator);
 
     return {
       sampleSize: sample,
       value: this.safeRate(numerator, sample),
+      coverage:
+        numerator === 0 ? undefined : this.safeRate(directNumerator, numerator),
+      directNumerator,
     };
   }
 
@@ -954,18 +1034,8 @@ export class DashService {
       .createQueryBuilder('o')
       .select('o.id', 'orderId')
       .addSelect('o.activated_at', 'activatedAt')
-      .addSelect('MIN(s.starts_at)', 'subscriptionStartedAt')
-      .addSelect('MIN(d.started_at)', 'deliveryStartedAt')
-      .leftJoin(
-        'subscriptions',
-        's',
-        's.order_id = o.id AND s.org_id = o.org_id AND s.deleted_at IS NULL',
-      )
-      .leftJoin(
-        'delivery_orders',
-        'd',
-        'd.order_id = o.id AND d.org_id = o.org_id AND d.deleted_at IS NULL',
-      )
+      .addSelect('o.subscription_opened_at', 'subscriptionStartedAt')
+      .addSelect('o.delivery_started_at', 'deliveryStartedAt')
       .where('o.org_id = :orgId', { orgId })
       .andWhere('o.deleted_at IS NULL')
       .andWhere('o.activated_at IS NOT NULL')
@@ -973,8 +1043,6 @@ export class DashService {
         startAt,
         endAt,
       })
-      .groupBy('o.id')
-      .addGroupBy('o.activated_at')
       .getRawMany<{
         orderId: string;
         activatedAt: string;
@@ -1075,6 +1143,13 @@ export class DashService {
             WHEN t.sla_due_at IS NOT NULL
               AND t.resolved_at IS NOT NULL
               AND t.resolved_at <= t.sla_due_at
+              AND NOT EXISTS (
+                SELECT 1
+                FROM ticket_logs tl
+                WHERE tl.ticket_id = t.id
+                  AND tl.org_id = t.org_id
+                  AND tl.action = 'reopened'
+              )
             THEN 1 ELSE 0
           END
         )`,
@@ -1101,7 +1176,11 @@ export class DashService {
     key: IndicatorKey,
     current: MetricStat,
     previous: MetricStat,
-    options?: { extraGovernanceNotes?: string[]; qualityOverride?: DataQuality },
+    options?: {
+      extraGovernanceNotes?: string[];
+      dataQualityOverride?: DataQuality;
+      qualityCategoryOverride?: DataQualityCategory;
+    },
   ): DashboardIndicator {
     const definition = INDICATOR_DEFINITIONS[key];
     const delta = this.round(current.value - previous.value, 2);
@@ -1140,7 +1219,9 @@ export class DashService {
       sampleSize: current.sampleSize,
       source: {
         ...definition.source,
-        dataQuality: options?.qualityOverride || definition.source.dataQuality,
+        dataQuality: options?.dataQualityOverride || definition.source.dataQuality,
+        qualityCategory:
+          options?.qualityCategoryOverride || definition.source.qualityCategory,
         governanceNotes,
       },
       anomalyActions: definition.actions,
@@ -1222,6 +1303,137 @@ export class DashService {
       indicator.threshold.warning,
       indicator.unit,
     )}。`;
+  }
+
+  private async publishAnomalyEvents(
+    orgId: string,
+    range: DashboardRange,
+    anomalies: DashboardAnomaly[],
+    indicators: DashboardIndicator[],
+  ): Promise<void> {
+    if (anomalies.length === 0) return;
+
+    const indicatorMap = new Map(
+      indicators.map((indicator) => [indicator.key, indicator]),
+    );
+
+    for (const anomaly of anomalies) {
+      const indicator = indicatorMap.get(anomaly.indicatorKey);
+      if (!indicator) continue;
+
+      const throttleKey = `${orgId}:${range}:${indicator.key}:${anomaly.status}`;
+      const now = Date.now();
+      const lastPublishedAt = this.anomalyThrottle.get(throttleKey);
+
+      if (
+        lastPublishedAt !== undefined &&
+        now - lastPublishedAt < this.ANOMALY_THROTTLE_MS
+      ) {
+        continue;
+      }
+
+      const ownerUserIds = await this.collectOwnersForAnomaly(
+        orgId,
+        indicator.key,
+        range,
+      );
+
+      this.eventBus.publish(
+        dashboardMetricAnomaly({
+          orgId,
+          metricKey: indicator.key,
+          metricName: indicator.name,
+          currentValue: indicator.currentValue,
+          currentLabel: indicator.currentLabel,
+          status: anomaly.status,
+          range,
+          sampleSize: anomaly.sampleSize,
+          qualityCategory: indicator.source.qualityCategory,
+          dataQuality: indicator.source.dataQuality,
+          ownerUserIds,
+          suggestedActions: anomaly.suggestedActions.map((item) => item.code),
+          reason: anomaly.reason,
+        }),
+      );
+
+      this.anomalyThrottle.set(throttleKey, now);
+    }
+  }
+
+  private async collectOwnersForAnomaly(
+    orgId: string,
+    metricKey: IndicatorKey,
+    range: DashboardRange,
+  ): Promise<string[]> {
+    if (metricKey === 'lead_missed_followup_rate') {
+      return this.queryLeadOwnersForMissedFollowup(orgId, range);
+    }
+
+    if (metricKey === 'first_response_time') {
+      return this.queryConversationOwnersForSlowResponse(orgId, range);
+    }
+
+    return [];
+  }
+
+  private async queryLeadOwnersForMissedFollowup(
+    orgId: string,
+    range: DashboardRange,
+  ): Promise<string[]> {
+    const openStatuses = ['new', 'assigned', 'following'];
+    const endAt = new Date();
+    const startAt = new Date(endAt.getTime() - RANGE_DAYS[range] * DAY_MS);
+
+    const rows = await this.leadRepo
+      .createQueryBuilder('l')
+      .select('DISTINCT l.owner_user_id', 'ownerUserId')
+      .where('l.org_id = :orgId', { orgId })
+      .andWhere('l.deleted_at IS NULL')
+      .andWhere('l.owner_user_id IS NOT NULL')
+      .andWhere('l.status IN (:...openStatuses)', { openStatuses })
+      .andWhere('l.created_at >= :startAt AND l.created_at < :endAt', {
+        startAt,
+        endAt,
+      })
+      .andWhere("l.created_at <= (now() - interval '24 hours')")
+      .andWhere(
+        "COALESCE(l.last_follow_up_at, l.created_at) <= (now() - interval '48 hours')",
+      )
+      .getRawMany<{ ownerUserId?: string; owneruserid?: string }>();
+
+    return rows
+      .map((row) => row.ownerUserId || row.owneruserid || '')
+      .filter((userId, index, list) => !!userId && list.indexOf(userId) === index);
+  }
+
+  private async queryConversationOwnersForSlowResponse(
+    orgId: string,
+    range: DashboardRange,
+  ): Promise<string[]> {
+    const endAt = new Date();
+    const startAt = new Date(endAt.getTime() - RANGE_DAYS[range] * DAY_MS);
+
+    const rows = await this.conversationRepo
+      .createQueryBuilder('c')
+      .select('DISTINCT c.assignee_user_id', 'ownerUserId')
+      .where('c.org_id = :orgId', { orgId })
+      .andWhere('c.deleted_at IS NULL')
+      .andWhere('c.assignee_user_id IS NOT NULL')
+      .andWhere('c.created_at >= :startAt AND c.created_at < :endAt', {
+        startAt,
+        endAt,
+      })
+      .andWhere('c.first_response_at IS NOT NULL')
+      .andWhere('c.first_response_at >= c.created_at')
+      .andWhere(
+        'EXTRACT(EPOCH FROM (c.first_response_at - c.created_at)) / 60 >= :warningMinutes',
+        { warningMinutes: 15 },
+      )
+      .getRawMany<{ ownerUserId?: string; owneruserid?: string }>();
+
+    return rows
+      .map((row) => row.ownerUserId || row.owneruserid || '')
+      .filter((userId, index, list) => !!userId && list.indexOf(userId) === index);
   }
 
   private normalizeRange(rangeInput?: string): DashboardRange {

@@ -199,6 +199,18 @@ const menuItems: MenuGroupWithPermission[] = [
         permission: "PERM-CSM-VIEW",
       },
       {
+        key: "/workbench/csm/plans",
+        icon: <FileTextOutlined />,
+        label: "Success Plans",
+        permission: "PERM-CSM-VIEW",
+      },
+      {
+        key: "/workbench/csm/visits",
+        icon: <FormOutlined />,
+        label: "Return Visits",
+        permission: "PERM-CSM-VIEW",
+      },
+      {
         key: "/automation",
         icon: <ThunderboltOutlined />,
         label: "Automation",
@@ -294,6 +306,10 @@ export default function Layout() {
     if (path.startsWith("/deliveries")) return ["/deliveries"];
     if (path.startsWith("/workbench/csm/health"))
       return ["/workbench/csm/health"];
+    if (path.startsWith("/workbench/csm/plans"))
+      return ["/workbench/csm/plans"];
+    if (path.startsWith("/workbench/csm/visits"))
+      return ["/workbench/csm/visits"];
     if (path.startsWith("/knowledge/manage")) return ["/knowledge/manage"];
     if (path.startsWith("/knowledge")) return ["/knowledge"];
     return [path];

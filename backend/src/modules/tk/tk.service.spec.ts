@@ -314,6 +314,64 @@ describe('TkService', () => {
     });
   });
 
+  describe('reopen', () => {
+    it('should reopen resolved ticket to processing', async () => {
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.RESOLVED,
+        version: 1,
+      });
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.PROCESSING,
+      });
+      logRepository.create.mockReturnValue({});
+      logRepository.save.mockResolvedValue({});
+
+      const result = await service.reopen(
+        'ticket-uuid-123',
+        'org-uuid-123',
+        'customer replied after close',
+        'user-uuid-123',
+        1,
+      );
+
+      expect(mockQb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ status: TicketStatus.PROCESSING }),
+      );
+    });
+
+    it('should reopen closed ticket to processing', async () => {
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.CLOSED,
+        version: 1,
+      });
+      const mockQb = createMockQueryBuilder();
+      mockQb.execute.mockResolvedValue({ affected: 1 });
+      ticketRepository.createQueryBuilder.mockReturnValue(mockQb);
+      ticketRepository.findOne.mockResolvedValueOnce({
+        ...mockTicket,
+        status: TicketStatus.PROCESSING,
+      });
+      logRepository.create.mockReturnValue({});
+      logRepository.save.mockResolvedValue({});
+
+      await expect(
+        service.reopen(
+          'ticket-uuid-123',
+          'org-uuid-123',
+          'customer replied after close',
+          'user-uuid-123',
+          1,
+        ),
+      ).resolves.not.toThrow();
+    });
+  });
+
   describe('SM-ticket state machine validation', () => {
     it('should allow transition from pending to assigned', async () => {
       ticketRepository.findOne.mockResolvedValueOnce(mockTicket);

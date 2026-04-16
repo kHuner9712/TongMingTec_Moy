@@ -29,6 +29,10 @@ export class DlvEventHandler implements OnModuleInit {
       'payment.status_changed',
       this.handlePaymentStatusChanged.bind(this),
     );
+    this.eventBus.subscribe(
+      'delivery.status_changed',
+      this.handleDeliveryStatusChanged.bind(this),
+    );
   }
 
   private async handleOrderStatusChanged(event: DomainEvent): Promise<void> {
@@ -72,6 +76,13 @@ export class DlvEventHandler implements OnModuleInit {
         customerId,
         SYSTEM_USER_ID,
       );
+
+      await this.ordService.markSubscriptionOpened(
+        orderId,
+        orgId,
+        event.occurredAt ? new Date(event.occurredAt) : new Date(),
+        SYSTEM_USER_ID,
+      );
     } catch (err) {
       console.error(
         `[DLV] bind subscription to delivery failed for subscription ${subscriptionId}:`,
@@ -98,6 +109,30 @@ export class DlvEventHandler implements OnModuleInit {
       );
     } catch (err) {
       console.error(`[DLV] bind payment to delivery failed for payment ${paymentId}:`, err);
+    }
+  }
+
+  private async handleDeliveryStatusChanged(event: DomainEvent): Promise<void> {
+    const { orgId, aggregateId: deliveryId } = event;
+    const { toStatus } = event.payload as { fromStatus: string; toStatus: string };
+
+    if (toStatus !== 'active') return;
+
+    try {
+      const delivery = await this.dlvService.findDeliveryById(deliveryId, orgId);
+      if (!delivery.orderId) return;
+
+      await this.ordService.markDeliveryStarted(
+        delivery.orderId,
+        orgId,
+        delivery.startedAt || (event.occurredAt ? new Date(event.occurredAt) : new Date()),
+        SYSTEM_USER_ID,
+      );
+    } catch (err) {
+      console.error(
+        `[DLV] mark order delivery_started_at failed for delivery ${deliveryId}:`,
+        err,
+      );
     }
   }
 }

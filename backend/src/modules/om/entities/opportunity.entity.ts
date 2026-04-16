@@ -23,6 +23,10 @@ export class Opportunity extends BaseEntity {
   @Index()
   leadId: string | null;
 
+  @Column({ type: 'uuid', nullable: true, name: 'source_conversation_id' })
+  @Index()
+  sourceConversationId: string | null;
+
   @Column({ type: 'uuid', name: 'owner_user_id' })
   @Index()
   ownerUserId: string;

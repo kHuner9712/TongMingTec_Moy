@@ -12,6 +12,10 @@ import { FlowService } from './flow.service';
 import { EventsModule } from '../../common/events/events.module';
 import { NtfModule } from '../ntf/ntf.module';
 import { CsmModule } from '../csm/csm.module';
+import { TskModule } from '../tsk/tsk.module';
+import { CmModule } from '../cm/cm.module';
+import { DlvModule } from '../dlv/dlv.module';
+import { ApprovalCenterModule } from '../approval-center/approval-center.module';
 
 @Module({
   imports: [
@@ -19,6 +23,10 @@ import { CsmModule } from '../csm/csm.module';
     EventsModule,
     NtfModule,
     CsmModule,
+    TskModule,
+    CmModule,
+    DlvModule,
+    ApprovalCenterModule,
   ],
   controllers: [AutoController],
   providers: [AutoService, AutoEventHandler, AutoActionExecutor, FlowService],

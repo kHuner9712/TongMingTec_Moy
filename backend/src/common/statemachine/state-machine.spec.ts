@@ -173,9 +173,10 @@ describe('StateMachine', () => {
       expect(ticketStateMachine.isTerminal('closed')).toBe(true);
     });
 
-    it('should disallow backward transitions', () => {
+    it('should disallow backward transitions except reopen path', () => {
       expect(() => ticketStateMachine.validateTransition('processing', 'assigned')).toThrow();
-      expect(() => ticketStateMachine.validateTransition('resolved', 'processing')).toThrow();
+      expect(() => ticketStateMachine.validateTransition('resolved', 'processing')).not.toThrow();
+      expect(() => ticketStateMachine.validateTransition('closed', 'processing')).not.toThrow();
     });
   });
 

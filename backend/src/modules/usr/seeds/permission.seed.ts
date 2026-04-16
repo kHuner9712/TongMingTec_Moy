@@ -1,4 +1,4 @@
-import { RiskLevel } from '../entities/permission.entity';
+﻿import { RiskLevel } from '../entities/permission.entity';
 
 export const permissionSeeds: Array<{
   permId: string;
@@ -44,6 +44,7 @@ export const permissionSeeds: Array<{
   { permId: 'PERM-TK-START', module: 'tk', action: 'start', riskLevel: RiskLevel.P2, description: '工单开始处理' },
   { permId: 'PERM-TK-RESOLVE', module: 'tk', action: 'resolve', riskLevel: RiskLevel.P2, description: '工单解决' },
   { permId: 'PERM-TK-CLOSE', module: 'tk', action: 'close', riskLevel: RiskLevel.P2, description: '工单关闭' },
+  { permId: 'PERM-TK-REOPEN', module: 'tk', action: 'reopen', riskLevel: RiskLevel.P1, description: '工单回开' },
   { permId: 'PERM-TK-SLA', module: 'tk', action: 'sla', riskLevel: RiskLevel.P2, description: '工单SLA管理' },
   { permId: 'PERM-TK-ESCALATE', module: 'tk', action: 'escalate', riskLevel: RiskLevel.P1, description: '工单升级' },
 

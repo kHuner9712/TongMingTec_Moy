@@ -5,10 +5,15 @@ import { OpportunityStageHistory } from './entities/opportunity-stage-history.en
 import { OmController } from './om.controller';
 import { OmService } from './om.service';
 import { EventsModule } from '../../common/events/events.module';
+import { Conversation } from '../cnv/entities/conversation.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Opportunity, OpportunityStageHistory]),
+    TypeOrmModule.forFeature([
+      Opportunity,
+      OpportunityStageHistory,
+      Conversation,
+    ]),
     EventsModule,
   ],
   controllers: [OmController],

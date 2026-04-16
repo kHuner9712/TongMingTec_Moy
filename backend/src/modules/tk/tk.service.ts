@@ -343,6 +343,68 @@ export class TkService {
     return this.findTicketById(id, orgId);
   }
 
+  async reopen(
+    id: string,
+    orgId: string,
+    reason: string,
+    userId: string,
+    version: number,
+  ): Promise<Ticket> {
+    const ticket = await this.findTicketById(id, orgId);
+
+    if (ticket.version !== version) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    const fromStatus = ticket.status;
+    const toStatus = TicketStatus.PROCESSING;
+    ticketStateMachine.validateTransition(fromStatus, toStatus);
+
+    const result = await this.ticketRepository
+      .createQueryBuilder()
+      .update(Ticket)
+      .set({
+        status: toStatus,
+        resolvedAt: null,
+        closedAt: null,
+        closedReason: null,
+        version: () => "version + 1",
+      })
+      .where("id = :id AND version = :version", { id, version })
+      .execute();
+
+    if (result.affected === 0) {
+      throw new ConflictException("CONFLICT_VERSION");
+    }
+
+    const log = this.logRepository.create({
+      ticketId: id,
+      orgId,
+      action: "reopened",
+      fromStatus,
+      toStatus,
+      operatorUserId: userId,
+      remark: reason || null,
+      createdBy: userId,
+    });
+
+    await this.logRepository.save(log);
+
+    this.eventBus.publish(
+      ticketStatusChanged({
+        orgId,
+        ticketId: id,
+        fromStatus,
+        toStatus,
+        reason: reason || undefined,
+        actorType: "user",
+        actorId: userId,
+      }),
+    );
+
+    return this.findTicketById(id, orgId);
+  }
+
   async findLogs(id: string, orgId: string): Promise<TicketLog[]> {
     return this.logRepository.find({
       where: { ticketId: id, orgId },

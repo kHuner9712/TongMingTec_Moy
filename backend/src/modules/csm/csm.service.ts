@@ -331,13 +331,102 @@ export class CsmService {
     const qb = this.visitRepository
       .createQueryBuilder('v')
       .where('v.orgId = :orgId', { orgId })
-      .andWhere('v.customerId = :customerId', { customerId });
+      .andWhere('v.customerId = :customerId', { customerId })
+      .andWhere('v.deletedAt IS NULL');
 
     qb.orderBy('v.createdAt', 'DESC');
     qb.skip((page - 1) * pageSize).take(pageSize);
 
     const [items, total] = await qb.getManyAndCount();
     return { items, total };
+  }
+
+  async findReturnVisitsGlobal(
+    orgId: string,
+    filters: { customerId?: string; visitType?: string },
+    page: number,
+    pageSize: number,
+  ): Promise<{ items: CustomerReturnVisit[]; total: number }> {
+    const qb = this.visitRepository
+      .createQueryBuilder('v')
+      .where('v.orgId = :orgId', { orgId })
+      .andWhere('v.deletedAt IS NULL');
+
+    if (filters.customerId) {
+      qb.andWhere('v.customerId = :customerId', { customerId: filters.customerId });
+    }
+
+    if (filters.visitType) {
+      qb.andWhere('v.visitType = :visitType', { visitType: filters.visitType });
+    }
+
+    qb.orderBy('v.createdAt', 'DESC');
+    qb.skip((page - 1) * pageSize).take(pageSize);
+
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total };
+  }
+
+  async findReturnVisitById(id: string, orgId: string): Promise<CustomerReturnVisit> {
+    const visit = await this.visitRepository.findOne({
+      where: { id, orgId, deletedAt: null as unknown as undefined },
+    });
+    if (!visit) throw new NotFoundException('RESOURCE_NOT_FOUND');
+    return visit;
+  }
+
+  async recordAutomationRiskSignal(
+    orgId: string,
+    customerId: string,
+    signal: {
+      source: string;
+      title: string;
+      severity: string;
+      status: string;
+      relatedType?: string;
+      relatedId?: string;
+      detail?: string;
+    },
+    userId: string,
+  ): Promise<CustomerHealthScore> {
+    let health = await this.healthRepository.findOne({
+      where: { customerId, orgId, deletedAt: null as unknown as undefined },
+    });
+
+    if (!health) {
+      health = await this.evaluateHealth(customerId, orgId, userId);
+    }
+
+    const factors =
+      health.factors && typeof health.factors === 'object'
+        ? { ...health.factors }
+        : {};
+    const existingSignals = Array.isArray((factors as any).autoRiskSignals)
+      ? [...((factors as any).autoRiskSignals as Record<string, unknown>[])]
+      : [];
+
+    const nextSignal = {
+      source: signal.source,
+      title: signal.title,
+      severity: signal.severity,
+      status: signal.status,
+      relatedType: signal.relatedType || null,
+      relatedId: signal.relatedId || null,
+      detail: signal.detail || null,
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+    };
+
+    (factors as any).autoRiskSignals = [nextSignal, ...existingSignals].slice(0, 20);
+    (factors as any).lastAutoRiskSignalAt = nextSignal.createdAt;
+
+    await this.healthRepository.update(health.id, {
+      factors: factors as any,
+      updatedBy: userId,
+      version: () => 'version + 1',
+    });
+
+    return this.findHealthScoreByCustomer(customerId, orgId);
   }
 
   async autoEnrollCustomer(

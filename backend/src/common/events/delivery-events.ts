@@ -81,8 +81,14 @@ export function deliveryRiskReported(params: {
   orgId: string;
   deliveryId: string;
   riskId: string;
+  customerId?: string;
+  ownerUserId?: string | null;
+  title?: string;
   severity: string;
   status: string;
+  contractId?: string | null;
+  orderId?: string | null;
+  subscriptionId?: string | null;
   actorType: string;
   actorId: string;
 }): DomainEvent {
@@ -92,8 +98,14 @@ export function deliveryRiskReported(params: {
     aggregateId: params.deliveryId,
     payload: {
       riskId: params.riskId,
+      customerId: params.customerId || null,
+      ownerUserId: params.ownerUserId || null,
+      title: params.title || null,
       severity: params.severity,
       status: params.status,
+      contractId: params.contractId || null,
+      orderId: params.orderId || null,
+      subscriptionId: params.subscriptionId || null,
       actorType: params.actorType,
       actorId: params.actorId,
     },

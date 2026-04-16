@@ -16,6 +16,8 @@ export enum TaskSourceType {
   CONVERSATION = 'conversation',
   TICKET = 'ticket',
   DELIVERY = 'delivery',
+  CSM = 'csm',
+  AUTOMATION = 'automation',
 }
 
 @Entity('tasks')

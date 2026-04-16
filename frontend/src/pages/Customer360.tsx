@@ -149,6 +149,21 @@ export default function Customer360() {
               data.currentIntent.intentType}
           </Tag>
         )}
+        {can("PERM-CSM-VIEW") && (
+          <Button onClick={() => navigate(`/workbench/csm/health?customerId=${data.customer.id}`)}>
+            客户成功工作台
+          </Button>
+        )}
+        {can("PERM-CSM-VIEW") && (
+          <Button onClick={() => navigate(`/workbench/csm/plans?customerId=${data.customer.id}`)}>
+            SuccessPlan
+          </Button>
+        )}
+        {can("PERM-CSM-VIEW") && (
+          <Button onClick={() => navigate(`/workbench/csm/visits?customerId=${data.customer.id}`)}>
+            回访记录
+          </Button>
+        )}
       </Space>
 
       {data.currentIntent && (

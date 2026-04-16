@@ -41,4 +41,12 @@ export class Order extends BaseEntity {
 
   @Column({ type: 'timestamptz', nullable: true, name: 'activated_at' })
   activatedAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'subscription_opened_at' })
+  @Index()
+  subscriptionOpenedAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'delivery_started_at' })
+  @Index()
+  deliveryStartedAt: Date | null;
 }

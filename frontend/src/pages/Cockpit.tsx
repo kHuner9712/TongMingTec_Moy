@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -65,6 +65,20 @@ function statusColor(status: DashboardMetricStatus): string {
   return 'green';
 }
 
+function qualityLabel(indicator: DashboardIndicator): string {
+  if (indicator.source.qualityCategory === 'coverage_limited') return '覆盖率不足';
+  if (indicator.source.qualityCategory === 'proxy') return '代理口径';
+  if (indicator.status === 'insufficient_data') return '覆盖率不足';
+  return '真实口径';
+}
+
+function qualityColor(indicator: DashboardIndicator): string {
+  if (indicator.source.qualityCategory === 'coverage_limited') return 'volcano';
+  if (indicator.source.qualityCategory === 'proxy') return 'orange';
+  if (indicator.status === 'insufficient_data') return 'default';
+  return 'green';
+}
+
 function trendNode(indicator: DashboardIndicator) {
   if (indicator.trend === 'up') {
     return (
@@ -106,6 +120,15 @@ export default function Cockpit() {
   const indicatorMap = useMemo(() => {
     if (!data) return new Map<string, DashboardIndicator>();
     return new Map(data.indicators.map((indicator) => [indicator.key, indicator]));
+  }, [data]);
+
+  const qualityLimitedIndicators = useMemo(() => {
+    if (!data) return [] as DashboardIndicator[];
+    return data.indicators.filter(
+      (indicator) =>
+        indicator.source.qualityCategory !== 'actual' ||
+        indicator.status === 'insufficient_data',
+    );
   }, [data]);
 
   if (!hasPermission('PERM-DASH-VIEW')) {
@@ -173,6 +196,18 @@ export default function Cockpit() {
         style={{ marginBottom: 16 }}
       />
 
+      {qualityLimitedIndicators.length > 0 && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="数据质量说明"
+          description={`以下指标仍存在代理口径或覆盖率不足：${qualityLimitedIndicators
+            .map((item) => `${item.name}（${qualityLabel(item)}）`)
+            .join('、')}`}
+        />
+      )}
+
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         {data.groups.map((group) => {
           const metrics = group.metricKeys
@@ -216,6 +251,7 @@ export default function Cockpit() {
                           <Tag color={statusColor(metric.status)}>
                             {statusLabel(metric.status)}
                           </Tag>
+                          <Tag color={qualityColor(metric)}>{qualityLabel(metric)}</Tag>
                           {trendNode(metric)}
                         </Space>
                       </Space>
@@ -291,8 +327,8 @@ export default function Cockpit() {
               {activeIndicator.source.fields.join(', ')}
             </Descriptions.Item>
             <Descriptions.Item label="数据质量">
-              <Tag color={activeIndicator.source.dataQuality === 'ready' ? 'green' : 'orange'}>
-                {activeIndicator.source.dataQuality}
+              <Tag color={qualityColor(activeIndicator)}>
+                {qualityLabel(activeIndicator)}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="说明">

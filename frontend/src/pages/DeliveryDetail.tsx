@@ -217,6 +217,34 @@ export default function DeliveryDetail() {
             查看客户
           </Button>
         </Descriptions.Item>
+        <Descriptions.Item label="客户成功">
+          <Space size={12}>
+            <Button
+              type="link"
+              size="small"
+              style={{ padding: 0 }}
+              onClick={() => navigate(`/workbench/csm/health?customerId=${delivery.customerId}`)}
+            >
+              健康档案
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              style={{ padding: 0 }}
+              onClick={() => navigate(`/workbench/csm/plans?customerId=${delivery.customerId}`)}
+            >
+              SuccessPlan
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              style={{ padding: 0 }}
+              onClick={() => navigate(`/workbench/csm/visits?customerId=${delivery.customerId}`)}
+            >
+              回访记录
+            </Button>
+          </Space>
+        </Descriptions.Item>
         <Descriptions.Item label="订单">
           {delivery.orderId ? (
             <Button
