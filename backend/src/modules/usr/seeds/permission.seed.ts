@@ -87,4 +87,20 @@ export const permissionSeeds: Array<{
   { permId: 'PERM-PAY-CONFIRM', module: 'pay', action: 'confirm', riskLevel: RiskLevel.P0, description: '付款确认/处理（高风险，需审批）' },
   { permId: 'PERM-PAY-REFUND', module: 'pay', action: 'refund', riskLevel: RiskLevel.P0, description: '付款退款' },
   { permId: 'PERM-PAY-RECONCILE', module: 'pay', action: 'reconcile', riskLevel: RiskLevel.P1, description: '付款对账（S3+）' },
+
+  { permId: 'PERM-SUB-MANAGE', module: 'sub', action: 'manage', riskLevel: RiskLevel.P2, description: '订阅管理（创建、编辑、续费、取消）' },
+  { permId: 'PERM-SUB-SUSPEND', module: 'sub', action: 'suspend', riskLevel: RiskLevel.P1, description: '订阅暂停' },
+
+  { permId: 'PERM-DLV-VIEW', module: 'dlv', action: 'view', riskLevel: RiskLevel.P3, description: '交付单/实施单查看' },
+  { permId: 'PERM-DLV-MANAGE', module: 'dlv', action: 'manage', riskLevel: RiskLevel.P2, description: '交付管理（里程碑、任务、风险、结果）' },
+  { permId: 'PERM-DLV-ACCEPT', module: 'dlv', action: 'accept', riskLevel: RiskLevel.P1, description: '交付验收记录与结果确认' },
+
+  { permId: 'PERM-CSM-VIEW', module: 'csm', action: 'view', riskLevel: RiskLevel.P3, description: '客户健康度与成功计划查看' },
+  { permId: 'PERM-CSM-MANAGE', module: 'csm', action: 'manage', riskLevel: RiskLevel.P2, description: '客户成功管理（健康评估、成功计划、回访）' },
+
+  { permId: 'PERM-AUTO-MANAGE', module: 'auto', action: 'manage', riskLevel: RiskLevel.P2, description: '自动化触发器管理（创建、编辑、启停）' },
+  { permId: 'PERM-AUTO-EXECUTE', module: 'auto', action: 'execute', riskLevel: RiskLevel.P1, description: '自动化触发器手动执行' },
+
+  { permId: 'PERM-DASH-VIEW', module: 'dash', action: 'view', riskLevel: RiskLevel.P3, description: '经营驾驶舱查看' },
+  { permId: 'PERM-DASH-MANAGE', module: 'dash', action: 'manage', riskLevel: RiskLevel.P2, description: '经营驾驶舱指标管理' },
 ];

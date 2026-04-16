@@ -3,12 +3,14 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { PayService } from './pay.service';
 import { Payment } from './entities/payment.entity';
 import { EventBusService } from '../../common/events/event-bus.service';
+import { ApprovalCenterService } from '../approval-center/services/approval-center.service';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('PayService', () => {
   let service: PayService;
   let paymentRepository: any;
   let eventBus: any;
+  let approvalCenterService: any;
 
   const mockPayment = {
     id: 'payment-1',
@@ -48,11 +50,16 @@ describe('PayService', () => {
 
     eventBus = { publish: jest.fn() };
 
+    approvalCenterService = {
+      createBusinessApprovalRequest: jest.fn().mockResolvedValue({ id: 'approval-1' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PayService,
         { provide: getRepositoryToken(Payment), useValue: paymentRepository },
         { provide: EventBusService, useValue: eventBus },
+        { provide: ApprovalCenterService, useValue: approvalCenterService },
       ],
     }).compile();
 
@@ -118,7 +125,7 @@ describe('PayService', () => {
       const result = await service.processPayment('payment-1', 'org-1', 'user-1');
 
       expect(paymentRepository.update).toHaveBeenCalledWith(
-        'payment-1',
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ status: 'processing' }),
       );
       expect(eventBus.publish).toHaveBeenCalled();
@@ -134,23 +141,75 @@ describe('PayService', () => {
   });
 
   describe('succeedPayment', () => {
-    it('should transition processing to succeeded with paidAt', async () => {
+    it('should transition processing to pending_approval and create approval request', async () => {
       const processingPayment = { ...mockPayment, status: 'processing' };
       paymentRepository.findOne
         .mockResolvedValueOnce(processingPayment)
-        .mockResolvedValueOnce({ ...processingPayment, status: 'succeeded' });
+        .mockResolvedValueOnce({ ...processingPayment, status: 'pending_approval' });
       paymentRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.succeedPayment('payment-1', 'org-1', 'TXN-123', 'user-1');
 
       expect(paymentRepository.update).toHaveBeenCalledWith(
-        'payment-1',
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
+        expect.objectContaining({ status: 'pending_approval' }),
+      );
+      expect(approvalCenterService.createBusinessApprovalRequest).toHaveBeenCalledWith(
+        'org-1',
+        expect.objectContaining({
+          resourceType: 'payment',
+          resourceId: 'payment-1',
+          requestedAction: 'succeed',
+        }),
+      );
+    });
+  });
+
+  describe('succeedPaymentAfterApproval', () => {
+    it('should transition pending_approval to succeeded with paidAt', async () => {
+      const pendingPayment = { ...mockPayment, status: 'pending_approval' };
+      paymentRepository.findOne
+        .mockResolvedValueOnce(pendingPayment)
+        .mockResolvedValueOnce({ ...pendingPayment, status: 'succeeded' });
+      paymentRepository.update.mockResolvedValue({ affected: 1 });
+
+      const result = await service.succeedPaymentAfterApproval('payment-1', 'org-1', 'TXN-123');
+
+      expect(paymentRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({
           status: 'succeeded',
           paidAt: expect.any(Date),
           externalTxnId: 'TXN-123',
         }),
       );
+      expect(eventBus.publish).toHaveBeenCalled();
+    });
+
+    it('should throw on illegal transition processing->succeeded (approval required)', async () => {
+      paymentRepository.findOne.mockResolvedValue({ ...mockPayment, status: 'processing' });
+
+      await expect(
+        service.succeedPaymentAfterApproval('payment-1', 'org-1'),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('revertPaymentApproval', () => {
+    it('should transition pending_approval back to processing', async () => {
+      const pendingPayment = { ...mockPayment, status: 'pending_approval' };
+      paymentRepository.findOne
+        .mockResolvedValueOnce(pendingPayment)
+        .mockResolvedValueOnce({ ...pendingPayment, status: 'processing' });
+      paymentRepository.update.mockResolvedValue({ affected: 1 });
+
+      const result = await service.revertPaymentApproval('payment-1', 'org-1');
+
+      expect(paymentRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
+        expect.objectContaining({ status: 'processing' }),
+      );
+      expect(eventBus.publish).toHaveBeenCalled();
     });
   });
 
@@ -165,7 +224,7 @@ describe('PayService', () => {
       const result = await service.failPayment('payment-1', 'org-1', 'user-1');
 
       expect(paymentRepository.update).toHaveBeenCalledWith(
-        'payment-1',
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ status: 'failed' }),
       );
     });
@@ -182,7 +241,7 @@ describe('PayService', () => {
       const result = await service.refundPayment('payment-1', 'org-1', 'user-1');
 
       expect(paymentRepository.update).toHaveBeenCalledWith(
-        'payment-1',
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ status: 'refunded' }),
       );
     });
@@ -198,7 +257,7 @@ describe('PayService', () => {
       const result = await service.voidPayment('payment-1', 'org-1', 'user-1');
 
       expect(paymentRepository.update).toHaveBeenCalledWith(
-        'payment-1',
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ status: 'voided' }),
       );
     });
@@ -212,7 +271,7 @@ describe('PayService', () => {
       await service.deletePayment('payment-1', 'org-1', 'user-1');
 
       expect(paymentRepository.update).toHaveBeenCalledWith(
-        'payment-1',
+        expect.objectContaining({ id: 'payment-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ deletedAt: expect.any(Date) }),
       );
     });
@@ -227,9 +286,24 @@ describe('PayService', () => {
   });
 
   describe('state machine validation', () => {
-    it('should reject illegal transition pending->succeeded', () => {
+    it('should reject illegal transition processing->succeeded (approval required)', () => {
       const { paymentStateMachine } = require('../../common/statemachine/definitions/payment.sm');
-      expect(() => paymentStateMachine.validateTransition('pending', 'succeeded')).toThrow();
+      expect(() => paymentStateMachine.validateTransition('processing', 'succeeded')).toThrow();
+    });
+
+    it('should validate processing->pending_approval', () => {
+      const { paymentStateMachine } = require('../../common/statemachine/definitions/payment.sm');
+      expect(() => paymentStateMachine.validateTransition('processing', 'pending_approval')).not.toThrow();
+    });
+
+    it('should validate pending_approval->succeeded', () => {
+      const { paymentStateMachine } = require('../../common/statemachine/definitions/payment.sm');
+      expect(() => paymentStateMachine.validateTransition('pending_approval', 'succeeded')).not.toThrow();
+    });
+
+    it('should validate pending_approval->processing (rejection revert)', () => {
+      const { paymentStateMachine } = require('../../common/statemachine/definitions/payment.sm');
+      expect(() => paymentStateMachine.validateTransition('pending_approval', 'processing')).not.toThrow();
     });
 
     it('should reject illegal transition failed->processing', () => {
@@ -237,10 +311,11 @@ describe('PayService', () => {
       expect(() => paymentStateMachine.validateTransition('failed', 'processing')).toThrow();
     });
 
-    it('should validate happy path: pending->processing->succeeded', () => {
+    it('should validate happy path: pending->processing->pending_approval->succeeded', () => {
       const { paymentStateMachine } = require('../../common/statemachine/definitions/payment.sm');
       expect(() => paymentStateMachine.validateTransition('pending', 'processing')).not.toThrow();
-      expect(() => paymentStateMachine.validateTransition('processing', 'succeeded')).not.toThrow();
+      expect(() => paymentStateMachine.validateTransition('processing', 'pending_approval')).not.toThrow();
+      expect(() => paymentStateMachine.validateTransition('pending_approval', 'succeeded')).not.toThrow();
     });
 
     it('should validate refund path: succeeded->refunded', () => {

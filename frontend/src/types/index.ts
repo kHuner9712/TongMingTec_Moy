@@ -706,6 +706,7 @@ export interface CreateContractDto {
 
 export type OrderStatus =
   | "draft"
+  | "pending_approval"
   | "confirmed"
   | "active"
   | "completed"
@@ -753,6 +754,7 @@ export interface CreateOrderDto {
 export type PaymentStatus =
   | "pending"
   | "processing"
+  | "pending_approval"
   | "succeeded"
   | "failed"
   | "refunded"
@@ -810,6 +812,95 @@ export interface CreateSubscriptionDto {
   endsAt: string;
   autoRenew?: boolean;
   seatCount?: number;
+}
+
+export type DeliveryStatus =
+  | "draft"
+  | "active"
+  | "blocked"
+  | "ready_for_acceptance"
+  | "accepted"
+  | "closed";
+
+export interface DeliveryOrder extends BaseEntity {
+  deliveryNo: string;
+  title: string;
+  description: string | null;
+  customerId: string;
+  contractId: string | null;
+  orderId: string | null;
+  paymentId: string | null;
+  subscriptionId: string | null;
+  successPlanId: string | null;
+  ownerUserId: string | null;
+  status: DeliveryStatus;
+  targetOutcomeSummary: string | null;
+  startedAt: string | null;
+  readyForAcceptanceAt: string | null;
+  acceptedAt: string | null;
+  closedAt: string | null;
+}
+
+export type DeliveryMilestoneStatus = "pending" | "done" | "blocked";
+
+export interface DeliveryMilestone extends BaseEntity {
+  deliveryId: string;
+  title: string;
+  description: string | null;
+  sequence: number;
+  status: DeliveryMilestoneStatus;
+  dueAt: string | null;
+  completedAt: string | null;
+}
+
+export type DeliveryTaskStatus = "pending" | "in_progress" | "done" | "blocked";
+
+export interface DeliveryTaskRecord extends BaseEntity {
+  deliveryId: string;
+  title: string;
+  description: string | null;
+  ownerUserId: string | null;
+  linkedTaskId: string | null;
+  status: DeliveryTaskStatus;
+  dueAt: string | null;
+  completedAt: string | null;
+}
+
+export type DeliveryAcceptanceResult = "pending" | "accepted" | "rejected";
+
+export interface DeliveryAcceptance extends BaseEntity {
+  deliveryId: string;
+  acceptanceType: string;
+  result: DeliveryAcceptanceResult;
+  summary: string;
+  acceptedByUserId: string | null;
+  acceptedAt: string | null;
+  payload: Record<string, unknown>;
+}
+
+export type DeliveryRiskSeverity = "low" | "medium" | "high" | "critical";
+export type DeliveryRiskStatus = "open" | "mitigated" | "closed";
+
+export interface DeliveryRisk extends BaseEntity {
+  deliveryId: string;
+  title: string;
+  mitigationPlan: string | null;
+  severity: DeliveryRiskSeverity;
+  status: DeliveryRiskStatus;
+  ownerUserId: string | null;
+  resolvedAt: string | null;
+}
+
+export type DeliveryOutcomeStatus = "pending" | "achieved" | "partial" | "not_achieved";
+
+export interface DeliveryOutcome extends BaseEntity {
+  deliveryId: string;
+  outcomeCode: string;
+  promisedValue: string;
+  actualValue: string | null;
+  status: DeliveryOutcomeStatus;
+  measuredAt: string | null;
+  note: string | null;
 }
 
 export type HealthLevel = "low" | "medium" | "high" | "critical";

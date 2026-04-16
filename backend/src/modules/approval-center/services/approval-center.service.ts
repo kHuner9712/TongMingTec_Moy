@@ -88,6 +88,36 @@ export class ApprovalCenterService {
     return this.approvalRepo.save(request);
   }
 
+  async createBusinessApprovalRequest(
+    orgId: string,
+    data: {
+      resourceType: string;
+      resourceId: string;
+      requestedAction: string;
+      beforeSnapshot: Record<string, unknown> | null;
+      proposedAfterSnapshot: Record<string, unknown> | null;
+      explanation: string;
+      customerId?: string;
+    },
+  ): Promise<AiApprovalRequest> {
+    const request = this.approvalRepo.create({
+      orgId,
+      agentRunId: null,
+      customerId: data.customerId || null,
+      resourceType: data.resourceType,
+      resourceId: data.resourceId,
+      requestedAction: data.requestedAction,
+      riskLevel: "high",
+      beforeSnapshot: data.beforeSnapshot,
+      proposedAfterSnapshot: data.proposedAfterSnapshot,
+      explanation: data.explanation,
+      status: ApprovalStatus.PENDING,
+      source: "business",
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    });
+    return this.approvalRepo.save(request);
+  }
+
   async listPending(orgId: string): Promise<AiApprovalRequest[]> {
     return this.approvalRepo.find({
       where: { orgId, status: ApprovalStatus.PENDING },
@@ -142,9 +172,11 @@ export class ApprovalCenterService {
       throw new ConflictException("CONFLICT_VERSION");
     }
 
-    await this.runRepo.update(request.agentRunId, {
-      status: AgentRunStatus.SUCCEEDED,
-    });
+    if (request.agentRunId) {
+      await this.runRepo.update(request.agentRunId, {
+        status: AgentRunStatus.SUCCEEDED,
+      });
+    }
 
     this.eventBus.publish(
       approvalStatusChanged({
@@ -154,6 +186,9 @@ export class ApprovalCenterService {
         toStatus: ApprovalStatus.APPROVED,
         actorType: "user",
         actorId: userId,
+        resourceType: request.resourceType,
+        resourceId: request.resourceId || undefined,
+        requestedAction: request.requestedAction,
       }),
     );
 
@@ -195,10 +230,12 @@ export class ApprovalCenterService {
       throw new ConflictException("CONFLICT_VERSION");
     }
 
-    await this.runRepo.update(request.agentRunId, {
-      status: AgentRunStatus.FAILED,
-      errorMessage: reason || "Approval rejected",
-    });
+    if (request.agentRunId) {
+      await this.runRepo.update(request.agentRunId, {
+        status: AgentRunStatus.FAILED,
+        errorMessage: reason || "Approval rejected",
+      });
+    }
 
     this.eventBus.publish(
       approvalStatusChanged({
@@ -209,6 +246,9 @@ export class ApprovalCenterService {
         actorType: "user",
         actorId: userId,
         reason,
+        resourceType: request.resourceType,
+        resourceId: request.resourceId || undefined,
+        requestedAction: request.requestedAction,
       }),
     );
 

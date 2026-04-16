@@ -2,12 +2,14 @@ import { Descriptions, Card, Tag, Steps, Button, Space, message, Spin, Popconfir
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { orderApi } from "../services/order";
+import { deliveryApi } from "../services/delivery";
 import { OrderStatus } from "../types";
 import dayjs from "dayjs";
 import { usePermission } from "../hooks/usePermission";
 
 const STATUS_CONFIG: Record<OrderStatus, { text: string; color: string }> = {
   draft: { text: "草稿", color: "default" },
+  pending_approval: { text: "待审批", color: "processing" },
   confirmed: { text: "已确认", color: "blue" },
   active: { text: "生效中", color: "green" },
   completed: { text: "已完成", color: "success" },
@@ -15,7 +17,7 @@ const STATUS_CONFIG: Record<OrderStatus, { text: string; color: string }> = {
   refunded: { text: "已退款", color: "orange" },
 };
 
-const STATUS_STEPS: OrderStatus[] = ["draft", "confirmed", "active", "completed"];
+const STATUS_STEPS: OrderStatus[] = ["draft", "pending_approval", "confirmed", "active", "completed"];
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -89,6 +91,16 @@ export default function OrderDetail() {
 
   const currentStep = STATUS_STEPS.indexOf(order.status);
 
+  const goToDeliveryDetail = async () => {
+    try {
+      const delivery = await deliveryApi.getByOrder(order.id);
+      navigate(`/deliveries/${delivery.id}`);
+    } catch {
+      navigate(`/deliveries?orderId=${order.id}`);
+      message.info("该订单尚未生成交付单，已进入交付列表并带入订单筛选");
+    }
+  };
+
   return (
     <Card
       title={`订单 ${order.orderNo}`}
@@ -130,6 +142,11 @@ export default function OrderDetail() {
               查看报价
             </Button>
           ) : "-"}
+        </Descriptions.Item>
+        <Descriptions.Item label="交付">
+          <Button type="link" size="small" style={{ padding: 0 }} onClick={goToDeliveryDetail}>
+            查看交付详情
+          </Button>
         </Descriptions.Item>
         <Descriptions.Item label="金额">¥{(order.totalAmount || 0).toLocaleString()}</Descriptions.Item>
         <Descriptions.Item label="币种">{order.currency}</Descriptions.Item>

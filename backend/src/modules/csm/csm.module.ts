@@ -8,12 +8,14 @@ import { CsmService } from './csm.service';
 import { CsmEventHandler } from './csm-event-handler.service';
 import { EventsModule } from '../../common/events/events.module';
 import { CmemModule } from '../cmem/cmem.module';
+import { DlvModule } from '../dlv/dlv.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([CustomerHealthScore, SuccessPlan, CustomerReturnVisit]),
     EventsModule,
     CmemModule,
+    DlvModule,
   ],
   controllers: [CsmController],
   providers: [CsmService, CsmEventHandler],

@@ -10,6 +10,7 @@ import { userStateMachine } from './definitions/user.sm';
 import { aiTaskStateMachine } from './definitions/ai-task.sm';
 import { aiAgentStateMachine } from './definitions/ai-agent.sm';
 import { approvalRequestStateMachine } from './definitions/approval-request.sm';
+import { deliveryStateMachine } from './definitions/delivery.sm';
 
 describe('StateMachine', () => {
   describe('base functionality', () => {
@@ -309,6 +310,28 @@ describe('StateMachine', () => {
       expect(approvalRequestStateMachine.isTerminal('rejected')).toBe(true);
       expect(approvalRequestStateMachine.isTerminal('expired')).toBe(true);
       expect(approvalRequestStateMachine.isTerminal('cancelled')).toBe(true);
+    });
+  });
+
+  describe('SM-delivery (S2)', () => {
+    it('should follow draft->active->blocked->ready_for_acceptance->accepted->closed', () => {
+      expect(() => deliveryStateMachine.validateTransition('draft', 'active')).not.toThrow();
+      expect(() => deliveryStateMachine.validateTransition('active', 'blocked')).not.toThrow();
+      expect(() => deliveryStateMachine.validateTransition('blocked', 'ready_for_acceptance')).not.toThrow();
+      expect(() => deliveryStateMachine.validateTransition('ready_for_acceptance', 'accepted')).not.toThrow();
+      expect(() => deliveryStateMachine.validateTransition('accepted', 'closed')).not.toThrow();
+    });
+
+    it('should allow blocked->active to resume delivery', () => {
+      expect(() => deliveryStateMachine.validateTransition('blocked', 'active')).not.toThrow();
+    });
+
+    it('should disallow draft->ready_for_acceptance', () => {
+      expect(() => deliveryStateMachine.validateTransition('draft', 'ready_for_acceptance')).toThrow();
+    });
+
+    it('should have closed as terminal', () => {
+      expect(deliveryStateMachine.isTerminal('closed')).toBe(true);
     });
   });
 });

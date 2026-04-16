@@ -1,115 +1,147 @@
 import api from '../utils/api';
 
-function unwrap<T>(response: any): T {
-  if (response && response.code === 'OK' && response.data !== undefined) {
-    return response.data as T;
+function unwrap<T>(response: unknown): T {
+  if (
+    response &&
+    typeof response === 'object' &&
+    'code' in response &&
+    (response as { code?: string }).code === 'OK' &&
+    'data' in response
+  ) {
+    return (response as { data: T }).data;
   }
   return response as T;
 }
 
-export interface SalesDashboardData {
-  kpi: {
-    totalOpportunities: number;
-    wonOpportunities: number;
-    winRate: number;
-    totalLeads: number;
-    convertedLeads: number;
-    leadConvertRate: number;
-    totalRevenue: number;
-  };
-  pipeline: {
-    total: number;
-    byStage: Record<string, number>;
-    byResult: Record<string, number>;
-    recent: any[];
-  };
-  revenueTrend: { month: string; revenue: number }[];
-  topOpportunities: any[];
+export type DashboardRange = '7d' | '30d' | '90d';
+export type DashboardBoardType = 'executive' | 'sales' | 'service';
+export type DashboardMetricStatus =
+  | 'healthy'
+  | 'warning'
+  | 'critical'
+  | 'insufficient_data';
+export type DashboardMetricTrend = 'up' | 'down' | 'flat';
+export type DashboardMetricPerformance = 'improved' | 'worsened' | 'stable';
+export type DashboardDataQuality = 'ready' | 'proxy' | 'missing';
+
+export interface DashboardActionSuggestion {
+  code: string;
+  title: string;
+  description: string;
+  ownerModule: string;
 }
 
-export interface ServiceDashboardData {
-  kpi: {
-    totalConversations: number;
-    queuedConversations: number;
-    totalTickets: number;
-    openTickets: number;
-    resolvedTickets: number;
-    resolveRate: number;
-  };
-  ticketByPriority: { priority: string; count: number }[];
-  ticketByStatus: { status: string; count: number }[];
-  healthDistribution: {
-    total: number;
-    distribution: Record<string, number>;
-    averageScore: number;
-  };
+export interface DashboardMetricSource {
+  modules: string[];
+  tables: string[];
+  fields: string[];
+  formula: string;
+  description: string;
+  dataQuality: DashboardDataQuality;
+  governanceNotes: string[];
 }
 
-export interface ExecutiveDashboardData {
-  customerMetrics: {
-    total: number;
-    active: number;
-    critical: number;
-    highRisk: number;
-  };
-  opportunityMetrics: {
-    total: number;
-    won: number;
-    winRate: number;
-  };
-  dealMetrics: {
-    activeContracts: number;
-    activeOrders: number;
-    activeSubscriptions: number;
-    totalRevenue: number;
-  };
-  healthMetrics: {
-    total: number;
-    high: number;
-    medium: number;
-    low: number;
+export interface DashboardIndicator {
+  key: string;
+  name: string;
+  unit: 'minutes' | 'hours' | 'percent';
+  direction: 'higher_is_better' | 'lower_is_better';
+  threshold: {
+    warning: number;
     critical: number;
   };
-  subscriptionMetrics: {
-    activeSubscriptions: number;
-    recurringRevenue: number;
+  currentValue: number;
+  previousValue: number;
+  deltaValue: number;
+  currentLabel: string;
+  previousLabel: string;
+  trend: DashboardMetricTrend;
+  performance: DashboardMetricPerformance;
+  status: DashboardMetricStatus;
+  sampleSize: number;
+  source: DashboardMetricSource;
+  anomalyActions: DashboardActionSuggestion[];
+}
+
+export interface DashboardIndicatorGroup {
+  key: string;
+  name: string;
+  description: string;
+  metricKeys: string[];
+}
+
+export interface DashboardAnomaly {
+  indicatorKey: string;
+  indicatorName: string;
+  status: DashboardMetricStatus;
+  currentLabel: string;
+  sampleSize: number;
+  reason: string;
+  suggestedActions: DashboardActionSuggestion[];
+}
+
+export interface DashboardModuleCoverage {
+  module: string;
+  covered: boolean;
+  indicatorKeys: string[];
+}
+
+export interface DashboardBoardData {
+  board: DashboardBoardType;
+  orgId: string;
+  range: DashboardRange;
+  generatedAt: string;
+  window: {
+    current: { startAt: string; endAt: string; label: string };
+    previous: { startAt: string; endAt: string; label: string };
   };
-  pipeline: any;
-  revenueTrend: { month: string; revenue: number }[];
-  healthDistribution: any;
-  riskAlerts: {
-    criticalCustomers: number;
-    highRiskCustomers: number;
-    lowHealthCount: number;
+  indicators: DashboardIndicator[];
+  groups: DashboardIndicatorGroup[];
+  anomalies: DashboardAnomaly[];
+  dataGovernance: {
+    computable: string[];
+    proxy: string[];
+    missing: string[];
   };
+  moduleCoverage: DashboardModuleCoverage[];
 }
 
 export const dashboardApi = {
-  getSummary: async (): Promise<any> => {
-    const res = await api.get('/dashboard/summary');
-    return unwrap(res);
+  getSummary: async (range: DashboardRange = '30d'): Promise<DashboardBoardData> => {
+    const res = await api.get('/dashboard/summary', { params: { range } });
+    return unwrap<DashboardBoardData>(res);
   },
 
-  getSalesDashboard: async (months: number = 6): Promise<SalesDashboardData> => {
-    const res = await api.get('/dashboard/sales', { params: { months } });
-    return unwrap(res);
+  getSalesDashboard: async (
+    range: DashboardRange = '30d',
+  ): Promise<DashboardBoardData> => {
+    const res = await api.get('/dashboard/sales', { params: { range } });
+    return unwrap<DashboardBoardData>(res);
   },
 
-  getServiceDashboard: async (): Promise<ServiceDashboardData> => {
-    const res = await api.get('/dashboard/service');
-    return unwrap(res);
+  getServiceDashboard: async (
+    range: DashboardRange = '30d',
+  ): Promise<DashboardBoardData> => {
+    const res = await api.get('/dashboard/service', { params: { range } });
+    return unwrap<DashboardBoardData>(res);
   },
 
-  getExecutiveDashboard: async (): Promise<ExecutiveDashboardData> => {
-    const res = await api.get('/dashboard/executive');
-    return unwrap(res);
+  getExecutiveDashboard: async (
+    range: DashboardRange = '30d',
+  ): Promise<DashboardBoardData> => {
+    const res = await api.get('/dashboard/executive', { params: { range } });
+    return unwrap<DashboardBoardData>(res);
   },
 
-  getMetrics: async (metricKey: string, startDate: string, endDate: string): Promise<any[]> => {
+  getMetrics: async (
+    metricKey: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<unknown[]> => {
     const res = await api.get('/dashboard/metrics', {
       params: { metricKey, startDate, endDate },
     });
-    return unwrap(res);
+    return unwrap<unknown[]>(res);
   },
 
   recordMetric: async (data: {
@@ -117,8 +149,8 @@ export const dashboardApi = {
     metricType: string;
     value: number;
     dimensions?: Record<string, unknown>;
-  }): Promise<any> => {
+  }): Promise<unknown> => {
     const res = await api.post('/dashboard/metrics', data);
-    return unwrap(res);
+    return unwrap<unknown>(res);
   },
 };

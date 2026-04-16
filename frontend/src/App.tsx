@@ -44,6 +44,8 @@ const Payments = lazy(() => import("./pages/Payments"));
 const PaymentDetail = lazy(() => import("./pages/PaymentDetail"));
 const Subscriptions = lazy(() => import("./pages/Subscriptions"));
 const SubscriptionDetail = lazy(() => import("./pages/SubscriptionDetail"));
+const Deliveries = lazy(() => import("./pages/Deliveries"));
+const DeliveryDetail = lazy(() => import("./pages/DeliveryDetail"));
 const CustomerHealth = lazy(() => import("./pages/CustomerHealth"));
 const KnowledgeBase = lazy(() => import("./pages/KnowledgeBase"));
 const KnowledgeManage = lazy(() => import("./pages/KnowledgeManage"));
@@ -246,6 +248,31 @@ function App() {
             element={
               <Suspense fallback={<PageLoader />}>
                 {withPermission(<SubscriptionDetail />, ["PERM-SUB-MANAGE"])}
+              </Suspense>
+            }
+          />
+
+          <Route
+            path="deliveries"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<Deliveries />, [
+                  "PERM-DLV-VIEW",
+                  "PERM-ORD-MANAGE",
+                  "PERM-SUB-MANAGE",
+                ])}
+              </Suspense>
+            }
+          />
+          <Route
+            path="deliveries/:id"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                {withPermission(<DeliveryDetail />, [
+                  "PERM-DLV-VIEW",
+                  "PERM-ORD-MANAGE",
+                  "PERM-SUB-MANAGE",
+                ])}
               </Suspense>
             }
           />

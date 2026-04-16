@@ -23,6 +23,7 @@ import { usePermission } from "../hooks/usePermission";
 const STATUS_CONFIG: Record<PaymentStatus, { text: string; color: string }> = {
   pending: { text: "待处理", color: "default" },
   processing: { text: "处理中", color: "blue" },
+  pending_approval: { text: "待审批", color: "processing" },
   succeeded: { text: "已成功", color: "green" },
   failed: { text: "已失败", color: "red" },
   refunded: { text: "已退款", color: "orange" },

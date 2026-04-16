@@ -8,6 +8,9 @@ export function approvalStatusChanged(params: {
   actorType: string;
   actorId: string;
   reason?: string;
+  resourceType?: string;
+  resourceId?: string;
+  requestedAction?: string;
 }): DomainEvent {
   return {
     eventType: 'approval.status_changed',
@@ -19,6 +22,9 @@ export function approvalStatusChanged(params: {
       actorType: params.actorType,
       actorId: params.actorId,
       reason: params.reason,
+      resourceType: params.resourceType,
+      resourceId: params.resourceId,
+      requestedAction: params.requestedAction,
     },
     occurredAt: new Date(),
     orgId: params.orgId,

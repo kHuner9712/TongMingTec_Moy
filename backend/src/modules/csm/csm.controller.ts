@@ -11,13 +11,17 @@ import {
   SuccessPlanListQueryDto,
 } from './dto/csm.dto';
 import { PageQueryDto } from '../../common/dto/pagination.dto';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('CSM')
+@ApiBearerAuth()
 @Controller('csm')
 export class CsmController {
   constructor(private readonly csmService: CsmService) {}
 
   @Get('health')
   @Permissions('PERM-CSM-VIEW')
+  @ApiOperation({ summary: '分页查询客户健康度' })
   async listHealthScores(
     @CurrentUser('orgId') orgId: string,
     @Query() query: HealthListQueryDto,
@@ -42,6 +46,7 @@ export class CsmController {
 
   @Get('health/:customerId')
   @Permissions('PERM-CSM-VIEW')
+  @ApiOperation({ summary: '按客户获取健康度详情' })
   async getHealthScore(
     @Param('customerId') customerId: string,
     @CurrentUser('orgId') orgId: string,
@@ -51,6 +56,7 @@ export class CsmController {
 
   @Post('health/evaluate')
   @Permissions('PERM-CSM-MANAGE')
+  @ApiOperation({ summary: '触发客户健康度评估' })
   async evaluateHealth(
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
@@ -61,6 +67,7 @@ export class CsmController {
 
   @Get('plans')
   @Permissions('PERM-CSM-MANAGE')
+  @ApiOperation({ summary: '分页查询成功计划' })
   async listSuccessPlans(
     @CurrentUser('orgId') orgId: string,
     @Query() query: SuccessPlanListQueryDto,
@@ -85,6 +92,7 @@ export class CsmController {
 
   @Get('plans/:id')
   @Permissions('PERM-CSM-MANAGE')
+  @ApiOperation({ summary: '获取成功计划详情' })
   async getSuccessPlan(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
@@ -94,6 +102,7 @@ export class CsmController {
 
   @Post('plans')
   @Permissions('PERM-CSM-MANAGE')
+  @ApiOperation({ summary: '创建成功计划' })
   async createSuccessPlan(
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
@@ -104,6 +113,7 @@ export class CsmController {
 
   @Put('plans/:id')
   @Permissions('PERM-CSM-MANAGE')
+  @ApiOperation({ summary: '更新成功计划（含状态流转）' })
   async updateSuccessPlan(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
@@ -115,6 +125,7 @@ export class CsmController {
 
   @Post('visits')
   @Permissions('PERM-CSM-MANAGE')
+  @ApiOperation({ summary: '创建客户回访记录' })
   async createReturnVisit(
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
@@ -125,6 +136,7 @@ export class CsmController {
 
   @Get('visits/:customerId')
   @Permissions('PERM-CSM-VIEW')
+  @ApiOperation({ summary: '按客户分页查询回访记录' })
   async listReturnVisits(
     @Param('customerId') customerId: string,
     @CurrentUser('orgId') orgId: string,

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -73,7 +73,7 @@ const createWrapper = () => {
 afterEach(() => { if (queryClient) queryClient.clear(); });
 
 describe("OrderDetail 页面", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); });
 
   it("展示客户跳转链接", async () => {
     render(<OrderDetail />, { wrapper: createWrapper() });
@@ -96,3 +96,4 @@ describe("OrderDetail 页面", () => {
     });
   });
 });
+

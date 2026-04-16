@@ -22,6 +22,7 @@ import {
   HeartOutlined,
   BookOutlined,
   FormOutlined,
+  ProjectOutlined,
 } from "@ant-design/icons";
 import { useAuthStore } from "../stores/authStore";
 import { useApprovalStore } from "../stores/approvalStore";
@@ -186,6 +187,12 @@ const menuItems: MenuGroupWithPermission[] = [
         permission: "PERM-SUB-MANAGE",
       },
       {
+        key: "/deliveries",
+        icon: <ProjectOutlined />,
+        label: "Deliveries",
+        permission: "PERM-DLV-VIEW",
+      },
+      {
         key: "/workbench/csm/health",
         icon: <HeartOutlined />,
         label: "Customer Health",
@@ -284,6 +291,7 @@ export default function Layout() {
     if (path.startsWith("/orders")) return ["/orders"];
     if (path.startsWith("/payments")) return ["/payments"];
     if (path.startsWith("/subscriptions")) return ["/subscriptions"];
+    if (path.startsWith("/deliveries")) return ["/deliveries"];
     if (path.startsWith("/workbench/csm/health"))
       return ["/workbench/csm/health"];
     if (path.startsWith("/knowledge/manage")) return ["/knowledge/manage"];

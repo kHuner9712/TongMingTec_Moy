@@ -11,9 +11,9 @@ export enum ApprovalStatus {
 
 @Entity("ai_approval_requests")
 export class AiApprovalRequest extends BaseEntity {
-  @Column({ type: "uuid", name: "agent_run_id" })
+  @Column({ type: "uuid", name: "agent_run_id", nullable: true })
   @Index()
-  agentRunId: string;
+  agentRunId: string | null;
 
   @Column({ type: "uuid", name: "customer_id", nullable: true })
   @Index()
@@ -52,4 +52,7 @@ export class AiApprovalRequest extends BaseEntity {
 
   @Column({ type: "timestamptz", name: "expires_at", nullable: true })
   expiresAt: Date | null;
+
+  @Column({ type: "varchar", length: 16, name: "source", default: "ai_agent" })
+  source: string;
 }

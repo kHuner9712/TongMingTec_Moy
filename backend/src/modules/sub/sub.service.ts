@@ -1,15 +1,16 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Subscription } from './entities/subscription.entity';
 import { SubscriptionSeat } from './entities/subscription-seat.entity';
 import { SubscriptionStatus, subscriptionStateMachine } from '../../common/statemachine/definitions/subscription.sm';
 import { EventBusService } from '../../common/events/event-bus.service';
-import { subscriptionStatusChanged, subscriptionOpened } from '../../common/events/subscription-events';
+import { subscriptionStatusChanged, subscriptionOpened, subscriptionRenewed } from '../../common/events/subscription-events';
 import { CreateSubscriptionDto, UpdateSubscriptionDto } from './dto/subscription.dto';
 
 @Injectable()
@@ -134,10 +135,7 @@ export class SubService {
     userId: string,
   ): Promise<Subscription> {
     const sub = await this.findSubscriptionById(id, orgId);
-
-    if (sub.version !== dto.version) {
-      throw new ConflictException('CONFLICT_VERSION');
-    }
+    const expectedVersion = this.resolveExpectedVersion(sub.version, dto.version);
 
     const updateData: Record<string, unknown> = {};
     if (dto.seatCount !== undefined) {
@@ -153,24 +151,23 @@ export class SubService {
       updateData.endsAt = new Date(dto.endsAt);
     }
 
-    await this.subscriptionRepository.update(id, {
+    await this.updateSubscriptionWithVersion(id, orgId, expectedVersion, {
       ...updateData,
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     return this.findSubscriptionById(id, orgId);
   }
 
-  async activateSubscription(id: string, orgId: string, userId: string): Promise<Subscription> {
+  async activateSubscription(id: string, orgId: string, userId: string, version?: number): Promise<Subscription> {
     const sub = await this.findSubscriptionById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(sub.version, version);
     const fromStatus = sub.status;
     subscriptionStateMachine.validateTransition(sub.status, 'active' as SubscriptionStatus);
 
-    await this.subscriptionRepository.update(id, {
+    await this.updateSubscriptionWithVersion(id, orgId, expectedVersion, {
       status: 'active',
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     this.eventBus.publish(
@@ -189,18 +186,14 @@ export class SubService {
 
   async suspendSubscription(id: string, orgId: string, reason: string, userId: string, version: number): Promise<Subscription> {
     const sub = await this.findSubscriptionById(id, orgId);
-
-    if (sub.version !== version) {
-      throw new ConflictException('CONFLICT_VERSION');
-    }
+    const expectedVersion = this.resolveExpectedVersion(sub.version, version);
 
     const fromStatus = sub.status;
     subscriptionStateMachine.validateTransition(sub.status, 'suspended' as SubscriptionStatus);
 
-    await this.subscriptionRepository.update(id, {
+    await this.updateSubscriptionWithVersion(id, orgId, expectedVersion, {
       status: 'suspended',
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     this.eventBus.publish(
@@ -217,15 +210,21 @@ export class SubService {
     return this.findSubscriptionById(id, orgId);
   }
 
-  async cancelSubscription(id: string, orgId: string, reason: string, userId: string): Promise<Subscription> {
+  async cancelSubscription(
+    id: string,
+    orgId: string,
+    reason: string,
+    userId: string,
+    version?: number,
+  ): Promise<Subscription> {
     const sub = await this.findSubscriptionById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(sub.version, version);
     const fromStatus = sub.status;
     subscriptionStateMachine.validateTransition(sub.status, 'cancelled' as SubscriptionStatus);
 
-    await this.subscriptionRepository.update(id, {
+    await this.updateSubscriptionWithVersion(id, orgId, expectedVersion, {
       status: 'cancelled',
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     this.eventBus.publish(
@@ -242,11 +241,100 @@ export class SubService {
     return this.findSubscriptionById(id, orgId);
   }
 
-  async deleteSubscription(id: string, orgId: string, userId: string): Promise<void> {
+  async renewSubscription(
+    id: string,
+    orgId: string,
+    newEndsAt: string,
+    renewedByOrderId: string | null,
+    version: number,
+    userId: string,
+  ): Promise<Subscription> {
     const sub = await this.findSubscriptionById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(sub.version, version);
+
+    const fromStatus = sub.status;
+    subscriptionStateMachine.validateTransition(sub.status, 'active' as SubscriptionStatus);
+
+    const previousEndsAt = sub.endsAt.toISOString();
+    const parsedNewEndsAt = new Date(newEndsAt);
+
+    if (parsedNewEndsAt <= sub.endsAt) {
+      throw new ConflictException('NEW_ENDS_AT_MUST_BE_AFTER_CURRENT');
+    }
+
+    await this.updateSubscriptionWithVersion(id, orgId, expectedVersion, {
+      status: 'active',
+      endsAt: parsedNewEndsAt,
+      autoRenew: true,
+      lastBillAt: new Date(),
+      updatedBy: userId,
+    });
+
+    if (fromStatus !== 'active') {
+      this.eventBus.publish(
+        subscriptionStatusChanged({
+          orgId,
+          subscriptionId: id,
+          fromStatus,
+          toStatus: 'active',
+          actorType: 'user',
+          actorId: userId,
+        }),
+      );
+    }
+
+    this.eventBus.publish(
+      subscriptionRenewed({
+        orgId,
+        subscriptionId: id,
+        previousEndsAt,
+        newEndsAt: parsedNewEndsAt.toISOString(),
+        renewedByOrderId,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
+
+    return this.findSubscriptionById(id, orgId);
+  }
+
+  async deleteSubscription(id: string, orgId: string, userId: string, version?: number): Promise<void> {
+    const sub = await this.findSubscriptionById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(sub.version, version);
     if (!['trial', 'cancelled'].includes(sub.status)) {
       throw new ConflictException('STATUS_TRANSITION_INVALID');
     }
-    await this.subscriptionRepository.update(id, { deletedAt: new Date(), updatedBy: userId });
+    await this.updateSubscriptionWithVersion(id, orgId, expectedVersion, {
+      deletedAt: new Date(),
+      updatedBy: userId,
+    });
+  }
+
+  private resolveExpectedVersion(currentVersion: number, providedVersion?: number): number {
+    if (providedVersion === undefined) return currentVersion;
+    if (!Number.isInteger(providedVersion) || providedVersion < 1) {
+      throw new BadRequestException('PARAM_INVALID');
+    }
+    if (providedVersion !== currentVersion) throw new ConflictException('CONFLICT_VERSION');
+    return providedVersion;
+  }
+
+  private async updateSubscriptionWithVersion(
+    id: string,
+    orgId: string,
+    expectedVersion: number,
+    patch: Partial<Subscription>,
+  ): Promise<void> {
+    const result = await this.subscriptionRepository.update(
+      { id, orgId, version: expectedVersion, deletedAt: IsNull() },
+      {
+        ...(patch as Record<string, unknown>),
+        version: () => 'version + 1',
+      } as any,
+    );
+
+    if ((result.affected ?? 0) !== 1) {
+      throw new ConflictException('CONFLICT_VERSION');
+    }
   }
 }

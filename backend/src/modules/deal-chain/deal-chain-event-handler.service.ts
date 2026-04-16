@@ -6,6 +6,7 @@ import { OmService } from '../om/om.service';
 import { OrdService } from '../ord/ord.service';
 import { PayService } from '../pay/pay.service';
 import { SubService } from '../sub/sub.service';
+import { QtService } from '../qt/qt.service';
 import { OpportunityResult } from '../om/entities/opportunity.entity';
 
 const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
@@ -19,12 +20,14 @@ export class DealChainEventHandler implements OnModuleInit {
     private readonly ordService: OrdService,
     private readonly payService: PayService,
     private readonly subService: SubService,
+    private readonly qtService: QtService,
   ) {}
 
   onModuleInit() {
     this.eventBus.subscribe('contract.status_changed', this.handleContractStatusChanged.bind(this));
     this.eventBus.subscribe('order.status_changed', this.handleOrderStatusChanged.bind(this));
     this.eventBus.subscribe('payment.status_changed', this.handlePaymentStatusChanged.bind(this));
+    this.eventBus.subscribe('quote.status_changed', this.handleQuoteStatusChanged.bind(this));
   }
 
   private async handleContractStatusChanged(event: DomainEvent): Promise<void> {
@@ -126,6 +129,31 @@ export class DealChainEventHandler implements OnModuleInit {
       }
     } catch (err) {
       console.error(`[DealChain] activate order after payment succeeded failed for payment ${paymentId}:`, err);
+    }
+  }
+
+  private async handleQuoteStatusChanged(event: DomainEvent): Promise<void> {
+    const { orgId, aggregateId: quoteId } = event;
+    const { toStatus } = event.payload as { fromStatus: string; toStatus: string };
+
+    if (toStatus !== 'approved') return;
+
+    try {
+      const quote = await this.qtService.findQuoteById(quoteId, orgId);
+
+      try {
+        await this.ctService.createContractFromQuote(
+          orgId,
+          quoteId,
+          quote.opportunityId,
+          quote.customerId,
+          SYSTEM_USER_ID,
+        );
+      } catch (err) {
+        console.error(`[DealChain] create contract from quote failed for quote ${quoteId}:`, err);
+      }
+    } catch (err) {
+      console.error(`[DealChain] handle quote approved failed for quote ${quoteId}:`, err);
     }
   }
 }

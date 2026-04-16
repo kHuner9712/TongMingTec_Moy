@@ -10,9 +10,12 @@ export const subscriptionStateMachine = new StateMachine<SubscriptionStatus>({
   transitions: [
     { from: 'trial', to: 'active' },
     { from: 'active', to: 'overdue' },
+    { from: 'active', to: 'active', name: 'renew' },
     { from: 'overdue', to: 'active' },
+    { from: 'overdue', to: 'active', name: 'renew' },
     { from: 'overdue', to: 'suspended' },
     { from: 'suspended', to: 'active' },
+    { from: 'suspended', to: 'active', name: 'renew' },
     { from: 'suspended', to: 'expired' },
     { from: 'active', to: 'cancelled' },
   ],

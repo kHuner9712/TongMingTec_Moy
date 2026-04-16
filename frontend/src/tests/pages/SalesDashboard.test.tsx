@@ -1,125 +1,124 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import SalesDashboard from "../../pages/dashboard/SalesDashboard";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import SalesDashboard from '../../pages/dashboard/SalesDashboard';
 
-vi.mock("../../stores/authStore", () => ({
+vi.mock('../../stores/authStore', () => ({
   useAuthStore: vi.fn(),
 }));
 
-vi.mock("../../services/dashboard", () => ({
-  dashboardApi: {
-    getSalesDashboard: vi.fn(),
-  },
-}));
-
-vi.mock("react-query", () => ({
+vi.mock('react-query', () => ({
   useQuery: vi.fn(),
 }));
 
-vi.mock("react-router-dom", () => ({
-  useNavigate: vi.fn(),
-}));
-
-import { useAuthStore } from "../../stores/authStore";
-import { useQuery } from "react-query";
+import { useAuthStore } from '../../stores/authStore';
+import { useQuery } from 'react-query';
 
 const mockAuthStoreHook = vi.mocked(useAuthStore);
 const mockUseQuery = vi.mocked(useQuery);
 
-describe("SalesDashboard page", () => {
+const mockSalesData = {
+  board: 'sales',
+  orgId: 'org-1',
+  range: '30d',
+  generatedAt: '2026-01-01T00:00:00.000Z',
+  window: {
+    current: { startAt: '', endAt: '', label: '最近30天' },
+    previous: { startAt: '', endAt: '', label: '前30天' },
+  },
+  indicators: [
+    {
+      key: 'lead_missed_followup_rate',
+      name: '线索漏跟进率',
+      unit: 'percent',
+      direction: 'lower_is_better',
+      threshold: { warning: 20, critical: 35 },
+      currentValue: 18,
+      previousValue: 25,
+      deltaValue: -7,
+      currentLabel: '18%',
+      previousLabel: '25%',
+      trend: 'down',
+      performance: 'improved',
+      status: 'healthy',
+      sampleSize: 20,
+      source: {
+        modules: ['LM'],
+        tables: ['leads'],
+        fields: ['status'],
+        formula: '漏跟进开放线索 / 开放线索',
+        description: '口径说明',
+        dataQuality: 'ready',
+        governanceNotes: [],
+      },
+      anomalyActions: [],
+    },
+  ],
+  groups: [
+    {
+      key: 'lead_leak',
+      name: '线索漏跟进率',
+      description: '开放线索漏跟进比例',
+      metricKeys: ['lead_missed_followup_rate'],
+    },
+  ],
+  anomalies: [],
+  dataGovernance: { computable: ['lead_missed_followup_rate'], proxy: [], missing: [] },
+  moduleCoverage: [],
+};
+
+describe('SalesDashboard page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthStoreHook.mockReturnValue({
-      hasPermission: (perm: string) => perm === "PERM-DASH-VIEW",
-    } as any);
+      hasPermission: (perm: string) => perm === 'PERM-DASH-VIEW',
+    } as never);
 
     mockUseQuery.mockReturnValue({
-      data: {
-        kpi: {
-          totalOpportunities: 20,
-          wonOpportunities: 8,
-          winRate: 40,
-          totalLeads: 50,
-          convertedLeads: 15,
-          leadConvertRate: 30,
-          totalRevenue: 150000,
-        },
-        pipeline: {
-          total: 20,
-          byStage: { qualification: 5, negotiation: 8, proposal: 4 },
-          byResult: { won: 8, lost: 3 },
-          recent: [],
-        },
-        revenueTrend: [
-          { month: "2025-01", revenue: 25000 },
-          { month: "2025-02", revenue: 30000 },
-        ],
-        topOpportunities: [
-          { id: "opp-1", name: "大客户A", amount: 50000, stage: "negotiation", result: null },
-        ],
-      },
+      data: mockSalesData,
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
-    } as any);
+    } as never);
   });
 
-  it("renders sales dashboard with KPIs", () => {
+  it('renders sales indicator board', () => {
     render(<SalesDashboard />);
 
-    expect(screen.getByText("销售看板")).toBeInTheDocument();
-    expect(screen.getByText("商机总数")).toBeInTheDocument();
-    expect(screen.getByText("赢单数 / 赢单率")).toBeInTheDocument();
-    expect(screen.getByText("线索转化率")).toBeInTheDocument();
-    expect(screen.getByText("总收入")).toBeInTheDocument();
+    expect(screen.getByText('销售看板')).toBeInTheDocument();
+    expect(screen.getByText('结果指标（销售）')).toBeInTheDocument();
+    expect(screen.getByText('线索漏跟进率')).toBeInTheDocument();
   });
 
-  it("renders pipeline and revenue trend", () => {
-    render(<SalesDashboard />);
-
-    expect(screen.getByText("销售漏斗")).toBeInTheDocument();
-    expect(screen.getByText("收入趋势")).toBeInTheDocument();
-  });
-
-  it("renders top opportunities", () => {
-    render(<SalesDashboard />);
-
-    expect(screen.getByText("Top 商机")).toBeInTheDocument();
-  });
-
-  it("shows 403 when no permission", () => {
-    mockAuthStoreHook.mockReturnValue({
-      hasPermission: () => false,
-    } as any);
-
-    render(<SalesDashboard />);
-
-    expect(screen.getByText("无权限")).toBeInTheDocument();
-  });
-
-  it("shows loading spinner", () => {
+  it('shows loading state', () => {
     mockUseQuery.mockReturnValue({
       data: null,
       isLoading: true,
       isError: false,
       refetch: vi.fn(),
-    } as any);
+    } as never);
 
     render(<SalesDashboard />);
-
-    expect(document.querySelector(".ant-spin")).toBeTruthy();
+    expect(document.querySelector('.ant-spin')).toBeTruthy();
   });
 
-  it("shows error state", () => {
+  it('shows error state', () => {
     mockUseQuery.mockReturnValue({
       data: null,
       isLoading: false,
       isError: true,
       refetch: vi.fn(),
-    } as any);
+    } as never);
 
     render(<SalesDashboard />);
+    expect(screen.getByText('加载失败')).toBeInTheDocument();
+  });
 
-    expect(screen.getByText("加载失败")).toBeInTheDocument();
+  it('shows 403 when no permission', () => {
+    mockAuthStoreHook.mockReturnValue({
+      hasPermission: () => false,
+    } as never);
+
+    render(<SalesDashboard />);
+    expect(screen.getByText('无权限')).toBeInTheDocument();
   });
 });

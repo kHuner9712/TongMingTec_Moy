@@ -4,6 +4,7 @@ import { OrdService } from './ord.service';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { EventBusService } from '../../common/events/event-bus.service';
+import { ApprovalCenterService } from '../approval-center/services/approval-center.service';
 import { NotFoundException, ConflictException } from '@nestjs/common';
 
 describe('OrdService', () => {
@@ -11,6 +12,7 @@ describe('OrdService', () => {
   let orderRepository: any;
   let itemRepository: any;
   let eventBus: any;
+  let approvalCenterService: any;
 
   const mockOrder = {
     id: 'order-1',
@@ -55,12 +57,17 @@ describe('OrdService', () => {
 
     eventBus = { publish: jest.fn() };
 
+    approvalCenterService = {
+      createBusinessApprovalRequest: jest.fn().mockResolvedValue({ id: 'approval-1' }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrdService,
         { provide: getRepositoryToken(Order), useValue: orderRepository },
         { provide: getRepositoryToken(OrderItem), useValue: itemRepository },
         { provide: EventBusService, useValue: eventBus },
+        { provide: ApprovalCenterService, useValue: approvalCenterService },
       ],
     }).compile();
 
@@ -155,27 +162,78 @@ describe('OrdService', () => {
   });
 
   describe('confirmOrder', () => {
-    it('should transition draft to confirmed', async () => {
+    it('should transition draft to pending_approval and create approval request', async () => {
       orderRepository.findOne
         .mockResolvedValueOnce(mockOrder)
-        .mockResolvedValueOnce({ ...mockOrder, status: 'confirmed' });
+        .mockResolvedValueOnce({ ...mockOrder, status: 'pending_approval' });
       orderRepository.update.mockResolvedValue({ affected: 1 });
 
       const result = await service.confirmOrder('order-1', 'org-1', 'user-1');
 
       expect(orderRepository.update).toHaveBeenCalledWith(
-        'order-1',
-        expect.objectContaining({ status: 'confirmed' }),
+        expect.objectContaining({ id: 'order-1', orgId: 'org-1', version: 1 }),
+        expect.objectContaining({ status: 'pending_approval' }),
       );
-      expect(eventBus.publish).toHaveBeenCalled();
+      expect(approvalCenterService.createBusinessApprovalRequest).toHaveBeenCalledWith(
+        'org-1',
+        expect.objectContaining({
+          resourceType: 'order',
+          resourceId: 'order-1',
+          requestedAction: 'confirm',
+        }),
+      );
     });
 
-    it('should throw on illegal transition active->confirmed', async () => {
+    it('should throw on illegal transition active->pending_approval', async () => {
       orderRepository.findOne.mockResolvedValue({ ...mockOrder, status: 'active' });
 
       await expect(
         service.confirmOrder('order-1', 'org-1', 'user-1'),
       ).rejects.toThrow();
+    });
+  });
+
+  describe('confirmOrderAfterApproval', () => {
+    it('should transition pending_approval to confirmed', async () => {
+      const pendingOrder = { ...mockOrder, status: 'pending_approval' };
+      orderRepository.findOne
+        .mockResolvedValueOnce(pendingOrder)
+        .mockResolvedValueOnce({ ...pendingOrder, status: 'confirmed' });
+      orderRepository.update.mockResolvedValue({ affected: 1 });
+
+      const result = await service.confirmOrderAfterApproval('order-1', 'org-1');
+
+      expect(orderRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'order-1', orgId: 'org-1', version: 1 }),
+        expect.objectContaining({ status: 'confirmed' }),
+      );
+      expect(eventBus.publish).toHaveBeenCalled();
+    });
+
+    it('should throw on illegal transition draft->confirmed', async () => {
+      orderRepository.findOne.mockResolvedValue(mockOrder);
+
+      await expect(
+        service.confirmOrderAfterApproval('order-1', 'org-1'),
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('revertOrderApproval', () => {
+    it('should transition pending_approval back to draft', async () => {
+      const pendingOrder = { ...mockOrder, status: 'pending_approval' };
+      orderRepository.findOne
+        .mockResolvedValueOnce(pendingOrder)
+        .mockResolvedValueOnce({ ...pendingOrder, status: 'draft' });
+      orderRepository.update.mockResolvedValue({ affected: 1 });
+
+      const result = await service.revertOrderApproval('order-1', 'org-1');
+
+      expect(orderRepository.update).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'order-1', orgId: 'org-1', version: 1 }),
+        expect.objectContaining({ status: 'draft' }),
+      );
+      expect(eventBus.publish).toHaveBeenCalled();
     });
   });
 
@@ -190,7 +248,7 @@ describe('OrdService', () => {
       const result = await service.activateOrder('order-1', 'org-1', 'user-1');
 
       expect(orderRepository.update).toHaveBeenCalledWith(
-        'order-1',
+        expect.objectContaining({ id: 'order-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ status: 'active', activatedAt: expect.any(Date) }),
       );
     });
@@ -207,7 +265,7 @@ describe('OrdService', () => {
       const result = await service.completeOrder('order-1', 'org-1', 'user-1');
 
       expect(orderRepository.update).toHaveBeenCalledWith(
-        'order-1',
+        expect.objectContaining({ id: 'order-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ status: 'completed' }),
       );
     });
@@ -224,7 +282,7 @@ describe('OrdService', () => {
       const result = await service.cancelOrder('order-1', 'org-1', '客户取消', 'user-1');
 
       expect(orderRepository.update).toHaveBeenCalledWith(
-        'order-1',
+        expect.objectContaining({ id: 'order-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ status: 'cancelled' }),
       );
     });
@@ -238,7 +296,7 @@ describe('OrdService', () => {
       await service.deleteOrder('order-1', 'org-1', 'user-1');
 
       expect(orderRepository.update).toHaveBeenCalledWith(
-        'order-1',
+        expect.objectContaining({ id: 'order-1', orgId: 'org-1', version: 1 }),
         expect.objectContaining({ deletedAt: expect.any(Date) }),
       );
     });
@@ -253,9 +311,24 @@ describe('OrdService', () => {
   });
 
   describe('state machine validation', () => {
-    it('should reject illegal transition draft->active', () => {
+    it('should reject illegal transition draft->confirmed (approval required)', () => {
       const { orderStateMachine } = require('../../common/statemachine/definitions/order.sm');
-      expect(() => orderStateMachine.validateTransition('draft', 'active')).toThrow();
+      expect(() => orderStateMachine.validateTransition('draft', 'confirmed')).toThrow();
+    });
+
+    it('should validate draft->pending_approval', () => {
+      const { orderStateMachine } = require('../../common/statemachine/definitions/order.sm');
+      expect(() => orderStateMachine.validateTransition('draft', 'pending_approval')).not.toThrow();
+    });
+
+    it('should validate pending_approval->confirmed', () => {
+      const { orderStateMachine } = require('../../common/statemachine/definitions/order.sm');
+      expect(() => orderStateMachine.validateTransition('pending_approval', 'confirmed')).not.toThrow();
+    });
+
+    it('should validate pending_approval->draft (rejection revert)', () => {
+      const { orderStateMachine } = require('../../common/statemachine/definitions/order.sm');
+      expect(() => orderStateMachine.validateTransition('pending_approval', 'draft')).not.toThrow();
     });
 
     it('should reject illegal transition completed->draft', () => {
@@ -263,9 +336,10 @@ describe('OrdService', () => {
       expect(() => orderStateMachine.validateTransition('completed', 'draft')).toThrow();
     });
 
-    it('should validate happy path: draft->confirmed->active->completed', () => {
+    it('should validate happy path: draft->pending_approval->confirmed->active->completed', () => {
       const { orderStateMachine } = require('../../common/statemachine/definitions/order.sm');
-      expect(() => orderStateMachine.validateTransition('draft', 'confirmed')).not.toThrow();
+      expect(() => orderStateMachine.validateTransition('draft', 'pending_approval')).not.toThrow();
+      expect(() => orderStateMachine.validateTransition('pending_approval', 'confirmed')).not.toThrow();
       expect(() => orderStateMachine.validateTransition('confirmed', 'active')).not.toThrow();
       expect(() => orderStateMachine.validateTransition('active', 'completed')).not.toThrow();
     });

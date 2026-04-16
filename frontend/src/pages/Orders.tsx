@@ -21,6 +21,7 @@ import { usePermission } from "../hooks/usePermission";
 
 const STATUS_CONFIG: Record<OrderStatus, { text: string; color: string }> = {
   draft: { text: "草稿", color: "default" },
+  pending_approval: { text: "待审批", color: "processing" },
   confirmed: { text: "已确认", color: "blue" },
   active: { text: "生效中", color: "green" },
   completed: { text: "已完成", color: "success" },

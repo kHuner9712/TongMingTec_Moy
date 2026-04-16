@@ -6,15 +6,21 @@ import {
   CreateSubscriptionDto,
   UpdateSubscriptionDto,
   SuspendSubscriptionDto,
+  RenewSubscriptionDto,
+  CancelSubscriptionDto,
   SubscriptionListQueryDto,
 } from './dto/subscription.dto';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('SUB')
+@ApiBearerAuth()
 @Controller('subscriptions')
 export class SubController {
   constructor(private readonly subService: SubService) {}
 
   @Get()
   @Permissions('PERM-SUB-MANAGE')
+  @ApiOperation({ summary: '分页查询订阅' })
   async listSubscriptions(
     @CurrentUser('orgId') orgId: string,
     @Query() query: SubscriptionListQueryDto,
@@ -39,6 +45,7 @@ export class SubController {
 
   @Get(':id')
   @Permissions('PERM-SUB-MANAGE')
+  @ApiOperation({ summary: '获取订阅详情（含席位）' })
   async getSubscriptionDetail(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
@@ -48,6 +55,7 @@ export class SubController {
 
   @Post()
   @Permissions('PERM-SUB-MANAGE')
+  @ApiOperation({ summary: '创建订阅' })
   async createSubscription(
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
@@ -58,6 +66,7 @@ export class SubController {
 
   @Put(':id')
   @Permissions('PERM-SUB-MANAGE')
+  @ApiOperation({ summary: '更新订阅配置' })
   async updateSubscription(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
@@ -69,6 +78,7 @@ export class SubController {
 
   @Post(':id/suspend')
   @Permissions('PERM-SUB-SUSPEND')
+  @ApiOperation({ summary: '暂停订阅' })
   async suspendSubscription(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
@@ -80,22 +90,44 @@ export class SubController {
 
   @Post(':id/cancel')
   @Permissions('PERM-SUB-MANAGE')
+  @ApiOperation({ summary: '取消订阅' })
   async cancelSubscription(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
-    @Body() body: { reason?: string },
+    @Body() dto: CancelSubscriptionDto,
   ) {
-    return this.subService.cancelSubscription(id, orgId, body.reason || '', userId);
+    return this.subService.cancelSubscription(id, orgId, dto.reason || '', userId, dto.version);
+  }
+
+  @Post(':id/renew')
+  @Permissions('PERM-SUB-MANAGE')
+  @ApiOperation({ summary: '续费并延长订阅有效期' })
+  async renewSubscription(
+    @Param('id') id: string,
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: RenewSubscriptionDto,
+  ) {
+    return this.subService.renewSubscription(
+      id,
+      orgId,
+      dto.newEndsAt,
+      dto.renewedByOrderId || null,
+      dto.version,
+      userId,
+    );
   }
 
   @Delete(':id')
   @Permissions('PERM-SUB-MANAGE')
+  @ApiOperation({ summary: '删除订阅（trial/cancelled）' })
   async deleteSubscription(
     @Param('id') id: string,
     @CurrentUser('orgId') orgId: string,
     @CurrentUser('id') userId: string,
+    @Query('version') version?: string,
   ) {
-    return this.subService.deleteSubscription(id, orgId, userId);
+    return this.subService.deleteSubscription(id, orgId, userId, version ? Number(version) : undefined);
   }
 }

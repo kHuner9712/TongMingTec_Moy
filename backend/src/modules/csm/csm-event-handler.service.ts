@@ -15,6 +15,7 @@ export class CsmEventHandler implements OnModuleInit {
   onModuleInit() {
     this.eventBus.subscribe('subscription.opened', this.handleSubscriptionOpened.bind(this));
     this.eventBus.subscribe('contract.expiry_warning', this.handleContractExpiryWarning.bind(this));
+    this.eventBus.subscribe('delivery.status_changed', this.handleDeliveryStatusChanged.bind(this));
   }
 
   private async handleSubscriptionOpened(event: DomainEvent): Promise<void> {
@@ -41,6 +42,29 @@ export class CsmEventHandler implements OnModuleInit {
       await this.csmService.evaluateHealth(customerId, orgId, SYSTEM_USER_ID);
     } catch (err) {
       console.error(`[CSM] health re-evaluation on contract expiry warning failed for ${customerId}:`, err);
+    }
+  }
+
+  private async handleDeliveryStatusChanged(event: DomainEvent): Promise<void> {
+    const { orgId, aggregateId: deliveryId } = event;
+    const { customerId, toStatus } = event.payload as {
+      customerId: string;
+      fromStatus: string;
+      toStatus: string;
+      actorType: string;
+      actorId: string;
+    };
+
+    if (!customerId) return;
+    if (!['accepted', 'closed', 'blocked'].includes(toStatus)) return;
+
+    try {
+      await this.csmService.evaluateHealth(customerId, orgId, SYSTEM_USER_ID, {
+        deliveryId,
+        deliveryStatus: toStatus,
+      });
+    } catch (err) {
+      console.error(`[CSM] health re-evaluation on delivery status failed for ${customerId}:`, err);
     }
   }
 }

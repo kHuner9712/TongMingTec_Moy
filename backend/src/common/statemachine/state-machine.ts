@@ -1,6 +1,7 @@
 export interface StateTransition<S extends string> {
   from: S;
   to: S;
+  name?: string;
 }
 
 export interface StateMachineDefinition<S extends string> {

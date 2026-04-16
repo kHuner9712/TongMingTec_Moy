@@ -3,6 +3,7 @@ import { Descriptions, Card, Tag, Steps, Button, Space, message, Spin, Table, In
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { subscriptionApi } from "../services/subscription";
+import { deliveryApi } from "../services/delivery";
 import { SubscriptionStatus } from "../types";
 import dayjs from "dayjs";
 import { usePermission } from "../hooks/usePermission";
@@ -107,6 +108,16 @@ export default function SubscriptionDetail() {
 
   const currentStep = getCurrentStep(subscription.status);
 
+  const goToDeliveryDetail = async () => {
+    try {
+      const delivery = await deliveryApi.getBySubscription(subscription.id);
+      navigate(`/deliveries/${delivery.id}`);
+    } catch {
+      navigate(`/deliveries?subscriptionId=${subscription.id}`);
+      message.info("该订阅尚未绑定交付单，已进入交付列表并带入订阅筛选");
+    }
+  };
+
   return (
     <Card
       title={`订阅 ${subscription.id.slice(0, 8)}`}
@@ -148,6 +159,11 @@ export default function SubscriptionDetail() {
               查看订单
             </Button>
           ) : "-"}
+        </Descriptions.Item>
+        <Descriptions.Item label="交付">
+          <Button type="link" size="small" style={{ padding: 0 }} onClick={goToDeliveryDetail}>
+            查看交付详情
+          </Button>
         </Descriptions.Item>
         <Descriptions.Item label="套餐ID">{subscription.planId || "-"}</Descriptions.Item>
         <Descriptions.Item label="席位数">

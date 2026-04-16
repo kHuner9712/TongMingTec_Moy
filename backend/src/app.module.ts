@@ -36,6 +36,9 @@ import { SubModule } from './modules/sub/sub.module';
 import { CsmModule } from './modules/csm/csm.module';
 import { KbModule } from './modules/kb/kb.module';
 import { DealChainModule } from './modules/deal-chain/deal-chain.module';
+import { AutoModule } from './modules/auto/auto.module';
+import { DashModule } from './modules/dash/dash.module';
+import { DlvModule } from './modules/dlv/dlv.module';
 
 import { WebSocketModule } from './common/gateway/websocket.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -112,6 +115,9 @@ import jwtConfig from './config/jwt.config';
     CsmModule,
     KbModule,
     DealChainModule,
+    AutoModule,
+    DashModule,
+    DlvModule,
     WebSocketModule,
   ],
   providers: [

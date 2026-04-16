@@ -3,11 +3,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Login from "../../pages/Login";
 
-interface AuthActions {
-  setUser: vi.Mock;
-  setTokens: vi.Mock;
-}
-
 const mockNavigate = vi.fn();
 const mockSetUser = vi.fn();
 const mockSetTokens = vi.fn();

@@ -45,3 +45,28 @@ export function subscriptionOpened(params: {
     orgId: params.orgId,
   };
 }
+
+export function subscriptionRenewed(params: {
+  orgId: string;
+  subscriptionId: string;
+  previousEndsAt: string;
+  newEndsAt: string;
+  renewedByOrderId: string | null;
+  actorType: string;
+  actorId: string;
+}): DomainEvent {
+  return {
+    eventType: 'subscription.renewed',
+    aggregateType: 'subscription',
+    aggregateId: params.subscriptionId,
+    payload: {
+      previousEndsAt: params.previousEndsAt,
+      newEndsAt: params.newEndsAt,
+      renewedByOrderId: params.renewedByOrderId,
+      actorType: params.actorType,
+      actorId: params.actorId,
+    },
+    occurredAt: new Date(),
+    orgId: params.orgId,
+  };
+}

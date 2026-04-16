@@ -9,13 +9,14 @@ import { usePermission } from "../hooks/usePermission";
 const STATUS_CONFIG: Record<PaymentStatus, { text: string; color: string }> = {
   pending: { text: "待处理", color: "default" },
   processing: { text: "处理中", color: "blue" },
+  pending_approval: { text: "待审批", color: "processing" },
   succeeded: { text: "已成功", color: "green" },
   failed: { text: "已失败", color: "red" },
   refunded: { text: "已退款", color: "orange" },
   voided: { text: "已作废", color: "default" },
 };
 
-const STATUS_STEPS: PaymentStatus[] = ["pending", "processing", "succeeded"];
+const STATUS_STEPS: PaymentStatus[] = ["pending", "processing", "pending_approval", "succeeded"];
 
 export default function PaymentDetail() {
   const { id } = useParams<{ id: string }>();

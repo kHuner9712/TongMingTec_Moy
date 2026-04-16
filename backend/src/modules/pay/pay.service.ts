@@ -1,15 +1,21 @@
 import {
   Injectable,
   NotFoundException,
+  BadRequestException,
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Payment } from './entities/payment.entity';
 import { PaymentStatus, paymentStateMachine } from '../../common/statemachine/definitions/payment.sm';
 import { EventBusService } from '../../common/events/event-bus.service';
 import { paymentStatusChanged } from '../../common/events/payment-events';
+import { ApprovalCenterService } from '../approval-center/services/approval-center.service';
 import { CreatePaymentDto } from './dto/payment.dto';
+import {
+  generateBusinessNo,
+  isUniqueConstraintViolation,
+} from '../../common/utils/business-no.util';
 
 @Injectable()
 export class PayService {
@@ -17,6 +23,7 @@ export class PayService {
     @InjectRepository(Payment)
     private paymentRepository: Repository<Payment>,
     private readonly eventBus: EventBusService,
+    private readonly approvalCenterService: ApprovalCenterService,
   ) {}
 
   async findPayments(
@@ -50,13 +57,9 @@ export class PayService {
   }
 
   async createPayment(orgId: string, dto: CreatePaymentDto, userId: string): Promise<Payment> {
-    const paymentNo = await this.generatePaymentNo(orgId);
-
-    const payment = this.paymentRepository.create({
-      orgId,
+    return this.savePaymentWithUniqueNo(orgId, {
       orderId: dto.orderId,
       customerId: dto.customerId,
-      paymentNo,
       paymentMethod: dto.paymentMethod || null,
       status: 'pending' as PaymentStatus,
       currency: dto.currency || 'CNY',
@@ -65,19 +68,17 @@ export class PayService {
       remark: dto.remark || null,
       createdBy: userId,
     });
-
-    return this.paymentRepository.save(payment);
   }
 
-  async processPayment(id: string, orgId: string, userId: string): Promise<Payment> {
+  async processPayment(id: string, orgId: string, userId: string, version?: number): Promise<Payment> {
     const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
     const fromStatus = payment.status;
     paymentStateMachine.validateTransition(payment.status, 'processing' as PaymentStatus);
 
-    await this.paymentRepository.update(id, {
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, {
       status: 'processing',
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     this.eventBus.publish(paymentStatusChanged({
@@ -88,36 +89,93 @@ export class PayService {
     return this.findPaymentById(id, orgId);
   }
 
-  async succeedPayment(id: string, orgId: string, externalTxnId: string | undefined, userId: string): Promise<Payment> {
+  async succeedPayment(
+    id: string,
+    orgId: string,
+    externalTxnId: string | undefined,
+    userId: string,
+    version?: number,
+  ): Promise<Payment> {
     const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
+    const fromStatus = payment.status;
+    paymentStateMachine.validateTransition(payment.status, 'pending_approval' as PaymentStatus);
+
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, {
+      status: 'pending_approval',
+      updatedBy: userId,
+    });
+
+    await this.approvalCenterService.createBusinessApprovalRequest(orgId, {
+      resourceType: 'payment',
+      resourceId: id,
+      requestedAction: 'succeed',
+      beforeSnapshot: { status: fromStatus, amount: payment.amount },
+      proposedAfterSnapshot: { status: 'succeeded', amount: payment.amount },
+      explanation: `付款 ${payment.paymentNo} 请求确认，金额 ${payment.amount} ${payment.currency}`,
+      customerId: payment.customerId,
+    });
+
+    return this.findPaymentById(id, orgId);
+  }
+
+  async succeedPaymentAfterApproval(
+    id: string,
+    orgId: string,
+    externalTxnId?: string,
+    version?: number,
+  ): Promise<Payment> {
+    const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
     const fromStatus = payment.status;
     paymentStateMachine.validateTransition(payment.status, 'succeeded' as PaymentStatus);
 
-    await this.paymentRepository.update(id, {
+    const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, {
       status: 'succeeded',
       paidAt: new Date(),
       externalTxnId: externalTxnId || payment.externalTxnId,
-      updatedBy: userId,
-      version: () => 'version + 1',
+      updatedBy: SYSTEM_USER_ID,
     });
 
     this.eventBus.publish(paymentStatusChanged({
       orgId, paymentId: id, fromStatus, toStatus: 'succeeded',
-      actorType: 'user', actorId: userId,
+      actorType: 'system', actorId: 'approval-gateway',
     }));
 
     return this.findPaymentById(id, orgId);
   }
 
-  async failPayment(id: string, orgId: string, userId: string): Promise<Payment> {
+  async revertPaymentApproval(id: string, orgId: string, version?: number): Promise<Payment> {
     const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
+    const fromStatus = payment.status;
+    paymentStateMachine.validateTransition(payment.status, 'processing' as PaymentStatus);
+
+    const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, {
+      status: 'processing',
+      updatedBy: SYSTEM_USER_ID,
+    });
+
+    this.eventBus.publish(paymentStatusChanged({
+      orgId, paymentId: id, fromStatus, toStatus: 'processing',
+      actorType: 'system', actorId: 'approval-gateway',
+      reason: '审批拒绝，回退到处理中',
+    }));
+
+    return this.findPaymentById(id, orgId);
+  }
+
+  async failPayment(id: string, orgId: string, userId: string, version?: number): Promise<Payment> {
+    const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
     const fromStatus = payment.status;
     paymentStateMachine.validateTransition(payment.status, 'failed' as PaymentStatus);
 
-    await this.paymentRepository.update(id, {
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, {
       status: 'failed',
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     this.eventBus.publish(paymentStatusChanged({
@@ -128,15 +186,15 @@ export class PayService {
     return this.findPaymentById(id, orgId);
   }
 
-  async refundPayment(id: string, orgId: string, userId: string): Promise<Payment> {
+  async refundPayment(id: string, orgId: string, userId: string, version?: number): Promise<Payment> {
     const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
     const fromStatus = payment.status;
     paymentStateMachine.validateTransition(payment.status, 'refunded' as PaymentStatus);
 
-    await this.paymentRepository.update(id, {
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, {
       status: 'refunded',
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     this.eventBus.publish(paymentStatusChanged({
@@ -147,15 +205,15 @@ export class PayService {
     return this.findPaymentById(id, orgId);
   }
 
-  async voidPayment(id: string, orgId: string, userId: string): Promise<Payment> {
+  async voidPayment(id: string, orgId: string, userId: string, version?: number): Promise<Payment> {
     const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
     const fromStatus = payment.status;
     paymentStateMachine.validateTransition(payment.status, 'voided' as PaymentStatus);
 
-    await this.paymentRepository.update(id, {
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, {
       status: 'voided',
       updatedBy: userId,
-      version: () => 'version + 1',
     });
 
     this.eventBus.publish(paymentStatusChanged({
@@ -166,16 +224,55 @@ export class PayService {
     return this.findPaymentById(id, orgId);
   }
 
-  async deletePayment(id: string, orgId: string, userId: string): Promise<void> {
+  async deletePayment(id: string, orgId: string, userId: string, version?: number): Promise<void> {
     const payment = await this.findPaymentById(id, orgId);
+    const expectedVersion = this.resolveExpectedVersion(payment.version, version);
     if (payment.status !== 'pending') throw new ConflictException('STATUS_TRANSITION_INVALID');
-    await this.paymentRepository.update(id, { deletedAt: new Date(), updatedBy: userId });
+    await this.updatePaymentWithVersion(id, orgId, expectedVersion, { deletedAt: new Date(), updatedBy: userId });
   }
 
-  private async generatePaymentNo(orgId: string): Promise<string> {
-    const count = await this.paymentRepository.count({ where: { orgId } });
-    const seq = (count + 1).toString().padStart(5, '0');
-    const year = new Date().getFullYear();
-    return `PAY-${year}-${seq}`;
+  private async savePaymentWithUniqueNo(orgId: string, payload: Partial<Payment>): Promise<Payment> {
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const paymentNo = generateBusinessNo('PAY', orgId);
+      const payment = this.paymentRepository.create({ ...payload, orgId, paymentNo });
+      try {
+        return await this.paymentRepository.save(payment);
+      } catch (error) {
+        if (isUniqueConstraintViolation(error, 'uq_payments_org_no')) {
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    throw new ConflictException('PAYMENT_NO_GENERATION_FAILED');
+  }
+
+  private async updatePaymentWithVersion(
+    id: string,
+    orgId: string,
+    expectedVersion: number,
+    patch: Partial<Payment>,
+  ): Promise<void> {
+    const result = await this.paymentRepository.update(
+      { id, orgId, version: expectedVersion, deletedAt: IsNull() },
+      {
+        ...(patch as Record<string, unknown>),
+        version: () => 'version + 1',
+      } as any,
+    );
+
+    if ((result.affected ?? 0) !== 1) {
+      throw new ConflictException('CONFLICT_VERSION');
+    }
+  }
+
+  private resolveExpectedVersion(currentVersion: number, providedVersion?: number): number {
+    if (providedVersion === undefined) return currentVersion;
+    if (!Number.isInteger(providedVersion) || providedVersion < 1) {
+      throw new BadRequestException('PARAM_INVALID');
+    }
+    if (providedVersion !== currentVersion) throw new ConflictException('CONFLICT_VERSION');
+    return providedVersion;
   }
 }

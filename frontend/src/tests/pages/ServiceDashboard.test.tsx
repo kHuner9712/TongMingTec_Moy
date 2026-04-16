@@ -1,121 +1,123 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
-import ServiceDashboard from "../../pages/dashboard/ServiceDashboard";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import ServiceDashboard from '../../pages/dashboard/ServiceDashboard';
 
-vi.mock("../../stores/authStore", () => ({
+vi.mock('../../stores/authStore', () => ({
   useAuthStore: vi.fn(),
 }));
 
-vi.mock("../../services/dashboard", () => ({
-  dashboardApi: {
-    getServiceDashboard: vi.fn(),
-  },
-}));
-
-vi.mock("react-query", () => ({
+vi.mock('react-query', () => ({
   useQuery: vi.fn(),
 }));
 
-vi.mock("react-router-dom", () => ({
-  useNavigate: vi.fn(),
-}));
-
-import { useAuthStore } from "../../stores/authStore";
-import { useQuery } from "react-query";
+import { useAuthStore } from '../../stores/authStore';
+import { useQuery } from 'react-query';
 
 const mockAuthStoreHook = vi.mocked(useAuthStore);
 const mockUseQuery = vi.mocked(useQuery);
 
-describe("ServiceDashboard page", () => {
+const mockServiceData = {
+  board: 'service',
+  orgId: 'org-1',
+  range: '30d',
+  generatedAt: '2026-01-01T00:00:00.000Z',
+  window: {
+    current: { startAt: '', endAt: '', label: '最近30天' },
+    previous: { startAt: '', endAt: '', label: '前30天' },
+  },
+  indicators: [
+    {
+      key: 'first_response_time',
+      name: '首响时间',
+      unit: 'minutes',
+      direction: 'lower_is_better',
+      threshold: { warning: 15, critical: 60 },
+      currentValue: 10,
+      previousValue: 12,
+      deltaValue: -2,
+      currentLabel: '10 分钟',
+      previousLabel: '12 分钟',
+      trend: 'down',
+      performance: 'improved',
+      status: 'healthy',
+      sampleSize: 50,
+      source: {
+        modules: ['CNV'],
+        tables: ['conversations'],
+        fields: ['created_at', 'first_response_at'],
+        formula: 'AVG(first_response_at - created_at)',
+        description: '口径说明',
+        dataQuality: 'ready',
+        governanceNotes: [],
+      },
+      anomalyActions: [],
+    },
+  ],
+  groups: [
+    {
+      key: 'first_response',
+      name: '首响时间',
+      description: '会话首次响应效率',
+      metricKeys: ['first_response_time'],
+    },
+  ],
+  anomalies: [],
+  dataGovernance: { computable: ['first_response_time'], proxy: [], missing: [] },
+  moduleCoverage: [],
+};
+
+describe('ServiceDashboard page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuthStoreHook.mockReturnValue({
-      hasPermission: (perm: string) => perm === "PERM-DASH-VIEW",
-    } as any);
+      hasPermission: (perm: string) => perm === 'PERM-DASH-VIEW',
+    } as never);
 
     mockUseQuery.mockReturnValue({
-      data: {
-        kpi: {
-          totalConversations: 100,
-          queuedConversations: 5,
-          totalTickets: 50,
-          openTickets: 10,
-          resolvedTickets: 35,
-          resolveRate: 70,
-        },
-        ticketByPriority: [
-          { priority: "high", count: 10 },
-          { priority: "medium", count: 25 },
-        ],
-        ticketByStatus: [
-          { status: "open", count: 10 },
-          { status: "resolved", count: 35 },
-        ],
-        healthDistribution: {
-          total: 20,
-          distribution: { high: 10, medium: 6, low: 3, critical: 1 },
-          averageScore: 72,
-        },
-      },
+      data: mockServiceData,
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
-    } as any);
+    } as never);
   });
 
-  it("renders service dashboard with KPIs", () => {
+  it('renders service indicator board', () => {
     render(<ServiceDashboard />);
-
-    expect(screen.getByText("客服看板")).toBeInTheDocument();
-    expect(screen.getByText("会话总数")).toBeInTheDocument();
-    expect(screen.getByText("排队中")).toBeInTheDocument();
-    expect(screen.getByText("工单总数")).toBeInTheDocument();
-    expect(screen.getByText("待处理工单")).toBeInTheDocument();
-    expect(screen.getByText("已解决工单")).toBeInTheDocument();
-    expect(screen.getByText("解决率")).toBeInTheDocument();
+    expect(screen.getByText('服务看板')).toBeInTheDocument();
+    expect(screen.getByText('结果指标（服务）')).toBeInTheDocument();
+    expect(screen.getByText('首响时间')).toBeInTheDocument();
   });
 
-  it("renders distribution tables", () => {
-    render(<ServiceDashboard />);
-
-    expect(screen.getByText("工单优先级分布")).toBeInTheDocument();
-    expect(screen.getByText("工单状态分布")).toBeInTheDocument();
-    expect(screen.getByText("客户健康分布")).toBeInTheDocument();
-  });
-
-  it("shows 403 when no permission", () => {
-    mockAuthStoreHook.mockReturnValue({
-      hasPermission: () => false,
-    } as any);
-
-    render(<ServiceDashboard />);
-
-    expect(screen.getByText("无权限")).toBeInTheDocument();
-  });
-
-  it("shows loading spinner", () => {
+  it('shows loading state', () => {
     mockUseQuery.mockReturnValue({
       data: null,
       isLoading: true,
       isError: false,
       refetch: vi.fn(),
-    } as any);
+    } as never);
 
     render(<ServiceDashboard />);
-
-    expect(document.querySelector(".ant-spin")).toBeTruthy();
+    expect(document.querySelector('.ant-spin')).toBeTruthy();
   });
 
-  it("shows error state", () => {
+  it('shows error state', () => {
     mockUseQuery.mockReturnValue({
       data: null,
       isLoading: false,
       isError: true,
       refetch: vi.fn(),
-    } as any);
+    } as never);
 
     render(<ServiceDashboard />);
+    expect(screen.getByText('加载失败')).toBeInTheDocument();
+  });
 
-    expect(screen.getByText("加载失败")).toBeInTheDocument();
+  it('shows 403 when no permission', () => {
+    mockAuthStoreHook.mockReturnValue({
+      hasPermission: () => false,
+    } as never);
+
+    render(<ServiceDashboard />);
+    expect(screen.getByText('无权限')).toBeInTheDocument();
   });
 });

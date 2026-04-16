@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { CtService } from './ct.service';
+import { ContractExpiryScheduler } from './contract-expiry.scheduler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import {
@@ -22,7 +23,10 @@ import {
 
 @Controller('contracts')
 export class CtController {
-  constructor(private readonly ctService: CtService) {}
+  constructor(
+    private readonly ctService: CtService,
+    private readonly expiryScheduler: ContractExpiryScheduler,
+  ) {}
 
   @Get()
   @Permissions('PERM-CT-MANAGE')
@@ -186,5 +190,26 @@ export class CtController {
     @CurrentUser('id') userId: string,
   ) {
     return this.ctService.deleteContract(id, orgId, userId);
+  }
+
+  @Post('expire-check')
+  @Permissions('PERM-CT-MANAGE')
+  async triggerExpiryCheck(
+    @CurrentUser('orgId') orgId: string,
+    @Body() body: { warningDays?: number },
+  ) {
+    const notified = await this.expiryScheduler.checkAndNotifyExpiringContracts(
+      body.warningDays || 30,
+    );
+    return { notified };
+  }
+
+  @Post('expire-overdue')
+  @Permissions('PERM-CT-MANAGE')
+  async triggerExpireOverdue(
+    @CurrentUser('orgId') orgId: string,
+  ) {
+    const expired = await this.expiryScheduler.expireOverdueContracts();
+    return { expired };
   }
 }

@@ -37,7 +37,7 @@ class CreateTaskDto {
   assigneeUserId?: string;
 
   @IsOptional()
-  @IsEnum(['manual', 'lead', 'opportunity', 'conversation', 'ticket'])
+  @IsEnum(['manual', 'lead', 'opportunity', 'conversation', 'ticket', 'delivery'])
   sourceType?: TaskSourceType;
 
   @IsOptional()

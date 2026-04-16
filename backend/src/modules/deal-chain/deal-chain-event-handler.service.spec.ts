@@ -4,6 +4,7 @@ import { OmService } from '../om/om.service';
 import { OrdService } from '../ord/ord.service';
 import { PayService } from '../pay/pay.service';
 import { SubService } from '../sub/sub.service';
+import { QtService } from '../qt/qt.service';
 import { EventBusService } from '../../common/events/event-bus.service';
 
 describe('DealChainEventHandler', () => {
@@ -14,6 +15,7 @@ describe('DealChainEventHandler', () => {
   let ordService: any;
   let payService: any;
   let subService: any;
+  let qtService: any;
 
   const mockContract = {
     id: 'contract-1',
@@ -51,6 +53,7 @@ describe('DealChainEventHandler', () => {
   beforeEach(() => {
     ctService = {
       findContractDetail: jest.fn(),
+      createContractFromQuote: jest.fn(),
     };
     omService = {
       findOpportunityById: jest.fn(),
@@ -69,6 +72,9 @@ describe('DealChainEventHandler', () => {
     subService = {
       createSubscriptionFromOrder: jest.fn(),
     };
+    qtService = {
+      findQuoteById: jest.fn(),
+    };
     eventBus = { subscribe: jest.fn() };
 
     handler = new DealChainEventHandler(
@@ -78,11 +84,12 @@ describe('DealChainEventHandler', () => {
       ordService,
       payService,
       subService,
+      qtService,
     );
   });
 
   describe('onModuleInit', () => {
-    it('should subscribe to contract, order, and payment status change events', () => {
+    it('should subscribe to contract, order, payment, and quote status change events', () => {
       handler.onModuleInit();
 
       expect(eventBus.subscribe).toHaveBeenCalledWith(
@@ -95,6 +102,10 @@ describe('DealChainEventHandler', () => {
       );
       expect(eventBus.subscribe).toHaveBeenCalledWith(
         'payment.status_changed',
+        expect.any(Function),
+      );
+      expect(eventBus.subscribe).toHaveBeenCalledWith(
+        'quote.status_changed',
         expect.any(Function),
       );
     });
@@ -280,6 +291,80 @@ describe('DealChainEventHandler', () => {
       });
 
       expect(ordService.activateOrder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('quote approved -> contract auto-created', () => {
+    const mockQuote = {
+      id: 'quote-1',
+      orgId: 'org-1',
+      opportunityId: 'opp-1',
+      customerId: 'customer-1',
+      quoteNo: 'QT-2026-00001',
+      status: 'approved',
+    };
+
+    it('should create contract from quote when quote is approved', async () => {
+      qtService.findQuoteById.mockResolvedValue(mockQuote);
+      ctService.createContractFromQuote.mockResolvedValue({ id: 'contract-auto-1' });
+
+      await handler.onModuleInit();
+
+      const quoteHandler = eventBus.subscribe.mock.calls.find(
+        (call: any[]) => call[0] === 'quote.status_changed',
+      )?.[1];
+
+      await quoteHandler({
+        eventType: 'quote.status_changed',
+        aggregateType: 'quote',
+        aggregateId: 'quote-1',
+        orgId: 'org-1',
+        payload: { fromStatus: 'pending_approval', toStatus: 'approved' },
+      });
+
+      expect(qtService.findQuoteById).toHaveBeenCalledWith('quote-1', 'org-1');
+      expect(ctService.createContractFromQuote).toHaveBeenCalledWith(
+        'org-1', 'quote-1', 'opp-1', 'customer-1', expect.any(String),
+      );
+    });
+
+    it('should not create contract for non-approved quote status', async () => {
+      await handler.onModuleInit();
+
+      const quoteHandler = eventBus.subscribe.mock.calls.find(
+        (call: any[]) => call[0] === 'quote.status_changed',
+      )?.[1];
+
+      await quoteHandler({
+        eventType: 'quote.status_changed',
+        aggregateType: 'quote',
+        aggregateId: 'quote-1',
+        orgId: 'org-1',
+        payload: { fromStatus: 'draft', toStatus: 'pending_approval' },
+      });
+
+      expect(ctService.createContractFromQuote).not.toHaveBeenCalled();
+    });
+
+    it('should handle contract creation failure gracefully', async () => {
+      qtService.findQuoteById.mockResolvedValue(mockQuote);
+      ctService.createContractFromQuote.mockRejectedValue(new Error('create failed'));
+
+      await handler.onModuleInit();
+
+      const quoteHandler = eventBus.subscribe.mock.calls.find(
+        (call: any[]) => call[0] === 'quote.status_changed',
+      )?.[1];
+
+      await quoteHandler({
+        eventType: 'quote.status_changed',
+        aggregateType: 'quote',
+        aggregateId: 'quote-1',
+        orgId: 'org-1',
+        payload: { fromStatus: 'pending_approval', toStatus: 'approved' },
+      });
+
+      expect(ctService.createContractFromQuote).toHaveBeenCalled();
     });
   });
 });

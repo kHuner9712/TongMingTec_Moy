@@ -4,12 +4,14 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { CustomerHealthScore, HealthLevel } from './entities/customer-health-score.entity';
 import { SuccessPlan, SuccessPlanStatus } from './entities/success-plan.entity';
 import { CustomerReturnVisit } from './entities/customer-return-visit.entity';
 import { IntentService } from '../cmem/services/intent.service';
 import { RiskService } from '../cmem/services/risk.service';
+import { DlvService } from '../dlv/dlv.service';
+import { successPlanStateMachine } from '../../common/statemachine/definitions/success-plan.sm';
 import {
   CreateSuccessPlanDto,
   UpdateSuccessPlanDto,
@@ -43,6 +45,7 @@ export class CsmService {
     private visitRepository: Repository<CustomerReturnVisit>,
     private readonly intentService: IntentService,
     private readonly riskService: RiskService,
+    private readonly dlvService: DlvService,
   ) {}
 
   async findHealthScores(
@@ -85,6 +88,10 @@ export class CsmService {
     customerId: string,
     orgId: string,
     userId: string,
+    deliverySignal?: {
+      deliveryId: string;
+      deliveryStatus: string;
+    },
   ): Promise<CustomerHealthScore> {
     const factors: Record<string, unknown> = {};
     let score = 50;
@@ -131,6 +138,40 @@ export class CsmService {
       score += 10;
       factors['hasActivePlan'] = true;
       factors['planBonus'] = 10;
+    }
+
+    try {
+      const deliverySummary = await this.dlvService.getCustomerDeliverySummary(orgId, customerId);
+      factors['deliverySummary'] = deliverySummary;
+
+      const deliveryDelta =
+        deliverySummary.achievedOutcomes * 2 +
+        deliverySummary.acceptedDeliveries * 3 -
+        deliverySummary.blockedDeliveries * 4 -
+        deliverySummary.pendingRisks * 2;
+
+      if (deliveryDelta !== 0) {
+        score += Math.max(-20, Math.min(20, deliveryDelta));
+        factors['deliverySummaryDelta'] = Math.max(-20, Math.min(20, deliveryDelta));
+      }
+    } catch {
+      factors['deliverySummaryError'] = 'delivery_summary_unavailable';
+    }
+
+    if (deliverySignal) {
+      factors['deliveryId'] = deliverySignal.deliveryId;
+      factors['deliveryStatus'] = deliverySignal.deliveryStatus;
+
+      if (deliverySignal.deliveryStatus === 'accepted') {
+        score += 8;
+        factors['deliveryDelta'] = 8;
+      } else if (deliverySignal.deliveryStatus === 'closed') {
+        score += 10;
+        factors['deliveryDelta'] = 10;
+      } else if (deliverySignal.deliveryStatus === 'blocked') {
+        score -= 12;
+        factors['deliveryDelta'] = -12;
+      }
     }
 
     score = Math.max(0, Math.min(100, score));
@@ -241,14 +282,25 @@ export class CsmService {
 
     const updateData: Record<string, unknown> = {};
     if (dto.title !== undefined) updateData.title = dto.title;
-    if (dto.status !== undefined) updateData.status = dto.status;
     if (dto.payload !== undefined) updateData.payload = dto.payload;
 
-    await this.planRepository.update(id, {
+    if (dto.status !== undefined && dto.status !== plan.status) {
+      successPlanStateMachine.validateTransition(plan.status, dto.status as SuccessPlanStatus);
+      updateData.status = dto.status;
+    }
+
+    const result = await this.planRepository.update(
+      { id, orgId, version: dto.version, deletedAt: IsNull() },
+      {
       ...updateData,
       updatedBy: userId,
       version: () => 'version + 1',
-    });
+      } as any,
+    );
+
+    if ((result.affected ?? 0) !== 1) {
+      throw new ConflictException('CONFLICT_VERSION');
+    }
 
     return this.findSuccessPlanById(id, orgId);
   }

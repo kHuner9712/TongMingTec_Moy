@@ -195,9 +195,52 @@ test.describe('ACPT-RSC-001: 结果责任链 E2E 最小验证', () => {
     expect(deliveryId).toBeTruthy();
     expect(delivery.customerId).toBe(customerId);
 
-    if (delivery.subscriptionId) {
-      expect(delivery.subscriptionId).toBe(subscriptionId);
-    }
+    const deliveriesResp = await apiClient.listDeliveries({ orderId });
+    const deliveriesByOrder = deliveriesResp.items || deliveriesResp.data || deliveriesResp;
+    expect(
+      deliveriesByOrder.some((item: any) => item.id === deliveryId),
+    ).toBeTruthy();
+
+    await apiClient.waitForCondition(async () => {
+      try {
+        const bySubscription = await apiClient.getDeliveryBySubscription(subscriptionId);
+        return bySubscription?.id === deliveryId;
+      } catch {
+        return false;
+      }
+    }, 20000);
+
+    const deliveryBySubscription = await apiClient.getDeliveryBySubscription(subscriptionId);
+    expect(deliveryBySubscription.id).toBe(deliveryId);
+    expect(deliveryBySubscription.subscriptionId).toBe(subscriptionId);
+
+    const detailBeforeBlocked = await apiClient.getDelivery(deliveryId);
+    const versionBeforeBlocked =
+      detailBeforeBlocked.delivery?.version || detailBeforeBlocked.version;
+    const statusBeforeBlocked =
+      detailBeforeBlocked.delivery?.status || detailBeforeBlocked.status;
+
+    expect(statusBeforeBlocked).toBe('active');
+
+    await apiClient.changeDeliveryStatus(
+      deliveryId,
+      'blocked',
+      'E2E验证交付阻塞状态',
+      versionBeforeBlocked,
+    );
+
+    const detailAfterBlocked = await apiClient.getDelivery(deliveryId);
+    const blockedStatus = detailAfterBlocked.delivery?.status || detailAfterBlocked.status;
+    const versionBeforeBackToActive =
+      detailAfterBlocked.delivery?.version || detailAfterBlocked.version;
+    expect(blockedStatus).toBe('blocked');
+
+    await apiClient.changeDeliveryStatus(
+      deliveryId,
+      'active',
+      'E2E解除交付阻塞',
+      versionBeforeBackToActive,
+    );
 
     await apiClient.createDeliveryRisk(deliveryId, {
       title: `RSC风险项-${runTag}`,
@@ -216,6 +259,9 @@ test.describe('ACPT-RSC-001: 结果责任链 E2E 最小验证', () => {
 
     const detailBeforeReady = await apiClient.getDelivery(deliveryId);
     const versionBeforeReady = detailBeforeReady.delivery?.version || detailBeforeReady.version;
+    const statusBeforeReady = detailBeforeReady.delivery?.status || detailBeforeReady.status;
+
+    expect(statusBeforeReady).toBe('active');
 
     await apiClient.changeDeliveryStatus(
       deliveryId,
