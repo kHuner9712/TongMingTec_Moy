@@ -27,7 +27,12 @@ npm-debug.log*
 
 # Test
 coverage/
+frontend/playwright-report/
+frontend/test-results/
 
 # Temp
 *.tmp
 *.temp
+
+# Local assistant specs/artifacts
+.trae/specs/
