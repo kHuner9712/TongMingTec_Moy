@@ -323,24 +323,35 @@ test.describe('ACPT-RSC-001: 结果责任链 E2E 最小验证', () => {
     expect(expiryResult).toHaveProperty('notified');
   });
 
-  test('链路D: 会话 -> AI建议 -> 人工确认 -> 发送 -> 转工单 -> 工单关闭（最小实现 + 卡点显式）', async () => {
+  test('链路D: 会话 -> AI建议 -> 人工确认 -> 发送 -> 转工单 -> 工单关闭', async () => {
     const blockers: string[] = [];
 
     const conversationsResp = await apiClient.listConversations({ page: 1, page_size: 20 });
     const conversations = conversationsResp.items || conversationsResp.data || conversationsResp;
 
-    const candidateConversation = conversations.find(
+    let candidateConversation = conversations.find(
       (conversation: any) => conversation.status === 'queued' || conversation.status === 'active',
     );
 
     if (!candidateConversation) {
-      blockers.push('缺数据对象：无可用会话；当前后端缺少用于E2E自举的会话创建API。');
-      test.info().annotations.push({
-        type: 'blocker',
-        description: blockers.join(' '),
+      const channelsResp = await apiClient.listChannels({ channelType: 'web' });
+      const channels = channelsResp.items || channelsResp.data || channelsResp;
+      let channel = channels[0];
+
+      if (!channel) {
+        channel = await apiClient.createChannel({
+          code: `e2e-web-${runTag}`,
+          channelType: 'web',
+          configJson: { source: 'e2e' },
+        });
+      }
+
+      const bootstrap = await apiClient.bootstrapTestConversation({
+        channelId: channel.id,
+        subject: `RSC会话-${runTag}`,
+        initialMessage: '你好，我希望了解交付进度。',
       });
-      expect(blockers.length).toBeGreaterThan(0);
-      return;
+      candidateConversation = await apiClient.getConversation(bootstrap.conversationId);
     }
 
     let conversation = await apiClient.getConversation(candidateConversation.id);

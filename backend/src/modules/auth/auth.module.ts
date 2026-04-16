@@ -5,19 +5,30 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthTestSupportService } from './auth-test-support.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../usr/entities/user.entity';
 import { UserRole } from '../usr/entities/user-role.entity';
+import { Role } from '../usr/entities/role.entity';
+import { Permission } from '../usr/entities/permission.entity';
 import { RolePermission } from '../usr/entities/role-permission.entity';
+import { Organization } from '../org/entities/organization.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserRole, RolePermission]),
+    TypeOrmModule.forFeature([
+      Organization,
+      User,
+      UserRole,
+      Role,
+      Permission,
+      RolePermission,
+    ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, AuthTestSupportService, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

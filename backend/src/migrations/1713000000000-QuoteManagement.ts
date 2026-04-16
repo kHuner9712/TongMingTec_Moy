@@ -24,9 +24,14 @@ export class QuoteManagement1713000000000 implements MigrationInterface {
         updated_by UUID NULL,
         deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
         version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
-        CONSTRAINT uq_quotes_org_no UNIQUE (org_id, quote_no) WHERE deleted_at IS NULL,
         CONSTRAINT chk_quotes_status CHECK (status IN ('draft','pending_approval','approved','sent','accepted','rejected','expired'))
       )
+    `);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX uq_quotes_org_no_live
+      ON quotes(org_id, quote_no)
+      WHERE deleted_at IS NULL
     `);
 
     await queryRunner.query(`CREATE INDEX idx_quotes_org_status ON quotes(org_id, status, updated_at DESC)`);

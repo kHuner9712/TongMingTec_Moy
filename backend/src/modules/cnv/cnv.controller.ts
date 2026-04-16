@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Body,
@@ -100,9 +101,37 @@ class CreateTicketDto {
   version: number;
 }
 
+class BootstrapTestConversationDto {
+  @IsUUID()
+  @IsNotEmpty()
+  channelId: string;
+
+  @IsOptional()
+  @IsUUID()
+  customerId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  subject?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  initialMessage?: string;
+}
+
 @Controller('conversations')
 export class CnvController {
   constructor(private readonly cnvService: CnvService) {}
+
+  private ensureTestBootstrapEnabled() {
+    const enabledByFlag = process.env.ENABLE_TEST_SUPPORT_APIS === 'true';
+    const nonProdRuntime = process.env.NODE_ENV !== 'production';
+    if (!enabledByFlag && !nonProdRuntime) {
+      throw new ForbiddenException('FEATURE_DISABLED');
+    }
+  }
 
   @Get()
   @Permissions('PERM-CNV-VIEW')
@@ -133,6 +162,17 @@ export class CnvController {
         has_next: total > (query.page || 1) * (query.page_size || 20),
       },
     };
+  }
+
+  @Post('test-bootstrap')
+  @Permissions('PERM-CNV-ACCEPT')
+  async bootstrapTestConversation(
+    @CurrentUser('orgId') orgId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: BootstrapTestConversationDto,
+  ) {
+    this.ensureTestBootstrapEnabled();
+    return this.cnvService.bootstrapTestConversation(orgId, dto, userId);
   }
 
   @Get(':id')

@@ -106,33 +106,18 @@ test.describe('ACPT-S2-010: 报价→合同自动创建', () => {
     expect(approvedQuote.status || approvedQuote.quote?.status).toBe('approved');
 
     await apiClient.waitForCondition(async () => {
-      try {
-        const contractsRes = await fetch('http://localhost:3001/api/v1/contracts?opportunityId=' + opportunity.id, {
-          headers: { Authorization: `Bearer ${apiClient['token']}` },
-        });
-        if (!contractsRes.ok) return false;
-        const data = await contractsRes.json();
-        const items = data.items || data.data || data;
-        return items.some((c: any) => c.quoteId === quote.id);
-      } catch {
-        return false;
-      }
-    }, 15000).catch(() => {});
+      const contractsResp = await apiClient.listContracts({ opportunityId: opportunity.id });
+      const items = contractsResp.items || contractsResp.data || contractsResp;
+      return items.some((c: any) => c.quoteId === quote.id);
+    }, 15000);
 
-    const contractsRes = await fetch('http://localhost:3001/api/v1/contracts?opportunityId=' + opportunity.id, {
-      headers: { Authorization: `Bearer ${apiClient['token']}` },
-    });
-
-    if (contractsRes.ok) {
-      const data = await contractsRes.json();
-      const items = data.items || data.data || data;
-      const autoContract = items.find((c: any) => c.quoteId === quote.id);
-      if (autoContract) {
-        expect(autoContract.quoteId).toBe(quote.id);
-        expect(autoContract.customerId).toBe(customer.id);
-        expect(autoContract.opportunityId).toBe(opportunity.id);
-      }
-    }
+    const contractsResp = await apiClient.listContracts({ opportunityId: opportunity.id });
+    const items = contractsResp.items || contractsResp.data || contractsResp;
+    const autoContract = items.find((c: any) => c.quoteId === quote.id);
+    expect(autoContract).toBeTruthy();
+    expect(autoContract.quoteId).toBe(quote.id);
+    expect(autoContract.customerId).toBe(customer.id);
+    expect(autoContract.opportunityId).toBe(opportunity.id);
   });
 });
 
@@ -299,19 +284,8 @@ test.describe('ACPT-S2-012: 订阅续费路径', () => {
     ];
 
     for (const [from, to] of renewTransitions) {
-      const res = await fetch('http://localhost:3001/api/v1/subscriptions/validate-transition', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiClient['token']}`,
-        },
-        body: JSON.stringify({ from, to }),
-      }).catch(() => null);
-
-      if (res && res.ok) {
-        const data = await res.json();
-        expect(data.valid).toBe(true);
-      }
+      const data = await apiClient.validateSubscriptionTransition(from, to);
+      expect(data.valid).toBe(true);
     }
 
     expect(renewTransitions.length).toBe(3);
@@ -330,36 +304,28 @@ test.describe('ACPT-S2-013: 多租户隔离', () => {
     const foundInOrgA = orgAItems.some((c: any) => c.id === customer.id);
     expect(foundInOrgA).toBe(true);
 
-    try {
-      const otherUser = await apiClient.loginAs('viewer', 'Viewer123!');
+    const secondary = await apiClient.ensureSecondaryTenant();
+    expect(secondary.orgId).not.toBe(apiClient.getCurrentOrgId());
 
-      if (otherUser.orgId !== apiClient['orgId']) {
-        const orgBCustomers = await apiClient.getCustomersWithToken(otherUser.token);
-        const orgBItems = orgBCustomers.items || orgBCustomers.data || orgBCustomers;
-        const foundInOrgB = orgBItems.some((c: any) => c.id === customer.id);
-        expect(foundInOrgB).toBe(false);
-      }
-    } catch {
-      console.warn('多租户隔离验证跳过：无法获取不同租户的 token');
-    }
+    const orgBCustomers = await apiClient.getCustomersWithToken(secondary.token);
+    const orgBItems = orgBCustomers.items || orgBCustomers.data || orgBCustomers;
+    const foundInOrgB = orgBItems.some((c: any) => c.id === customer.id);
+    expect(foundInOrgB).toBe(false);
   });
 
   test('跨 org 直接访问资源被拒绝', async () => {
     await apiClient.login();
 
     const customer = await apiClient.createCustomer({ name: '租户隔离访问测试客户', phone: '13900012222' });
+    const secondary = await apiClient.ensureSecondaryTenant();
+    expect(secondary.orgId).not.toBe(apiClient.getCurrentOrgId());
 
     try {
-      const otherUser = await apiClient.loginAs('viewer', 'Viewer123!');
-      const res = await fetch(`http://localhost:3001/api/v1/customers/${customer.id}`, {
-        headers: { Authorization: `Bearer ${otherUser.token}` },
-      });
-
-      if (otherUser.orgId !== apiClient['orgId']) {
-        expect([403, 404]).toContain(res.status);
-      }
-    } catch {
-      console.warn('跨 org 访问验证跳过：无法获取不同租户的 token');
+      await apiClient.getCustomerByIdWithToken(customer.id, secondary.token);
+      throw new Error('应该拒绝跨租户直接访问客户资源');
+    } catch (err: any) {
+      if (err.message === '应该拒绝跨租户直接访问客户资源') throw err;
+      expect([403, 404]).toContain(err.response?.status || err.status);
     }
   });
 });
@@ -368,11 +334,11 @@ test.describe('ACPT-S2-014: WebSocket 实时推送', () => {
   test('socket.io 客户端连接并接收事件', async () => {
     await apiClient.login();
 
-    const token = (apiClient as any).token;
+    const token = apiClient.getAccessToken();
 
     const receivedEvents: string[] = await new Promise((resolve) => {
       const events: string[] = [];
-      const socket = socketIoClient('http://localhost:3001/ws', {
+      const socket = socketIoClient(`${apiClient.getApiOrigin()}/ws`, {
         auth: { token },
         transports: ['websocket'],
         reconnection: false,

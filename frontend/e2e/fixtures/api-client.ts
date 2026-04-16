@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:3001/api/v1';
+const DEFAULT_API_BASE = 'http://localhost:3001/api/v1';
+const normalizeApiBase = (raw?: string): string => {
+  const sanitized = (raw || DEFAULT_API_BASE).trim().replace(/\/+$/, '');
+  if (sanitized.endsWith('/api/v1')) return sanitized;
+  return `${sanitized}/api/v1`;
+};
+
+const API_BASE = normalizeApiBase(
+  process.env.PW_API_BASE_URL || process.env.E2E_API_BASE_URL,
+);
+const API_ORIGIN = API_BASE.replace(/\/api\/v1$/, '');
 const UUID_V4_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -19,6 +29,14 @@ class ApiClient {
 
   getCurrentUserId(): string {
     return this.userId;
+  }
+
+  getApiBaseUrl(): string {
+    return API_BASE;
+  }
+
+  getApiOrigin(): string {
+    return API_ORIGIN;
   }
 
   async login(
@@ -76,6 +94,46 @@ class ApiClient {
 
   async getCustomers(): Promise<any> {
     const res = await axios.get(`${API_BASE}/customers`, { headers: this.headers });
+    return res.data;
+  }
+
+  async getCustomerByIdWithToken(customerId: string, token: string): Promise<any> {
+    const res = await axios.get(`${API_BASE}/customers/${customerId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data;
+  }
+
+  async listChannels(params?: { channelType?: string; status?: string }): Promise<any> {
+    const res = await axios.get(`${API_BASE}/channels`, {
+      params,
+      headers: this.headers,
+    });
+    return res.data;
+  }
+
+  async createChannel(data: {
+    code: string;
+    channelType: 'wechat' | 'wechat_mini' | 'wechat_work' | 'web' | 'app' | 'phone' | 'email';
+    configJson: Record<string, unknown>;
+  }): Promise<any> {
+    const res = await axios.post(`${API_BASE}/channels`, data, {
+      headers: this.headers,
+    });
+    return res.data;
+  }
+
+  async updateChannel(
+    id: string,
+    data: {
+      configJson?: Record<string, unknown>;
+      status?: 'inactive' | 'active' | 'error';
+      version: number;
+    },
+  ): Promise<any> {
+    const res = await axios.put(`${API_BASE}/channels/${id}`, data, {
+      headers: this.headers,
+    });
     return res.data;
   }
 
@@ -809,6 +867,18 @@ class ApiClient {
     return res.data;
   }
 
+  async bootstrapTestConversation(data: {
+    channelId: string;
+    customerId?: string;
+    subject?: string;
+    initialMessage?: string;
+  }): Promise<{ conversationId: string; messageId: string | null }> {
+    const res = await axios.post(`${API_BASE}/conversations/test-bootstrap`, data, {
+      headers: this.headers,
+    });
+    return res.data;
+  }
+
   async getConversation(id: string): Promise<any> {
     const res = await axios.get(`${API_BASE}/conversations/${id}`, {
       headers: this.headers,
@@ -986,6 +1056,28 @@ class ApiClient {
     return res.data;
   }
 
+  async ensureSecondaryTenant(data?: {
+    tenantCode?: string;
+    tenantName?: string;
+    username?: string;
+    password?: string;
+    displayName?: string;
+    email?: string;
+  }): Promise<{
+    orgId: string;
+    userId: string;
+    username: string;
+    password: string;
+    token: string;
+  }> {
+    const res = await axios.post(
+      `${API_BASE}/auth/test-support/ensure-secondary-tenant`,
+      data || {},
+      { headers: this.headers },
+    );
+    return res.data;
+  }
+
   async createOrg(data: { name: string; slug: string }): Promise<any> {
     const res = await axios.post(`${API_BASE}/orgs`, data, { headers: this.headers });
     return res.data;
@@ -1052,6 +1144,23 @@ class ApiClient {
     const res = await axios.get(`${API_BASE}/customers`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    return res.data;
+  }
+
+  async validateSubscriptionTransition(
+    from: string,
+    to: string,
+    token?: string,
+  ): Promise<any> {
+    const res = await axios.post(
+      `${API_BASE}/subscriptions/validate-transition`,
+      { from, to },
+      {
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : this.headers,
+      },
+    );
     return res.data;
   }
 

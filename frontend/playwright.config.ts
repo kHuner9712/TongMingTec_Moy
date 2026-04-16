@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: process.env.PW_WEB_BASE_URL || 'http://localhost:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -26,9 +26,18 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'node ./scripts/start-e2e-backend.mjs',
+      url: process.env.PW_BACKEND_HEALTH_URL || 'http://localhost:3001/api/v1/docs',
+      reuseExistingServer: false,
+      timeout: 180_000,
+    },
+    {
+      command: 'npm run dev',
+      url: process.env.PW_WEB_BASE_URL || 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+  ],
 });

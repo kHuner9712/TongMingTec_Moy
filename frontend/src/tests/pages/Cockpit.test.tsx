@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import Cockpit from '../../pages/Cockpit';
 
 vi.mock('../../stores/authStore', () => ({
@@ -94,8 +94,13 @@ describe('Cockpit page', () => {
 
     expect(screen.getByText('经营驾驶舱')).toBeInTheDocument();
     expect(screen.getByText('经营总览（6个结果指标）')).toBeInTheDocument();
-    expect(screen.getByText('首响时间')).toBeInTheDocument();
-    expect(screen.getByText('查看来源说明')).toBeInTheDocument();
+    const firstResponseIndicator = screen.getByTestId(
+      'cockpit-indicator-first_response_time',
+    );
+    expect(within(firstResponseIndicator).getByText('首响时间')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('cockpit-indicator-source-first_response_time'),
+    ).toBeInTheDocument();
   });
 
   it('shows loading spinner', () => {

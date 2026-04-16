@@ -147,7 +147,11 @@ describe('SubService', () => {
       const result = await service.suspendSubscription('sub-1', 'org-1', '欠费停服', 'user-1', 1);
 
       expect(subscriptionRepository.update).toHaveBeenCalledWith(
-        'sub-1',
+        expect.objectContaining({
+          id: 'sub-1',
+          orgId: 'org-1',
+          version: 1,
+        }),
         expect.objectContaining({ status: 'suspended' }),
       );
       expect(eventBus.publish).toHaveBeenCalled();
@@ -173,7 +177,11 @@ describe('SubService', () => {
       const result = await service.cancelSubscription('sub-1', 'org-1', '客户取消', 'user-1');
 
       expect(subscriptionRepository.update).toHaveBeenCalledWith(
-        'sub-1',
+        expect.objectContaining({
+          id: 'sub-1',
+          orgId: 'org-1',
+          version: 1,
+        }),
         expect.objectContaining({ status: 'cancelled' }),
       );
     });
@@ -193,7 +201,11 @@ describe('SubService', () => {
       }, 'user-1');
 
       expect(subscriptionRepository.update).toHaveBeenCalledWith(
-        'sub-1',
+        expect.objectContaining({
+          id: 'sub-1',
+          orgId: 'org-1',
+          version: 1,
+        }),
         expect.objectContaining({ seatCount: 5, autoRenew: true }),
       );
     });
@@ -215,7 +227,11 @@ describe('SubService', () => {
       await service.deleteSubscription('sub-1', 'org-1', 'user-1');
 
       expect(subscriptionRepository.update).toHaveBeenCalledWith(
-        'sub-1',
+        expect.objectContaining({
+          id: 'sub-1',
+          orgId: 'org-1',
+          version: 1,
+        }),
         expect.objectContaining({ deletedAt: expect.any(Date) }),
       );
     });

@@ -23,10 +23,14 @@ export class OrderManagement1713200000000 implements MigrationInterface {
         updated_by UUID NULL,
         deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
         version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
-        CONSTRAINT uq_orders_org_no UNIQUE (org_id, order_no) WHERE deleted_at IS NULL,
         CONSTRAINT chk_orders_type CHECK (order_type IN ('new','renewal','addon','refund')),
         CONSTRAINT chk_orders_status CHECK (status IN ('draft','confirmed','active','completed','cancelled','refunded'))
       )
+    `);
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX uq_orders_org_no_live
+      ON orders(org_id, order_no)
+      WHERE deleted_at IS NULL
     `);
     await queryRunner.query(`CREATE INDEX idx_orders_org_status ON orders(org_id, status, updated_at DESC)`);
     await queryRunner.query(`CREATE INDEX idx_orders_org_customer ON orders(org_id, customer_id)`);

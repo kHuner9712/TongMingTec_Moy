@@ -3,12 +3,51 @@ import { AuthService } from './auth.service';
 import { LoginDto, RefreshTokenDto, ChangePasswordDto, ForgotPasswordDto } from './dto/auth.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { Permissions } from '../../common/decorators/permissions.decorator';
+import { AuthTestSupportService } from './auth-test-support.service';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+
+class EnsureSecondaryTenantDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  tenantCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  tenantName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8)
+  @MaxLength(64)
+  password?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  displayName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  email?: string;
+}
 
 @ApiTags('AUTH')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly authTestSupportService: AuthTestSupportService,
+  ) {}
 
   @Public()
   @Post('login')
@@ -52,5 +91,13 @@ export class AuthController {
   ) {
     await this.authService.changePassword(userId, dto);
     return { code: 'OK', message: 'success' };
+  }
+
+  @Post('test-support/ensure-secondary-tenant')
+  @Permissions('PERM-ORG-MANAGE')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'E2E测试辅助：准备第二租户管理员账号（非生产环境）' })
+  async ensureSecondaryTenant(@Body() dto: EnsureSecondaryTenantDto) {
+    return this.authTestSupportService.ensureSecondaryTenant(dto);
   }
 }

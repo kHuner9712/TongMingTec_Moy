@@ -14,6 +14,12 @@ import { OmModule } from "../om/om.module";
 import { CnvModule } from "../cnv/cnv.module";
 import { TkModule } from "../tk/tk.module";
 import { CmemModule } from "../cmem/cmem.module";
+import { Customer } from "../cm/entities/customer.entity";
+import { CustomerContact } from "../cm/entities/customer-contact.entity";
+import { Lead } from "../lm/entities/lead.entity";
+import { Opportunity } from "../om/entities/opportunity.entity";
+import { Conversation } from "../cnv/entities/conversation.entity";
+import { Ticket } from "../tk/entities/ticket.entity";
 
 @Module({
   imports: [
@@ -21,6 +27,12 @@ import { CmemModule } from "../cmem/cmem.module";
       CustomerTimelineEvent,
       CustomerOperatingRecord,
       CustomerStateSnapshot,
+      Customer,
+      CustomerContact,
+      Lead,
+      Opportunity,
+      Conversation,
+      Ticket,
     ]),
     CmModule,
     LmModule,

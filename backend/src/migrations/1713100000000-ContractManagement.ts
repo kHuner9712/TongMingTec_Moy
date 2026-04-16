@@ -22,9 +22,14 @@ export class ContractManagement1713100000000 implements MigrationInterface {
         updated_by UUID NULL,
         deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
         version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
-        CONSTRAINT uq_contracts_org_no UNIQUE (org_id, contract_no) WHERE deleted_at IS NULL,
         CONSTRAINT chk_contracts_status CHECK (status IN ('draft','pending_approval','approved','rejected','signing','active','expired','terminated'))
       )
+    `);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX uq_contracts_org_no_live
+      ON contracts(org_id, contract_no)
+      WHERE deleted_at IS NULL
     `);
 
     await queryRunner.query(`CREATE INDEX idx_contracts_org_status ON contracts(org_id, status, updated_at DESC)`);

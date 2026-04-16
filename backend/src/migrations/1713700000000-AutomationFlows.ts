@@ -23,9 +23,14 @@ export class AutomationFlows1713700000000 implements MigrationInterface {
         updated_by UUID NULL,
         deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
         version INT NOT NULL DEFAULT 1,
-        CONSTRAINT uq_auto_flows_org_code UNIQUE (org_id, code) WHERE deleted_at IS NULL,
         CONSTRAINT chk_auto_flow_status CHECK (status IN ('draft','active','paused','archived'))
       );
+    `);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX uq_auto_flows_org_code_live
+      ON automation_flows(org_id, code)
+      WHERE deleted_at IS NULL
     `);
 
     await queryRunner.query(`

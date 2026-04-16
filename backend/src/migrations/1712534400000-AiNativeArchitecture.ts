@@ -147,6 +147,8 @@ export class AiNativeArchitecture1712534400000 implements MigrationInterface {
         rollback_strategy JSONB,
         takeover_strategy JSONB,
         status VARCHAR(16) NOT NULL DEFAULT 'draft',
+        created_by UUID,
+        updated_by UUID,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         deleted_at TIMESTAMPTZ,

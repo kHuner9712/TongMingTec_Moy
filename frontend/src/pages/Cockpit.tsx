@@ -227,12 +227,13 @@ export default function Cockpit() {
               <Card
                 title={group.name}
                 extra={<Tag color={statusColor(groupStatus)}>{statusLabel(groupStatus)}</Tag>}
+                data-testid={`cockpit-group-${group.key}`}
               >
                 <Text type="secondary">{group.description}</Text>
                 <Divider style={{ margin: '12px 0' }} />
                 <Space direction="vertical" size={10} style={{ width: '100%' }}>
                   {metrics.map((metric) => (
-                    <div key={metric.key}>
+                    <div key={metric.key} data-testid={`cockpit-indicator-${metric.key}`}>
                       <Space
                         style={{
                           width: '100%',
@@ -259,6 +260,7 @@ export default function Cockpit() {
                         type="link"
                         size="small"
                         style={{ padding: 0 }}
+                        data-testid={`cockpit-indicator-source-${metric.key}`}
                         onClick={() => setActiveIndicator(metric)}
                       >
                         查看来源说明

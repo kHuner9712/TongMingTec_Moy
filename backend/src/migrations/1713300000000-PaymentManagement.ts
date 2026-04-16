@@ -24,9 +24,13 @@ export class PaymentManagement1713300000000 implements MigrationInterface {
         updated_by UUID NULL,
         deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
         version INT NOT NULL DEFAULT 1 CHECK(version >= 1),
-        CONSTRAINT uq_payments_org_no UNIQUE (org_id, payment_no) WHERE deleted_at IS NULL,
         CONSTRAINT chk_payments_status CHECK (status IN ('pending','processing','succeeded','failed','refunded','voided'))
       )
+    `);
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX uq_payments_org_no_live
+      ON payments(org_id, payment_no)
+      WHERE deleted_at IS NULL
     `);
     await queryRunner.query(`CREATE INDEX idx_payments_org_status ON payments(org_id, status, updated_at DESC)`);
     await queryRunner.query(`CREATE INDEX idx_payments_org_order ON payments(org_id, order_id)`);

@@ -57,9 +57,14 @@ export class SubscriptionAndDealChain1713400000000 implements MigrationInterface
         created_by UUID NULL,
         updated_by UUID NULL,
         deleted_at TIMESTAMPTZ NULL DEFAULT NULL,
-        version INT NOT NULL DEFAULT 1,
-        CONSTRAINT uq_sub_seats_org_sub_code UNIQUE (org_id, subscription_id, seat_code) WHERE deleted_at IS NULL
+        version INT NOT NULL DEFAULT 1
       );
+    `);
+
+    await queryRunner.query(`
+      CREATE UNIQUE INDEX uq_sub_seats_org_sub_code_live
+      ON subscription_seats(org_id, subscription_id, seat_code)
+      WHERE deleted_at IS NULL;
     `);
 
     await queryRunner.query(`

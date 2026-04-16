@@ -17,7 +17,7 @@ import {
 } from "./entities/conversation-message.entity";
 import { conversationStateMachine } from "../../common/statemachine/definitions/conversation.sm";
 import { EventBusService } from "../../common/events/event-bus.service";
-import { conversationMessageCreated } from "../../common/events/conversation-events";
+import { conversationCreated, conversationMessageCreated } from "../../common/events/conversation-events";
 import { TkService } from "../tk/tk.service";
 import { TicketPriority } from "../tk/entities/ticket.entity";
 
@@ -382,5 +382,85 @@ export class CnvService {
     );
 
     return { ticketId: ticket.id };
+  }
+
+  async bootstrapTestConversation(
+    orgId: string,
+    dto: {
+      channelId: string;
+      customerId?: string;
+      subject?: string;
+      initialMessage?: string;
+    },
+    userId: string,
+  ): Promise<{ conversationId: string; messageId: string | null }> {
+    const now = new Date();
+
+    const conversation = this.conversationRepository.create({
+      orgId,
+      channelId: dto.channelId,
+      customerId: dto.customerId || null,
+      subject: dto.subject || 'E2E测试会话',
+      assigneeUserId: null,
+      status: ConversationStatus.QUEUED,
+      firstResponseAt: null,
+      lastMessageAt: now,
+      closedAt: null,
+      closedReason: null,
+      ratingScore: null,
+      ratingComment: null,
+      createdBy: userId,
+      updatedBy: userId,
+    });
+
+    const savedConversation = await this.conversationRepository.save(conversation);
+
+    this.eventBus.publish(
+      conversationCreated({
+        orgId,
+        conversationId: savedConversation.id,
+        channel: savedConversation.channelId,
+        customerId: savedConversation.customerId || undefined,
+        actorType: 'user',
+        actorId: userId,
+      }),
+    );
+
+    if (!dto.initialMessage) {
+      return { conversationId: savedConversation.id, messageId: null };
+    }
+
+    const message = this.messageRepository.create({
+      orgId,
+      conversationId: savedConversation.id,
+      messageType: MessageType.TEXT,
+      direction: MessageDirection.IN,
+      senderType: SenderType.CUSTOMER,
+      senderId: null,
+      content: dto.initialMessage,
+      attachments: [],
+      sentAt: now,
+      createdBy: userId,
+    });
+    const savedMessage = await this.messageRepository.save(message);
+
+    await this.conversationRepository.update(savedConversation.id, {
+      lastMessageAt: now,
+      version: () => 'version + 1',
+      updatedBy: userId,
+    });
+
+    this.eventBus.publish(
+      conversationMessageCreated({
+        orgId,
+        conversationId: savedConversation.id,
+        messageId: savedMessage.id,
+        senderType: SenderType.CUSTOMER,
+        senderId: userId,
+        contentType: MessageType.TEXT,
+      }),
+    );
+
+    return { conversationId: savedConversation.id, messageId: savedMessage.id };
   }
 }
