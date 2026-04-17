@@ -23,6 +23,7 @@ export const permissionSeeds: Array<{
   { permId: 'PERM-LM-SCORE', module: 'lm', action: 'score', riskLevel: RiskLevel.P3, description: '线索评分' },
   { permId: 'PERM-LM-RECYCLE', module: 'lm', action: 'recycle', riskLevel: RiskLevel.P2, description: '线索回收' },
 
+  { permId: 'PERM-OM-VIEW', module: 'om', action: 'view', riskLevel: RiskLevel.P3, description: '商机查看' },
   { permId: 'PERM-OM-CREATE', module: 'om', action: 'create', riskLevel: RiskLevel.P2, description: '商机新建' },
   { permId: 'PERM-OM-UPDATE', module: 'om', action: 'update', riskLevel: RiskLevel.P2, description: '商机编辑' },
   { permId: 'PERM-OM-STAGE', module: 'om', action: 'stage', riskLevel: RiskLevel.P1, description: '商机阶段推进' },

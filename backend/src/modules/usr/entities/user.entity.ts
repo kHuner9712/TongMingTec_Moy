@@ -25,7 +25,7 @@ export class User extends BaseEntity {
   @Index()
   username: string;
 
-  @Column({ type: 'varchar', length: 64 })
+  @Column({ type: 'varchar', length: 64, name: 'display_name' })
   @Index()
   displayName: string;
 

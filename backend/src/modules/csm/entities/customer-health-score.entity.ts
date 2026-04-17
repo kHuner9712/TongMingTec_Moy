@@ -9,7 +9,17 @@ export class CustomerHealthScore extends BaseEntity {
   @Index()
   customerId: string;
 
-  @Column({ type: 'decimal', precision: 8, scale: 2, default: 0 })
+  @Column({
+    type: 'decimal',
+    precision: 8,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value?: number | null) => value,
+      from: (value: string | number | null) =>
+        value === null ? null : Number(value),
+    },
+  })
   score: number;
 
   @Column({ type: 'varchar', length: 16, default: 'medium' })

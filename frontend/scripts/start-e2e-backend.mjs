@@ -111,11 +111,34 @@ function resetE2EDatabase() {
   );
 }
 
+function ensureE2EDatabaseExtensions() {
+  runWithOutput(
+    [
+      `docker exec ${CONTAINER_NAME} psql`,
+      `-U ${DB_USER}`,
+      `-d ${DB_NAME}`,
+      '-v ON_ERROR_STOP=1',
+      `-c "CREATE EXTENSION IF NOT EXISTS \\"uuid-ossp\\";"`,
+    ].join(' '),
+  );
+
+  runWithOutput(
+    [
+      `docker exec ${CONTAINER_NAME} psql`,
+      `-U ${DB_USER}`,
+      `-d ${DB_NAME}`,
+      '-v ON_ERROR_STOP=1',
+      `-c "CREATE EXTENSION IF NOT EXISTS \\"pgcrypto\\";"`,
+    ].join(' '),
+  );
+}
+
 async function main() {
   run('docker --version');
   ensurePostgresContainer();
   await waitForPostgresReady();
   resetE2EDatabase();
+  ensureE2EDatabaseExtensions();
 
   const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const backend = spawn(`${npmCmd} run start --prefix ../backend`, {
@@ -130,8 +153,12 @@ async function main() {
       DB_USERNAME: DB_USER,
       DB_PASSWORD,
       DB_NAME,
-      DB_SYNCHRONIZE: process.env.DB_SYNCHRONIZE || 'false',
+      DB_SYNCHRONIZE: process.env.DB_SYNCHRONIZE || 'true',
+      DB_MIGRATIONS_RUN: process.env.DB_MIGRATIONS_RUN || 'false',
       DB_LOGGING: process.env.DB_LOGGING || 'false',
+      JWT_SECRET: process.env.JWT_SECRET || 'moy-jwt-secret-key-change-in-production',
+      JWT_ACCESS_EXPIRES_IN: process.env.JWT_ACCESS_EXPIRES_IN || '15m',
+      JWT_REFRESH_EXPIRES_IN: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
     },
   });
 

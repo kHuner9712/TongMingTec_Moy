@@ -8,10 +8,8 @@ import {
   IsEnum,
   IsDateString,
   IsArray,
-  ValidateNested,
   ArrayMinSize,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 import { PageQueryDto } from '../../../common/dto/pagination.dto';
 
 export class CreateContractDto {
@@ -50,7 +48,6 @@ export class UpdateContractDto {
 
 export class SubmitApprovalDto {
   @IsArray()
-  @ValidateNested({ each: true })
   @ArrayMinSize(1)
   @IsUUID('4', { each: true })
   approverIds: string[];

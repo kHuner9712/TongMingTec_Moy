@@ -69,7 +69,7 @@ import jwtConfig from './config/jwt.config';
         synchronize: configService.get('database.synchronize') || false,
         logging: configService.get('database.logging') || false,
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        migrationsRun: true,
+        migrationsRun: configService.get('database.migrationsRun'),
       }),
       inject: [ConfigService],
     }),

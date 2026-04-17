@@ -8,4 +8,5 @@ export default registerAs('database', () => ({
   name: process.env.DB_NAME || 'moy',
   synchronize: process.env.DB_SYNCHRONIZE === 'true' || false,
   logging: process.env.DB_LOGGING === 'true' || false,
+  migrationsRun: process.env.DB_MIGRATIONS_RUN !== 'false',
 }));

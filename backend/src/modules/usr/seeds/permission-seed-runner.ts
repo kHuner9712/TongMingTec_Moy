@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Permission } from '../entities/permission.entity';
 import { permissionSeeds } from './permission.seed';
 
+const SYSTEM_ORG_ID = '00000000-0000-0000-0000-000000000000';
+
 @Injectable()
 export class PermissionSeedRunner implements OnModuleInit {
   private readonly logger = new Logger(PermissionSeedRunner.name);
@@ -13,28 +15,31 @@ export class PermissionSeedRunner implements OnModuleInit {
     private readonly permRepo: Repository<Permission>,
   ) {}
 
-  async onModuleInit() {
-    await this.seedGlobalPermissions();
+  async onModuleInit(): Promise<void> {
+    if (process.env.ENABLE_GLOBAL_PERMISSION_SEED === 'true') {
+      await this.seedGlobalPermissions();
+    }
   }
 
-  private async seedGlobalPermissions() {
+  private async seedGlobalPermissions(): Promise<void> {
     let created = 0;
     for (const seed of permissionSeeds) {
       const existing = await this.permRepo.findOne({
-        where: { permId: seed.permId, orgId: 'system' },
+        where: { permId: seed.permId, orgId: SYSTEM_ORG_ID },
       });
-      if (!existing) {
-        const perm = this.permRepo.create({
-          ...seed,
-          orgId: 'system',
-        });
-        await this.permRepo.save(perm);
-        created++;
-        this.logger.log(`种子数据：全局权限 ${seed.permId} 已创建`);
-      }
+      if (existing) continue;
+
+      const perm = this.permRepo.create({
+        ...seed,
+        orgId: SYSTEM_ORG_ID,
+      });
+      await this.permRepo.save(perm);
+      created += 1;
+      this.logger.log(`Seeded global permission ${seed.permId}`);
     }
+
     if (created > 0) {
-      this.logger.log(`全局权限种子数据初始化完成，新增 ${created} 条`);
+      this.logger.log(`Global permission seed completed, created ${created}`);
     }
   }
 
@@ -44,18 +49,20 @@ export class PermissionSeedRunner implements OnModuleInit {
       const existing = await this.permRepo.findOne({
         where: { permId: seed.permId, orgId },
       });
-      if (!existing) {
-        const perm = this.permRepo.create({
-          ...seed,
-          orgId,
-        });
-        await this.permRepo.save(perm);
-        created++;
-      }
+      if (existing) continue;
+
+      const perm = this.permRepo.create({
+        ...seed,
+        orgId,
+      });
+      await this.permRepo.save(perm);
+      created += 1;
     }
+
     if (created > 0) {
-      this.logger.log(`租户 ${orgId} 权限初始化完成，新增 ${created} 条`);
+      this.logger.log(`Tenant ${orgId} permission seed completed, created ${created}`);
     }
+
     return created;
   }
 }

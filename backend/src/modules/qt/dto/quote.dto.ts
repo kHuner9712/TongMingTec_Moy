@@ -88,7 +88,6 @@ export class UpdateQuoteDto {
 
 export class SubmitApprovalDto {
   @IsArray()
-  @ValidateNested({ each: true })
   @ArrayMinSize(1)
   @IsUUID('4', { each: true })
   approverIds: string[];

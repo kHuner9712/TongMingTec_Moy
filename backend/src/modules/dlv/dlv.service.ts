@@ -780,8 +780,10 @@ export class DlvService {
       { allowExistingForOrder: true, source: 'order_activation' },
     );
 
-    if (created.status === 'draft') {
-      return this.changeStatus(
+    if (created.status !== 'draft') return created;
+
+    try {
+      return await this.changeStatus(
         created.id,
         input.orgId,
         {
@@ -791,9 +793,23 @@ export class DlvService {
         },
         SYSTEM_USER_ID,
       );
-    }
+    } catch (error) {
+      if (!(error instanceof ConflictException)) throw error;
 
-    return created;
+      const latest = await this.findDeliveryByOrderId(input.orderId, input.orgId);
+      if (latest.status !== 'draft') return latest;
+
+      return this.changeStatus(
+        latest.id,
+        input.orgId,
+        {
+          status: 'active',
+          version: latest.version,
+          reason: '订单激活自动启动交付',
+        },
+        SYSTEM_USER_ID,
+      );
+    }
   }
 
   async bindSubscriptionToOrderDelivery(
