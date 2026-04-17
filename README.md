@@ -173,3 +173,48 @@ npm run test:e2e:responsibility
 
 ---
 本 README 用于 5 分钟快速入场；最终裁决以 `docs/SSOT` 为准。
+
+## 10. S2 RC 持续验证（Gate 与 Smoke）
+
+### 10.1 本地执行
+```bash
+# S2 发布门禁（硬门禁）
+cd frontend
+npm run test:gate:s2
+
+# 仅跑 advanced acceptance（Chromium）
+npm run test:gate:s2:advanced
+
+# 仅跑结果责任链
+npm run test:gate:s2:responsibility
+
+# 迁移与测试支撑烟测
+npm run test:smoke:migration
+npm run test:smoke:test-support
+```
+
+### 10.2 Playwright 浏览器入口
+```bash
+cd frontend
+
+# 按浏览器执行
+npm run test:e2e:chromium
+npm run test:e2e:firefox
+npm run test:e2e:webkit
+
+# 安装浏览器二进制
+npm run pw:install:chromium
+npm run pw:install:firefox
+npm run pw:install:webkit
+```
+说明：`frontend/scripts/run-playwright-project.mjs` 会在执行前检查浏览器二进制是否存在；缺失时会直接提示安装命令，避免把环境问题误判为测试失败。
+
+### 10.3 CI 与夜间作业
+- `S2 Gate`：`.github/workflows/s2-gate.yml`
+  - 运行 `test:gate:s2`，用于 PR / 发布门禁。
+- `Nightly Smoke`：`.github/workflows/nightly-smoke.yml`
+  - 每日运行 `test:smoke:migration` + `test:smoke:test-support`，用于持续回归监控。
+
+### 10.4 Gate 与 Smoke 口径
+- Gate：发布前必须通过。
+- Smoke：持续健康检查，不替代 gate。

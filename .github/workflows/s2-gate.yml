@@ -1,0 +1,56 @@
+name: S2 Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - backend/**
+      - frontend/**
+      - docs/SSOT/12*
+      - README.md
+      - .github/workflows/s2-gate.yml
+
+jobs:
+  s2-gate:
+    name: Run S2 Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CI: true
+      PW_WEB_BASE_URL: http://127.0.0.1:5173
+      PW_API_BASE_URL: http://127.0.0.1:3001/api/v1
+      PW_BACKEND_HEALTH_URL: http://127.0.0.1:3001/api/v1/docs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Install Chromium for Playwright
+        run: npm --prefix frontend run pw:install:chromium
+
+      - name: Run S2 Gate suite
+        run: npm --prefix frontend run test:gate:s2
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          if-no-files-found: ignore

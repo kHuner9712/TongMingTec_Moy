@@ -12,6 +12,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+    "test:smoke:migration": "node ./scripts/smoke-migration.mjs",
+    "test:smoke:test-support": "node ./scripts/smoke-test-support.mjs",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:generate": "npm run typeorm -- migration:generate -d src/config/database.config.ts",
     "migration:run": "npm run typeorm -- migration:run -d src/data-source.ts",
