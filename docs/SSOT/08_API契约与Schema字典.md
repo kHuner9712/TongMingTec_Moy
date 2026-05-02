@@ -1,7 +1,7 @@
-# MOY API 契约与 Schema 字典
+# MOY App API 契约与 Schema 字典
 
 ## 1. 文档定位
-本文档是 MOY 唯一 API 实现级文档，统一收口：
+本文档是 MOY App 唯一 API 实现级文档，统一收口：
 - HTTP API
 - WebSocket 事件
 - 错误码约束

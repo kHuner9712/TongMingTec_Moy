@@ -1,7 +1,7 @@
 {
   "name": "moy-backend",
   "version": "1.0.0",
-  "description": "MOY - AI Native Customer Management System Backend",
+  "description": "MOY App - AI Native Customer Operating System Backend",
   "main": "dist/main.js",
   "scripts": {
     "build": "nest build",

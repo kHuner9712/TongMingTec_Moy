@@ -1,4 +1,4 @@
-# MOY 原子 API 与 Schema 展开
+# MOY App 原子 API 与 Schema 展开
 
 ## 1. 文档定位
 本文档是 [08_API契约与Schema字典.md](./08_API契约与Schema字典.md) 的实现级子文档。

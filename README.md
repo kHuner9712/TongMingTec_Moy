@@ -1,220 +1,143 @@
-# MOY 仓库说明
+# MOY
 
-## 1. 项目一句话定位
-MOY 是一个**结果交付型企业 AI 原生系统**：目标不是做聊天或单点 AI 工具，而是把“获客 -> 沟通 -> 成交 -> 交付 -> 验收 -> 客户成功”做成可执行、可追责、可持续运营的业务主链。
-
-## 2. 当前阶段
-
-### S1 / S2 / S3 / S4 含义
-- `S1`：基础底座与前链路主干（租户/权限、客户-线索-商机、会话-工单、AI 运行与治理）。
-- `S2`：成交与成交后承接主干（QT/CT/ORD/PAY/SUB/DLV/CSM + KB/DASH/AUTO）。
-- `S3`：商业化与平台化扩展（PLAN/BILL/INV/INT/PLT 等）。
-- `S4`：规模化与全球化（I18N/DEPLOY、合规、多区域、私有化、规模化 AI 编排）。
-
-### 当前大致所处阶段
-- 按 SSOT 当前判断：`S1 基本完成`，`S2 主干已落地，待门禁收口`。
-
-### 当前主干目标
-- 把 S2 主链做成可验收闭环：`商机赢单 -> 报价 -> 合同 -> 订单 -> 付款 -> 开通/订阅 -> 交付实施 -> 验收 -> 客户成功`。
-
-## 3. 技术栈
-
-### 前端（`frontend`）
-- React 18 + TypeScript + Vite 5
-- Ant Design 5 / Pro Components
-- React Router 6 / React Query / Zustand / Axios
-- 测试：Vitest、Testing Library、Playwright
-
-### 后端（`backend`）
-- NestJS 10 + TypeScript
-- TypeORM 0.3 + PostgreSQL
-- JWT + Passport（鉴权）、Tenant/Role Guard
-- 领域事件总线 + 状态机 + WebSocket（Socket.IO）
-
-### 数据库
-- PostgreSQL（多租户关键字段：`org_id`）
-
-### 测试
-- 后端：Jest（`*.spec.ts`）
-- 前端单测：Vitest + Testing Library
-- 前端 E2E：Playwright（`frontend/e2e`）
-
-## 4. 目录速览
-```text
-.
-├─ frontend/                         # 前端工程
-│  ├─ src/App.tsx                    # 前端路由与权限入口
-│  ├─ src/pages/                     # 页面
-│  ├─ src/services/                  # API 调用封装
-│  └─ e2e/                           # Playwright E2E
-├─ backend/                          # 后端工程
-│  ├─ src/app.module.ts              # 模块注册主入口
-│  ├─ src/modules/                   # 业务模块（QT/CT/ORD/PAY/SUB/DLV/CSM/...）
-│  ├─ src/common/                    # 公共能力（事件、状态机、鉴权、过滤器等）
-│  └─ src/migrations/                # 数据库迁移
-├─ docs/SSOT/                        # 单一事实源（需求/模型/API/页面/测试）
-├─ .env.example                      # 仓库级环境变量最小模板
-└─ DEVELOPMENT.md                    # 开发补充说明
-```
-
-## 5. 本地启动方式
-
-### 5.1 环境变量
-- 根目录有仓库级模板：`.env.example`（用于快速理解必需变量）。
-- 实际运行请分别复制：
-  - `backend/.env.example -> backend/.env`
-  - `frontend/.env.example -> frontend/.env.development`
-
-### 5.2 数据库要求
-- PostgreSQL `>= 14`
-- 默认示例：
-  - host：`localhost`
-  - port：`5432`
-  - db：`moy`
-  - user/password：`postgres/postgres`
-- 后端启用 `migrationsRun: true`，启动时会自动执行 migration。
-
-### 5.3 启动命令
-```bash
-# 终端 1：后端
-cd backend
-npm install
-npm run start:dev
-
-# 终端 2：前端
-cd frontend
-npm install
-npm run dev
-```
-
-### 5.4 测试命令
-```bash
-# 后端单元测试
-cd backend
-npm test
-npm run test:cov
-
-# 前端单元测试
-cd frontend
-npm test
-npm run test:coverage
-```
-
-### 5.5 E2E 命令
-```bash
-cd frontend
-
-# 全量 E2E
-npm run test:e2e
-
-# 结果责任链专项 E2E
-npm run test:e2e:responsibility
-```
-
-### 5.6 默认访问地址
-- 前端：`http://localhost:5173`
-- 后端 API：`http://localhost:3001/api/v1`
-- Swagger：`http://localhost:3001/api/v1/docs`
-
-## 6. 文档阅读顺序（先读什么）
-1. `docs/SSOT/00_README_唯一执行入口.md`
-2. `docs/SSOT/01_产品范围与阶段地图.md`
-3. `docs/SSOT/02_业务域与模块树.md`
-4. `docs/SSOT/06_状态机总表.md`
-5. `docs/SSOT/08_API契约与Schema字典.md`
-6. `docs/SSOT/09_页面与交互规格.md`
-7. `docs/SSOT/12_测试_验收_部署与迁移.md`
-8. 涉及结果责任链时补读：`docs/SSOT/12B_结果责任链E2E验证设计与最小实现.md`
-
-## 7. AI 编程工具协作规则（Trae / 其他 AI 助手）
-
-### 进入仓库后先读
-- `docs/SSOT/00`、`01`、`02`
-- `backend/src/app.module.ts`
-- `frontend/src/App.tsx`
-
-### 不允许破坏
-- 不允许破坏模块码与命名体系（如 `QT/CT/ORD/PAY/SUB/DLV/CSM/DealChain`）。
-- 不允许建立“平行主链”（平行状态机、平行 API、平行模块树）。
-- 不允许绕开现有审批/事件/状态机边界直接写死状态。
-
-### 修改前必须检查
-- `docs/SSOT/01_产品范围与阶段地图.md`
-- `docs/SSOT/02_业务域与模块树.md`
-- `docs/SSOT/06_状态机总表.md`
-- `docs/SSOT/07_权限模型与AI边界.md`
-- `docs/SSOT/08_API契约与Schema字典.md`
-- `backend/src/app.module.ts`
-- `frontend/src/App.tsx`
-
-### 一致性要求（必须）
-- 文档、后端、前端必须同步更新。
-- 改动模块时，至少同步核对：路由/API、状态机、权限、测试。
-
-## 8. 当前已实现主干能力
-
-### 8.1 已接入 S1 基线模块
-- `AUTH / ORG / USR / CM / LM / OM / CNV / TK / TSK / NTF / CHN / AI / AUD / SYS`
-- `COR / CMEM / ART / APC / TKC / RBC`
-
-### 8.2 已推进的 S2 模块
-- `QT / CT / ORD / PAY / SUB / DLV / CSM / KB / DASH / AUTO / DealChain`
-- 前端已接入对应核心入口：`/quotes /contracts /orders /payments /subscriptions /deliveries /workbench/csm/health /knowledge /automation`
-
-### 8.3 当前缺口（工程事实）
-- S2 门禁仍需收口：端到端验收稳定性、指标归因与覆盖率治理、动作闭环完善。
-- 多模块仍处于 `workflow_ready/crud_ready`，尚未普遍达到 `production_ready`。
-- S3/S4 多数模块仍为骨架或待实现。
-
-## 9. 后续路线（仅工程事实）
-- 近期：完成 S2 门禁收口与责任链验收稳定化。
-- 中期：推进 S3 商业化闭环（PLAN/BILL/INV）与平台化扩展（INT/PLT）。
-- 远期：推进 S4 国际化/私有化/合规与规模化 AI 编排能力。
+**MOY** 是桐鸣科技旗下的企业 AI 增长与经营自动化平台。
 
 ---
-本 README 用于 5 分钟快速入场；最终裁决以 `docs/SSOT` 为准。
 
-## 10. S2 RC 持续验证（Gate 与 Smoke）
+## 产品矩阵
 
-### 10.1 本地执行
-```bash
-# S2 发布门禁（硬门禁）
-cd frontend
-npm run test:gate:s2
+### MOY App
+AI 原生客户经营系统。覆盖获客 → 沟通 → 成交 → 交付 → 验收 → 客户成功全链路。
+本仓库 `frontend/` 与 `backend/` 即为主体系统。
 
-# 仅跑 advanced acceptance（Chromium）
-npm run test:gate:s2:advanced
+- 域名：[app.moy.com](https://app.moy.com)
+- 本地开发端口：`5173`（前端）/ `3001`（后端）
 
-# 仅跑结果责任链
-npm run test:gate:s2:responsibility
+### MOY GEO
+AI 搜索增长与品牌可见度服务。帮助企业在 ChatGPT、豆包、Kimi 等 AI 搜索/问答环境中被看见、被理解、被推荐。
 
-# 迁移与测试支撑烟测
-npm run test:smoke:migration
-npm run test:smoke:test-support
+- 域名：[geo.moy.com](https://geo.moy.com)
+- 本地开发端口：`5176`
+- 交付文档：[docs/GEO/](./docs/GEO/00_GEO服务总览.md)
+
+### MOY API
+多模型 API 网关与开发者平台。提供 OpenAI 兼容接口，统一接入多个大语言模型供应商，附带调用治理、用量管控和成本归集能力。
+
+- 域名：[api.moy.com](https://api.moy.com)
+- 本地开发端口：`5177`
+- 技术文档：[docs/API_HUB/](./docs/API_HUB/00_MOY_API产品总览.md)
+
+### MOY Official
+品牌官网与产品矩阵入口。
+
+- 域名：[moy.com](https://moy.com)
+- 本地开发端口：`5175`
+
+---
+
+## 仓库结构
+
+```
+MOY/
+├── backend/          MOY App 后端 / Core API（NestJS + TypeScript）
+├── frontend/         MOY App 前端（React + Vite）
+├── sites/
+│   ├── official/     moy.com 品牌官网
+│   ├── geo/          geo.moy.com GEO 服务站
+│   └── api/          api.moy.com API 开发者平台
+├── docs/
+│   ├── SSOT/         单一事实源文档体系
+│   ├── GEO/          GEO 服务化交付文档
+│   └── API_HUB/      MOY API 技术设计文档
+├── .trae/            IDE 规则与项目配置
+└── DEVELOPMENT.md    开发补充说明
 ```
 
-### 10.2 Playwright 浏览器入口
+---
+
+## 当前阶段
+
+- MOY App：S2 主干已落地，推进门禁收口与责任链验收稳定化
+- 品牌架构：产品矩阵与多站点边界已定义，官方/CEO/API 三个前台入口已建立
+- MOY GEO：先以服务化方式交付，不急于产品化
+- MOY API：先做轻量 MVP（OpenAI 兼容转发 + Key 管理 + 用量管控）
+- 原则上：不推倒重写 MOY App，各产品线独立演进
+
+---
+
+## 本地开发
+
+### 环境准备
+
+- Node.js >= 18，PostgreSQL >= 14
+- 根目录 `.env.example` 供参考；实际运行需分别复制到各子目录
+
+### MOY App 后端
+
+```bash
+cd backend
+npm install
+npm run start:dev     # http://localhost:3001
+```
+
+### MOY App 前端
+
 ```bash
 cd frontend
-
-# 按浏览器执行
-npm run test:e2e:chromium
-npm run test:e2e:firefox
-npm run test:e2e:webkit
-
-# 安装浏览器二进制
-npm run pw:install:chromium
-npm run pw:install:firefox
-npm run pw:install:webkit
+npm install
+npm run dev           # http://localhost:5173
 ```
-说明：`frontend/scripts/run-playwright-project.mjs` 会在执行前检查浏览器二进制是否存在；缺失时会直接提示安装命令，避免把环境问题误判为测试失败。
 
-### 10.3 CI 与夜间作业
-- `S2 Gate`：`.github/workflows/s2-gate.yml`
-  - 运行 `test:gate:s2`，用于 PR / 发布门禁。
-- `Nightly Smoke`：`.github/workflows/nightly-smoke.yml`
-  - 每日运行 `test:smoke:migration` + `test:smoke:test-support`，用于持续回归监控。
+### MOY Official
 
-### 10.4 Gate 与 Smoke 口径
-- Gate：发布前必须通过。
-- Smoke：持续健康检查，不替代 gate。
+```bash
+cd sites/official
+npm install
+npm run dev           # http://localhost:5175
+```
+
+### MOY GEO
+
+```bash
+cd sites/geo
+npm install
+npm run dev           # http://localhost:5176
+```
+
+### MOY API
+
+```bash
+cd sites/api
+npm install
+npm run dev           # http://localhost:5177
+```
+
+### 测试
+
+```bash
+# 后端
+cd backend && npm test
+
+# 前端
+cd frontend && npm test
+```
+
+---
+
+## 文档入口
+
+| 入口 | 说明 |
+| --- | --- |
+| [docs/SSOT/00](./docs/SSOT/00_README_唯一执行入口.md) | 开发唯一执行入口 |
+| [docs/SSOT/14](./docs/SSOT/14_品牌架构与多站点边界.md) | 品牌架构、产品线拆分与工程路线 |
+| [docs/GEO/00](./docs/GEO/00_GEO服务总览.md) | GEO 服务总览与交付文档导航 |
+| [docs/API_HUB/00](./docs/API_HUB/00_MOY_API产品总览.md) | MOY API 产品总览与技术设计 |
+
+---
+
+## 命名规则
+
+- **MOY** 是母品牌，不代表某个单一产品
+- **MOY App** 是当前客户经营业务系统——不要再把"MOY App"等同于"全部 MOY"
+- **MOY GEO** 和 **MOY API** 是独立产品线，不默认进入 MOY App 主菜单或路由
+- 各产品线有独立的域名、前台入口和文档体系

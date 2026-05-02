@@ -355,7 +355,7 @@ export default function Layout() {
             borderBottom: "1px solid #f0f0f0",
           }}
         >
-          <h1 style={{ margin: 0, fontSize: 20, color: "#1677ff" }}>MOY</h1>
+          <h1 style={{ margin: 0, fontSize: 20, color: "#1677ff" }}>MOY App</h1>
         </div>
         <Menu
           mode="inline"

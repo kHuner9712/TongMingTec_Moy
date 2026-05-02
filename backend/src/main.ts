@@ -1,6 +1,10 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
-import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common";
+import {
+  BadRequestException,
+  ValidationError,
+  ValidationPipe,
+} from "@nestjs/common";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module";
 import { StateMachineErrorFilter } from "./common/filters/state-machine-error.filter";
@@ -18,7 +22,9 @@ function flattenValidationErrors(
   const issues: ValidationIssue[] = [];
 
   for (const error of errors) {
-    const field = parentPath ? `${parentPath}.${error.property}` : error.property;
+    const field = parentPath
+      ? `${parentPath}.${error.property}`
+      : error.property;
     const messages = error.constraints ? Object.values(error.constraints) : [];
 
     if (messages.length > 0) {
@@ -35,11 +41,9 @@ function flattenValidationErrors(
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const corsOrigins =
-    process.env.CORS_ORIGINS
-      ?.split(",")
-      .map((origin) => origin.trim())
-      .filter(Boolean) || ["http://localhost:3000", "http://localhost:5173"];
+  const corsOrigins = process.env.CORS_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) || ["http://localhost:3000", "http://localhost:5173"];
 
   app.setGlobalPrefix("api/v1");
 
@@ -71,13 +75,20 @@ async function bootstrap() {
     origin: corsOrigins,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Org-Id", "X-Request-Id"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Org-Id",
+      "X-Request-Id",
+    ],
     exposedHeaders: ["X-Request-Id"],
   });
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle("MOY OpenAPI")
-    .setDescription("MOY enterprise AI-native system API documentation")
+    .setTitle("MOY App OpenAPI")
+    .setDescription(
+      "MOY App enterprise AI-native customer operating system API documentation",
+    )
     .setVersion("1.0.0")
     .addBearerAuth()
     .build();
@@ -98,7 +109,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3001;
   await app.listen(port);
   // eslint-disable-next-line no-console
-  console.log(`MOY Backend running on port ${port}, docs: /api/v1/docs`);
+  console.log(`MOY App Backend running on port ${port}, docs: /api/v1/docs`);
 }
 
 bootstrap();

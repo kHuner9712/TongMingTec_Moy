@@ -1,7 +1,7 @@
 {
   "name": "moy-frontend",
   "version": "1.0.0",
-  "description": "MOY - AI Native Customer Management System Frontend",
+  "description": "MOY App - AI Native Customer Operating System Frontend",
   "type": "module",
   "scripts": {
     "dev": "vite",

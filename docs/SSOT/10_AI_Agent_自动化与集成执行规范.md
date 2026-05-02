@@ -1,8 +1,8 @@
-# MOY AI / Agent / 自动化 / 集成执行规范
+# MOY App AI / Agent / 自动化 / 集成执行规范
 
 ## 1. 文档定位
 
-本文档是 MOY 唯一的 AI、Agent、自动化和集成执行规范，统一收口：
+本文档是 MOY App 唯一的 AI、Agent、自动化和集成执行规范，统一收口：
 
 - Agent registry
 - capability contract
