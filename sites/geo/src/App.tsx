@@ -225,6 +225,9 @@ export default function App() {
           <h2 style={{ ...h2, marginBottom: 12 }}>让我们了解你的品牌</h2>
           <p style={{ ...body, marginBottom: 40 }}>提交信息后，GEO 团队将在 1 个工作日内联系你，进行需求对齐和下一步安排。</p>
           <LeadForm />
+          <p style={{ ...small, textAlign: "center", marginTop: 20, color: C.gray, lineHeight: 1.6 }}>
+            提交信息仅用于 MOY GEO 诊断沟通与服务跟进，不会公开展示。正式隐私政策上线前，如需删除或更正信息，请联系 MOY 团队。
+          </p>
         </div>
       </section>
 

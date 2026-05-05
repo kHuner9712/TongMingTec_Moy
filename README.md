@@ -89,6 +89,16 @@ npm run test             # 运行全部测试
 npm run test:smoke:geo-leads  # GEO 线索收集 Smoke Test
 ```
 
+### 数据库迁移
+
+```bash
+# 生产部署后运行 migration（创建 geo_leads 等新表）
+cd backend && npm run migration:run
+
+# 注意：迁移前请备份数据库，迁移失败不要继续部署
+# geo_leads 表由 migration 创建，不依赖 synchronize
+```
+
 ### 子项目独立启动
 
 ```bash
