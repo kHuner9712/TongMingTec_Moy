@@ -18,6 +18,8 @@ function getBaseUrl(): string {
   return import.meta.env.VITE_GEO_ADMIN_API_BASE_URL || "http://localhost:3001/api/v1";
 }
 
+export { getBaseUrl };
+
 function headers(): Record<string, string> {
   const token = getToken();
   return {

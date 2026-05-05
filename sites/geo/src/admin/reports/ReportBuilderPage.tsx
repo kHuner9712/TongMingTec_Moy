@@ -7,6 +7,7 @@ import MarkdownPreview from "./components/MarkdownPreview";
 import { generateMarkdown } from "./reportMarkdown";
 import { saveDraft, loadDraft, clearDraft } from "./reportStorage";
 import { CustomerInfo, DiagnosisScope, TestRecord, Summary, ReportDraft } from "./reportTypes";
+import { createReport, updateReport, fetchReportById } from "./geoReportsApi";
 import { C, sans } from "../../styles";
 import { getToken } from "../geoAdminApi";
 
@@ -30,50 +31,164 @@ export default function ReportBuilderPage() {
   const [markdown, setMarkdown] = useState("");
   const [copied, setCopied] = useState(false);
   const [leadMsg, setLeadMsg] = useState("");
+  const [reportId, setReportId] = useState<string | null>(null);
+  const [leadId, setLeadId] = useState<string | null>(null);
+  const [saveMsg, setSaveMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rid = params.get("reportId");
+    const lid = params.get("leadId");
+    if (lid) setLeadId(lid);
+
+    if (rid) {
+      setLoading(true);
+      fetchReportById(rid)
+        .then((r) => {
+          setReportId(r.id);
+          if (r.leadId) setLeadId(r.leadId);
+          setCustomerInfo({
+            companyName: r.companyName || "",
+            brandName: r.brandName || "",
+            website: r.website || "",
+            industry: r.industry || "",
+            targetCity: r.targetCity || "",
+            contactName: r.contactName || "",
+          });
+          setScope({
+            diagnosisDate: r.diagnosisDate || new Date().toISOString().slice(0, 10),
+            platforms: (r.platforms || []) as any[],
+            competitors: r.competitors || "",
+            targetQuestions: r.targetQuestions || "",
+          });
+          setTestRecords((r.testResults || []) as TestRecord[]);
+          setSummary({
+            visibilitySummary: r.visibilitySummary || "",
+            mainProblems: r.mainProblems || "",
+            opportunities: r.opportunities || "",
+            recommendedActions: r.recommendedActions || "",
+          });
+          setMarkdown(r.markdown || "");
+          setLeadMsg(r.leadId ? `已加载报告 ${r.id}` : `已加载报告`);
+        })
+        .catch(() => {
+          setLeadMsg("无法加载报告，请检查报告 ID 是否正确");
+        })
+        .finally(() => setLoading(false));
+    } else if (lid) {
+      const token = getToken();
+      if (!token) {
+        setLeadMsg("无法自动读取 lead（未登录），请手动填写客户信息。");
+        return;
+      }
+
+      const baseUrl = import.meta.env.VITE_GEO_ADMIN_API_BASE_URL || "http://localhost:3001/api/v1";
+      fetch(`${baseUrl}/geo-leads/${lid}`, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("读取失败");
+          return res.json();
+        })
+        .then((lead) => {
+          setCustomerInfo({
+            companyName: lead.companyName || "",
+            brandName: lead.brandName || "",
+            website: lead.website || "",
+            industry: lead.industry || "",
+            targetCity: lead.targetCity || "",
+            contactName: lead.contactName || "",
+          });
+          setLeadMsg(`已从线索 ${lid} 带入客户信息`);
+        })
+        .catch(() => {
+          setLeadMsg("无法自动读取 lead，请手动填写客户信息。");
+        });
+    }
+  }, []);
 
   const draft: ReportDraft = { customerInfo, scope, testRecords, summary };
 
-  // try load lead data
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const leadId = params.get("leadId");
-    if (!leadId) return;
-
-    const token = getToken();
-    if (!token) {
-      setLeadMsg("无法自动读取 lead（未登录），请手动填写客户信息。");
-      return;
-    }
-
-    const baseUrl = import.meta.env.VITE_GEO_ADMIN_API_BASE_URL || "http://localhost:3001/api/v1";
-    fetch(`${baseUrl}/geo-leads/${leadId}`, {
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("读取失败");
-        return res.json();
-      })
-      .then((lead) => {
-        const info: CustomerInfo = {
-          companyName: lead.companyName || "",
-          brandName: lead.brandName || "",
-          website: lead.website || "",
-          industry: lead.industry || "",
-          targetCity: lead.targetCity || "",
-          contactName: lead.contactName || "",
-        };
-        setCustomerInfo(info);
-        setLeadMsg(`已从线索 ${leadId} 带入客户信息`);
-      })
-      .catch(() => {
-        setLeadMsg("无法自动读取 lead，请手动填写客户信息。");
-      });
-  }, []);
+  const currentMarkdown = useCallback(() => {
+    return generateMarkdown(draft);
+  }, [draft]);
 
   const handleGenerate = useCallback(() => {
-    const md = generateMarkdown(draft);
+    const md = currentMarkdown();
     setMarkdown(md);
-  }, [draft]);
+  }, [currentMarkdown]);
+
+  const buildPayload = useCallback(() => {
+    const md = markdown || currentMarkdown();
+    return {
+      leadId: leadId || undefined,
+      title: `${customerInfo.brandName} AI 可见度诊断报告`,
+      companyName: customerInfo.companyName,
+      brandName: customerInfo.brandName,
+      website: customerInfo.website,
+      industry: customerInfo.industry,
+      targetCity: customerInfo.targetCity || undefined,
+      contactName: customerInfo.contactName || undefined,
+      diagnosisDate: scope.diagnosisDate,
+      platforms: scope.platforms,
+      competitors: scope.competitors,
+      targetQuestions: scope.targetQuestions,
+      testResults: testRecords as any[],
+      visibilitySummary: summary.visibilitySummary,
+      mainProblems: summary.mainProblems,
+      opportunities: summary.opportunities,
+      recommendedActions: summary.recommendedActions,
+      markdown: md,
+    };
+  }, [customerInfo, scope, testRecords, summary, markdown, leadId, currentMarkdown]);
+
+  const handleSaveToBackend = async () => {
+    if (!getToken()) {
+      alert("需要管理员 Token 才能保存到后端。请在 Leads 管理页面输入 Token。");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = buildPayload();
+      if (reportId) {
+        await updateReport(reportId, payload);
+        setSaveMsg("报告已保存");
+      } else {
+        const created = await createReport(payload);
+        setReportId(created.id);
+        setSaveMsg("报告已保存");
+        const url = new URL(window.location.href);
+        url.searchParams.set("reportId", created.id);
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch (e: any) {
+      setSaveMsg(`保存失败: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveAsNew = async () => {
+    if (!getToken()) {
+      alert("需要管理员 Token 才能保存到后端。请在 Leads 管理页面输入 Token。");
+      return;
+    }
+    setLoading(true);
+    try {
+      const payload = buildPayload();
+      const created = await createReport(payload);
+      setReportId(created.id);
+      setSaveMsg("已另存为新报告");
+      const url = new URL(window.location.href);
+      url.searchParams.set("reportId", created.id);
+      window.history.replaceState({}, "", url.toString());
+    } catch (e: any) {
+      setSaveMsg(`保存失败: ${e.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCopy = async () => {
     try {
@@ -81,7 +196,6 @@ export default function ReportBuilderPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback
       const ta = document.createElement("textarea");
       ta.value = markdown;
       document.body.appendChild(ta);
@@ -110,6 +224,7 @@ export default function ReportBuilderPage() {
     setTestRecords([]);
     setSummary(emptySummary());
     setMarkdown("");
+    setReportId(null);
     clearDraft();
   };
 
@@ -130,6 +245,14 @@ export default function ReportBuilderPage() {
     alert("草稿已恢复");
   };
 
+  if (loading) {
+    return (
+      <div style={{ fontFamily: sans, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: C.gray, fontSize: 16 }}>
+        加载中...
+      </div>
+    );
+  }
+
   return (
     <div style={{ fontFamily: sans, color: C.dark, background: C.bg, minHeight: "100vh" }}>
       <nav style={{
@@ -142,7 +265,9 @@ export default function ReportBuilderPage() {
           </a>
           <span style={{ fontSize: 13, color: "#8a9aaa" }}>/</span>
           <a href="/admin/leads" style={{ fontSize: 13, color: C.blue, textDecoration: "none", fontWeight: 600 }}>Leads</a>
-          <span style={{ fontSize: 13, color: "#8a9aaa", fontFamily: "monospace" }}>Reports</span>
+          <span style={{ fontSize: 13, color: "#8a9aaa" }}>/</span>
+          <a href="/admin/reports" style={{ fontSize: 13, color: C.blue, textDecoration: "none", fontWeight: 600 }}>Reports</a>
+          <span style={{ fontSize: 13, color: "#8a9aaa", fontFamily: "monospace" }}>{reportId ? "编辑" : "新建"}</span>
         </div>
         <a href="/" style={{ fontSize: 13, color: C.blue, textDecoration: "none", fontWeight: 600 }}>← 返回官网</a>
       </nav>
@@ -156,15 +281,29 @@ export default function ReportBuilderPage() {
             </p>
           </div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={handleSaveDraft} style={actionBtn}>保存草稿</button>
+            <button onClick={handleSaveDraft} style={actionBtn}>本地草稿</button>
             <button onClick={handleLoadDraft} style={actionBtn}>恢复草稿</button>
             <button onClick={handleGenerate} style={{ ...actionBtn, background: "#0055cc", color: "#fff", borderColor: "#0055cc" }}>生成报告</button>
+            <button onClick={handleSaveToBackend} style={{ ...actionBtn, background: "#0f7b3a", color: "#fff", borderColor: "#0f7b3a" }} disabled={loading}>
+              {reportId ? "更新到后端" : "保存到后端"}
+            </button>
+            {reportId && (
+              <button onClick={handleSaveAsNew} style={{ ...actionBtn, background: "#0f7b3a", color: "#fff", borderColor: "#0f7b3a" }} disabled={loading}>
+                另存为新报告
+              </button>
+            )}
             <button onClick={handleClear} style={{ ...actionBtn, color: "#c62828", borderColor: "#ef9a9a" }}>清空</button>
           </div>
         </div>
 
+        {saveMsg && (
+          <div style={{ marginBottom: 8, padding: "10px 14px", background: saveMsg.includes("失败") ? "#fff6ea" : "#e6f4ea", borderRadius: 6, fontSize: 13, color: saveMsg.includes("失败") ? "#b85c00" : "#0f7b3a" }}>
+            {saveMsg}
+          </div>
+        )}
+
         {leadMsg && (
-          <div style={{ marginBottom: 16, padding: "10px 14px", background: leadMsg.startsWith("已从") ? "#e6f4ea" : "#fff6ea", borderRadius: 6, fontSize: 13, color: leadMsg.startsWith("已从") ? "#0f7b3a" : "#b85c00" }}>
+          <div style={{ marginBottom: 16, padding: "10px 14px", background: leadMsg.startsWith("已从") || leadMsg.startsWith("已加载") ? "#e6f4ea" : "#fff6ea", borderRadius: 6, fontSize: 13, color: leadMsg.startsWith("已从") || leadMsg.startsWith("已加载") ? "#0f7b3a" : "#b85c00" }}>
             {leadMsg}
           </div>
         )}

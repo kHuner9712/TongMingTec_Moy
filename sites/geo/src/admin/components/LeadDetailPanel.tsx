@@ -108,6 +108,28 @@ export default function LeadDetailPanel({ leadId, onClose, onUpdated }: Props) {
               </div>
             </div>
 
+            <div style={{ marginBottom: 20 }}>
+              <div style={sectionLabel}>快捷操作</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <a href={`/admin/reports/new?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#e6f0ff", color: "#0055cc", border: "1px solid #b3d4ff" }}>
+                  + 新建诊断报告
+                </a>
+                <a href={`/admin/brand-assets/new?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#e6f4ea", color: "#0f7b3a", border: "1px solid #b3e0c0" }}>
+                  + 新建品牌事实资产包
+                </a>
+                <a href={`/admin/reports?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
+                  查看关联报告
+                </a>
+                <a href={`/admin/brand-assets?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
+                  查看关联资产包
+                </a>
+              </div>
+            </div>
+
             {lead.notes && (
               <div style={{ marginBottom: 20 }}>
                 <div style={sectionLabel}>备注</div>

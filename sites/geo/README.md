@@ -107,6 +107,8 @@ src/
 │   └── DevSubmissionsPanel.tsx    # 开发调试面板（仅 dev 可见）
 └── admin/
     ├── AdminLeadsPage.tsx         # 内部线索运营后台
+    ├── ReportsListPage.tsx        # 诊断报告列表页
+    ├── BrandAssetsListPage.tsx    # 品牌资产包列表页
     ├── adminTypes.ts              # 管理台类型定义
     ├── geoAdminApi.ts             # 管理接口调用封装
     ├── reports/
@@ -114,6 +116,7 @@ src/
     │   ├── reportTypes.ts         # 报告类型定义
     │   ├── reportStorage.ts       # localStorage 草稿读写
     │   ├── reportMarkdown.ts      # Markdown 报告生成
+    │   ├── geoReportsApi.ts       # 报告后端 API
     │   └── components/
     │       ├── CustomerInfoForm.tsx   # 客户信息表单
     │       ├── DiagnosisScopeForm.tsx # 诊断范围表单
@@ -125,6 +128,7 @@ src/
     │   ├── brandAssetTypes.ts         # 资产包类型定义
     │   ├── brandAssetStorage.ts       # localStorage 草稿读写
     │   ├── brandAssetMarkdown.ts      # Markdown 资产包生成
+    │   ├── geoBrandAssetsApi.ts       # 资产包后端 API
     │   └── components/
     │       ├── BasicInfoForm.tsx          # 基础信息表单
     │       ├── IntroForm.tsx              # 标准介绍表单
@@ -308,6 +312,50 @@ cd sites/geo && npm run dev             # http://localhost:5176
 # http://localhost:5176/admin/brand-assets/new
 # http://localhost:5176/admin/brand-assets/new?leadId=1
 ```
+
+## 后端持久化
+
+诊断报告和品牌资产包支持保存到后端数据库。
+
+### 报告管理接口 `GET/POST /api/v1/geo-reports`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/v1/geo-reports | 列表（?leadId=&status=&keyword=&page=&pageSize=） |
+| POST | /api/v1/geo-reports | 创建 |
+| GET | /api/v1/geo-reports/:id | 详情 |
+| PATCH | /api/v1/geo-reports/:id | 更新内容 |
+| PATCH | /api/v1/geo-reports/:id/status | 更新状态（draft/ready/delivered/archived） |
+| DELETE | /api/v1/geo-reports/:id | 归档 |
+
+### 资产包管理接口 `GET/POST /api/v1/geo-brand-assets`
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/v1/geo-brand-assets | 列表（?leadId=&status=&keyword=&page=&pageSize=） |
+| POST | /api/v1/geo-brand-assets | 创建 |
+| GET | /api/v1/geo-brand-assets/:id | 详情 |
+| PATCH | /api/v1/geo-brand-assets/:id | 更新内容 |
+| PATCH | /api/v1/geo-brand-assets/:id/status | 更新状态（draft/ready/reviewed/delivered/archived） |
+| DELETE | /api/v1/geo-brand-assets/:id | 归档 |
+
+### 管理后台页面
+
+| 路径 | 页面 | 说明 |
+|------|------|------|
+| `/admin/reports` | 报告列表 | 筛选/搜索/分页，点击跳转编辑 |
+| `/admin/reports/new` | 报告编辑 | ?reportId= 加载已有, ?leadId= 带入线索 |
+| `/admin/brand-assets` | 资产包列表 | 筛选/搜索/分页，点击跳转编辑 |
+| `/admin/brand-assets/new` | 资产包编辑 | ?assetId= 加载已有, ?leadId= 带入线索 |
+| `/admin/leads` | 线索管理 | 详情抽屉含快捷入口 |
+
+### 快捷入口
+
+线索详情抽屉 → 快捷操作：
+- + 新建诊断报告
+- + 新建品牌事实资产包
+- 查看关联报告
+- 查看关联资产包
 
 ## 后续计划
 
