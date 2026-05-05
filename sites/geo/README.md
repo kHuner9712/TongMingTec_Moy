@@ -21,32 +21,60 @@ npm run build      # tsc --noEmit && vite build → dist/
 
 ## 当前状态
 
-**可交付线索收集 MVP**。表单已升级为可真实收集客户诊断信息的交互组件：
+**可部署运营版本**。表单提交已接入真实后端 `POST /api/geo/leads`。
 
 - 9 个字段（公司名称、品牌名称、官网、行业、目标城市、主要竞品、联系人、手机/微信、备注）
 - 前端校验（必填字段、URL 格式）
-- **默认存储：localStorage**（`moy_geo_submissions` key）
-- **开发环境**：右下角有「Debug: 提交记录」按钮，可查看所有 localStorage 中的提交
+- 后端反垃圾（honeypot、website 校验、contactMethod 24h 频率限制）
 
 ## 表单存储方案
 
-### 默认：localStorage
+### 接入真实后端（推荐）
 
-表单提交后写入 `localStorage` key `moy_geo_submissions`，包含全部字段 + `submittedAt` 时间戳。
-
-### 接入真实接口
-
-在项目根目录创建 `.env` 文件或设置环境变量：
+复制 `.env.example` 为 `.env`：
 
 ```bash
-VITE_GEO_LEAD_ENDPOINT=https://your-api.com/api/geo/leads
+cp .env.example .env
 ```
 
-设置后，表单提交将自动 POST 到该 endpoint（JSON body 格式与 LeadSubmission 一致），不再写入 localStorage。
+内容：
 
-也可修改 `src/config.ts` 直接硬编码 endpoint。
+```env
+VITE_GEO_LEAD_ENDPOINT=http://localhost:3001/api/geo/leads
+```
 
-### 数据结构
+设置后，表单提交将 POST 到后端接口，写入 `geo_leads` 表。
+
+### 生产环境建议
+
+```env
+VITE_GEO_LEAD_ENDPOINT=https://api.app.moy.com/api/geo/leads
+```
+
+> 注意：不要使用 `api.moy.com`，那是 MOY API 开发者平台。
+
+### 本地调试：fallback 到 localStorage
+
+如果 `VITE_GEO_LEAD_ENDPOINT` 为空（默认），表单提交写入 `localStorage` key `moy_geo_submissions`。
+
+开发环境右下角有「Debug: 提交记录」按钮，可查看 localStorage 中的提交。
+
+## 本地联调后端步骤
+
+```bash
+# 1. 启动后端（确保 PostgreSQL 已运行）
+cd backend && npm run start:dev    # http://localhost:3001
+
+# 2. 配置 GEO 前端环境变量
+echo "VITE_GEO_LEAD_ENDPOINT=http://localhost:3001/api/geo/leads" > sites/geo/.env
+
+# 3. 启动 GEO 前端
+cd sites/geo && npm run dev        # http://localhost:5176
+
+# 4. 打开 http://localhost:5176 填写表单并提交
+```
+
+## 数据结构
 
 每次提交的 JSON 格式：
 
@@ -79,8 +107,16 @@ src/
     └── DevSubmissionsPanel.tsx    # 开发调试面板（仅 dev 可见）
 ```
 
+## 相关后台接口
+
+| 接口 | 说明 |
+|------|------|
+| `POST /api/geo/leads` | 公开表单提交 |
+| `GET /api/v1/geo-leads` | 管理端：线索列表（需 JWT） |
+| `GET /api/v1/geo-leads/:id` | 管理端：线索详情（需 JWT） |
+| `PATCH /api/v1/geo-leads/:id/status` | 管理端：状态流转（需 JWT） |
+
 ## 后续计划
 
-- S2：接入真实诊断表单 → 后台 CRM / 独立 GEO backend
 - S3：客户登录后台、诊断报告在线查看
 - S4：在线支付、服务订阅管理

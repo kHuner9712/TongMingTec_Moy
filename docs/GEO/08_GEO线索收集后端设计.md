@@ -4,7 +4,7 @@
 
 本文档定义 geo.moy.com「获取 AI 可见度诊断」表单的后端接口、数据模型、风控策略和与 MOY App 的边界。供后端开发和接口联调参考。
 
-**注意：本文档仅作设计，暂不实现代码。**
+**实现状态**：基础 MVP 已实现（2026-05），并已升级到可部署运营版本。实现文件位于 `backend/src/modules/geo-leads/`。
 
 ## 2. 背景
 
@@ -17,12 +17,12 @@
 
 ### 2.2 为什么需要独立后端
 
-| 原因 | 说明 |
-| --- | --- |
-| localStorage 不可靠 | 客户端存储易丢失，无法跨设备同步，无法团队协作 |
-| 正式服务化交付需要 | 线索需要流转（received → contacted → qualified → won），需要通知和分配 |
-| 不应污染 MOY App | GEO 线索是独立业务线，不应直接写入 MOY App 客户表或 leads 表 |
-| 独立演进 | GEO backend 未来可能有自己的业务逻辑、计费、客户门户 |
+| 原因                | 说明                                                                   |
+| ------------------- | ---------------------------------------------------------------------- |
+| localStorage 不可靠 | 客户端存储易丢失，无法跨设备同步，无法团队协作                         |
+| 正式服务化交付需要  | 线索需要流转（received → contacted → qualified → won），需要通知和分配 |
+| 不应污染 MOY App    | GEO 线索是独立业务线，不应直接写入 MOY App 客户表或 leads 表           |
+| 独立演进            | GEO backend 未来可能有自己的业务逻辑、计费、客户门户                   |
 
 ### 2.3 设计原则
 
@@ -41,19 +41,19 @@ POST /api/geo/leads
 
 **请求体 (JSON)**
 
-| 字段 | 类型 | 必填 | 说明 |
-| --- | --- | --- | --- |
-| companyName | string | 是 | 公司名称 |
-| brandName | string | 是 | 品牌名称 |
-| website | string | 是 | 官网 URL |
-| industry | string | 是 | 行业分类 |
-| targetCity | string | 否 | 目标城市 |
-| competitors | string | 否 | 主要竞品（逗号分隔或自由文本） |
-| contactName | string | 是 | 联系人姓名 |
-| contactMethod | string | 是 | 手机号或微信号 |
-| notes | string | 否 | 备注信息 |
-| source | string | 否 | 来源标识，默认 `geo_website_form` |
-| submittedAt | string | 否 | 客户端提交时间 ISO 8601，服务端同时记录 `created_at` |
+| 字段          | 类型   | 必填 | 说明                                                 |
+| ------------- | ------ | ---- | ---------------------------------------------------- |
+| companyName   | string | 是   | 公司名称                                             |
+| brandName     | string | 是   | 品牌名称                                             |
+| website       | string | 是   | 官网 URL                                             |
+| industry      | string | 是   | 行业分类                                             |
+| targetCity    | string | 否   | 目标城市                                             |
+| competitors   | string | 否   | 主要竞品（逗号分隔或自由文本）                       |
+| contactName   | string | 是   | 联系人姓名                                           |
+| contactMethod | string | 是   | 手机号或微信号                                       |
+| notes         | string | 否   | 备注信息                                             |
+| source        | string | 否   | 来源标识，默认 `geo_website_form`                    |
+| submittedAt   | string | 否   | 客户端提交时间 ISO 8601，服务端同时记录 `created_at` |
 
 **响应 (201 Created)**
 
@@ -85,31 +85,57 @@ POST /api/geo/leads
 }
 ```
 
-### 3.2 查询线索列表（后期）
+### 3.2 查询线索列表（管理接口，需 JWT 认证）
 
 ```
-GET /api/geo/leads?status=received&page=1&pageSize=20
+GET /api/v1/geo-leads?status=received&keyword=xxx&page=1&pageSize=20
 ```
 
-需要认证，MVP 阶段通过 API Key 或 JWT 鉴权。
+返回分页结构：
 
-### 3.3 更新线索状态（后期）
-
-```
-PATCH /api/geo/leads/:id
-```
-
-```
+```json
 {
-  "status": "contacted",
-  "assignedTo": "user_xxx",
-  "notes": "已致电客户，约定周四下午 3 点诊断沟通。"
+  "data": [...],
+  "pagination": { "page": 1, "pageSize": 20, "total": 100 }
 }
 ```
+
+- `status` 可选，过滤状态
+- `keyword` 可选，匹配 companyName / brandName / website / contactMethod
+
+### 3.3 查询单条线索（管理接口，需 JWT 认证）
+
+```
+GET /api/v1/geo-leads/:id
+```
+
+### 3.4 更新线索状态（管理接口，需 JWT 认证）
+
+```
+PATCH /api/v1/geo-leads/:id/status
+```
+
+### 3.5 状态流转规则
+
+| 从            | 允许到                        |
+| ------------- | ----------------------------- |
+| received      | contacted, lost, archived     |
+| contacted     | qualified, lost, archived     |
+| qualified     | proposal_sent, lost, archived |
+| proposal_sent | won, lost, archived           |
+| won           | —（终态）                     |
+| lost          | archived                      |
+| archived      | —（终态）                     |
+
+非法流转返回 400，错误码 `INVALID_TRANSITION`。
 
 ## 4. 数据表设计
 
 ### 4.1 表名：`geo_leads`
+
+TypeORM migration 已实现：`backend/src/migrations/1714100000000-CreateGeoLeads.ts`
+
+建表 DDL（供参考）：
 
 ```sql
 CREATE TABLE geo_leads (
@@ -146,57 +172,57 @@ CREATE INDEX idx_geo_leads_contact ON geo_leads(contact_method);
 
 ### 4.2 字段说明
 
-| 字段 | 类型 | 说明 |
-| --- | --- | --- |
-| id | UUID | 主键，格式 `geo_lead_` + 短 UUID（前端展示用） |
-| company_name | VARCHAR(200) | |
-| brand_name | VARCHAR(200) | |
-| website | VARCHAR(500) | 经过校验的 URL |
-| industry | VARCHAR(100) | |
-| target_city | VARCHAR(100) | 可空 |
-| competitors | TEXT | 可空 |
-| contact_name | VARCHAR(100) | |
-| contact_method | VARCHAR(100) | 手机号或微信号 |
-| notes | TEXT | 可空 |
-| source | VARCHAR(50) | 来源，默认 `geo_website_form` |
-| status | VARCHAR(20) | 见 §4.3 |
-| assigned_to | UUID | 分配给哪位 GEO 顾问 |
-| first_contacted_at | TIMESTAMPTZ | 首次联系客户的时间 |
-| converted_to_customer_id | VARCHAR(100) | 若转为 MOY App 客户，记录 App 侧 ID |
-| ip_address | VARCHAR(45) | 提交 IP（风控用） |
-| user_agent | TEXT | 浏览器 UA（风控用） |
-| created_at | TIMESTAMPTZ | 服务端接收时间 |
-| updated_at | TIMESTAMPTZ | 最后更新时间 |
+| 字段                     | 类型         | 说明                                           |
+| ------------------------ | ------------ | ---------------------------------------------- |
+| id                       | UUID         | 主键，格式 `geo_lead_` + 短 UUID（前端展示用） |
+| company_name             | VARCHAR(200) |                                                |
+| brand_name               | VARCHAR(200) |                                                |
+| website                  | VARCHAR(500) | 经过校验的 URL                                 |
+| industry                 | VARCHAR(100) |                                                |
+| target_city              | VARCHAR(100) | 可空                                           |
+| competitors              | TEXT         | 可空                                           |
+| contact_name             | VARCHAR(100) |                                                |
+| contact_method           | VARCHAR(100) | 手机号或微信号                                 |
+| notes                    | TEXT         | 可空                                           |
+| source                   | VARCHAR(50)  | 来源，默认 `geo_website_form`                  |
+| status                   | VARCHAR(20)  | 见 §4.3                                        |
+| assigned_to              | UUID         | 分配给哪位 GEO 顾问                            |
+| first_contacted_at       | TIMESTAMPTZ  | 首次联系客户的时间                             |
+| converted_to_customer_id | VARCHAR(100) | 若转为 MOY App 客户，记录 App 侧 ID            |
+| ip_address               | VARCHAR(45)  | 提交 IP（风控用）                              |
+| user_agent               | TEXT         | 浏览器 UA（风控用）                            |
+| created_at               | TIMESTAMPTZ  | 服务端接收时间                                 |
+| updated_at               | TIMESTAMPTZ  | 最后更新时间                                   |
 
 ### 4.3 status 枚举
 
-| 值 | 含义 | 典型触发动作 |
-| --- | --- | --- |
-| `received` | 已收到，待处理 | 表单提交后自动设置 |
-| `contacted` | 已联系客户 | GEO 顾问标记已首次联系 |
-| `qualified` | 已确认需求，有合作意向 | 诊断沟通后评估为有效线索 |
-| `proposal_sent` | 已发送方案/报价 | |
-| `won` | 成交 | 客户确认合作 |
-| `lost` | 关闭-未成交 | 客户拒绝 / 无回应 / 不符合条件 |
-| `archived` | 归档 | 垃圾 / 重复 / 测试数据 |
+| 值              | 含义                   | 典型触发动作                   |
+| --------------- | ---------------------- | ------------------------------ |
+| `received`      | 已收到，待处理         | 表单提交后自动设置             |
+| `contacted`     | 已联系客户             | GEO 顾问标记已首次联系         |
+| `qualified`     | 已确认需求，有合作意向 | 诊断沟通后评估为有效线索       |
+| `proposal_sent` | 已发送方案/报价        |                                |
+| `won`           | 成交                   | 客户确认合作                   |
+| `lost`          | 关闭-未成交            | 客户拒绝 / 无回应 / 不符合条件 |
+| `archived`      | 归档                   | 垃圾 / 重复 / 测试数据         |
 
 ### 4.4 与前端表单的字段映射
 
-| 前端 LeadFormData | 后端 API 字段 | 数据库列名 |
-| --- | --- | --- |
-| companyName | companyName | company_name |
-| brandName | brandName | brand_name |
-| website | website | website |
-| industry | industry | industry |
-| targetCity | targetCity | target_city |
-| competitors | competitors | competitors |
-| contactName | contactName | contact_name |
-| contactMethod | contactMethod | contact_method |
-| notes | notes | notes |
-| — | source | source |
-| — | — | status |
-| — | — | ip_address |
-| — | — | user_agent |
+| 前端 LeadFormData | 后端 API 字段 | 数据库列名     |
+| ----------------- | ------------- | -------------- |
+| companyName       | companyName   | company_name   |
+| brandName         | brandName     | brand_name     |
+| website           | website       | website        |
+| industry          | industry      | industry       |
+| targetCity        | targetCity    | target_city    |
+| competitors       | competitors   | competitors    |
+| contactName       | contactName   | contact_name   |
+| contactMethod     | contactMethod | contact_method |
+| notes             | notes         | notes          |
+| —                 | source        | source         |
+| —                 | —             | status         |
+| —                 | —             | ip_address     |
+| —                 | —             | user_agent     |
 
 ## 5. 风控与反垃圾
 
@@ -208,10 +234,10 @@ CREATE INDEX idx_geo_leads_contact ON geo_leads(contact_method);
 
 ### 5.2 IP 限流
 
-| 策略 | 参数 |
-| --- | --- |
-| 同一 IP 每分钟最多提交次数 | 5 次 |
-| 超出后返回 | 429 + `Retry-After: 60` |
+| 策略                       | 参数                    |
+| -------------------------- | ----------------------- |
+| 同一 IP 每分钟最多提交次数 | 5 次                    |
+| 超出后返回                 | 429 + `Retry-After: 60` |
 
 实现：内存计数器（MVP）或 Redis（后期）。
 
@@ -226,11 +252,11 @@ WHERE contact_method = ? AND created_at > now() - INTERVAL '24 hours';
 
 ### 5.4 website 检查
 
-| 检查 | 说明 |
-| --- | --- |
-| 格式校验 | 必须是合法 URL（http/https），非 IP 地址 |
-| 本地域名禁止 | 拒绝 `localhost`、`127.0.0.1`、`0.0.0.0` |
-| 可选的公共后缀检查 | 拒绝已知垃圾域名（后期维护黑名单） |
+| 检查               | 说明                                     |
+| ------------------ | ---------------------------------------- |
+| 格式校验           | 必须是合法 URL（http/https），非 IP 地址 |
+| 本地域名禁止       | 拒绝 `localhost`、`127.0.0.1`、`0.0.0.0` |
+| 可选的公共后缀检查 | 拒绝已知垃圾域名（后期维护黑名单）       |
 
 ### 5.5 contactMethod 最小长度
 
@@ -242,21 +268,30 @@ WHERE contact_method = ? AND created_at > now() - INTERVAL '24 hours';
 
 ### 5.7 静默丢弃 vs 明确拒绝
 
-| 场景 | 策略 | 原因 |
-| --- | --- | --- |
-| Honeypot 触发 | 静默丢弃（返回 200 假成功） | 不暴露检测机制 |
-| 限流触发 | 明确 429 | 正常用户偶尔超频需要知道原因 |
-| 格式校验失败 | 明确 400 + 字段级错误 | 帮助用户修正 |
+| 场景          | 策略                        | 原因                         |
+| ------------- | --------------------------- | ---------------------------- |
+| Honeypot 触发 | 静默丢弃（返回 200 假成功） | 不暴露检测机制               |
+| 限流触发      | 明确 429                    | 正常用户偶尔超频需要知道原因 |
+| 格式校验失败  | 明确 400 + 字段级错误       | 帮助用户修正                 |
 
 ## 6. 通知
 
-### 6.1 通知渠道
+### 6.1 Webhook 环境变量
 
-| 渠道 | 触发条件 | 优先级 |
-| --- | --- | --- |
-| 邮件 | 新线索提交 → 邮件通知 GEO 团队 | P1 |
-| 企业微信/飞书 Webhook | 新线索提交 → 群机器人消息 | P1 |
-| MOY App 内部通知 | 后期接入统一通知中心 | P3 |
+| 变量                           | 说明                              | 默认   |
+| ------------------------------ | --------------------------------- | ------ |
+| `GEO_LEAD_NOTIFY_WEBHOOK_URL`  | Webhook 地址                      | 空     |
+| `GEO_LEAD_NOTIFY_WEBHOOK_TYPE` | 类型：`none` / `feishu` / `wecom` | `none` |
+
+当 `type` 不为 `none` 且 `url` 不为空时，新 lead 创建成功后会发送通知。
+
+### 6.2 通知渠道
+
+| 渠道                  | 触发条件                       | 优先级 |
+| --------------------- | ------------------------------ | ------ |
+| 邮件                  | 新线索提交 → 邮件通知 GEO 团队 | P1     |
+| 企业微信/飞书 Webhook | 新线索提交 → 群机器人消息      | P1     |
+| MOY App 内部通知      | 后期接入统一通知中心           | P3     |
 
 ### 6.2 邮件通知模板
 
@@ -298,21 +333,21 @@ WHERE contact_method = ? AND created_at > now() - INTERVAL '24 hours';
 
 当一条 GEO lead 状态变为 `qualified` 后，GEO 顾问可手动执行"转入 MOY App"操作：
 
-| 步骤 | 操作 |
-| --- | --- |
-| 1 | GEO 顾问判断该客户适合 MOY App |
-| 2 | 在 GEO 后台点击「转入 MOY App」 |
-| 3 | 系统调用 MOY App 的 lead/customer 创建 API（需认证） |
-| 4 | GEO lead 的 `converted_to_customer_id` 记录 App 侧 ID |
-| 5 | GEO lead 状态保持不变（不自动改为 won） |
+| 步骤 | 操作                                                  |
+| ---- | ----------------------------------------------------- |
+| 1    | GEO 顾问判断该客户适合 MOY App                        |
+| 2    | 在 GEO 后台点击「转入 MOY App」                       |
+| 3    | 系统调用 MOY App 的 lead/customer 创建 API（需认证）  |
+| 4    | GEO lead 的 `converted_to_customer_id` 记录 App 侧 ID |
+| 5    | GEO lead 状态保持不变（不自动改为 won）               |
 
 ### 7.3 为什么不自动同步
 
-| 原因 | 说明 |
-| --- | --- |
-| 数据质量 | GEO 表单提交者很多只是咨询，不是有效业务线索 |
-| 业务判断 | 是否值得跟进需要人工判断，不应自动污染 App 数据 |
-| 合规 | 客户提交 GEO 表单 ≠ 同意被加入 MOY App CRM |
+| 原因     | 说明                                             |
+| -------- | ------------------------------------------------ |
+| 数据质量 | GEO 表单提交者很多只是咨询，不是有效业务线索     |
+| 业务判断 | 是否值得跟进需要人工判断，不应自动污染 App 数据  |
+| 合规     | 客户提交 GEO 表单 ≠ 同意被加入 MOY App CRM       |
 | 产品边界 | GEO 是增长服务，App 是经营系统，数据不应默认混用 |
 
 ### 7.4 统一账号（S5）
@@ -321,13 +356,13 @@ WHERE contact_method = ? AND created_at > now() - INTERVAL '24 hours';
 
 ## 8. 技术栈建议
 
-| 层 | 推荐 | 备注 |
-| --- | --- | --- |
-| 运行时 | Node.js + TypeScript | 与 MOY App 后端技术栈一致 |
-| 框架 | Express / Fastify（轻量） | NestJS 可选，但对 GEO MVP 偏重 |
-| ORM | TypeORM / Drizzle | 保持与 MOY App 一致即可 |
-| 数据库 | PostgreSQL | `moy_geo` 独立数据库或 `moy_api_hub` 内独立 schema |
-| 部署 | Docker | 与 MOY App 同机部署或独立容器 |
+| 层     | 推荐                      | 备注                                               |
+| ------ | ------------------------- | -------------------------------------------------- |
+| 运行时 | Node.js + TypeScript      | 与 MOY App 后端技术栈一致                          |
+| 框架   | Express / Fastify（轻量） | NestJS 可选，但对 GEO MVP 偏重                     |
+| ORM    | TypeORM / Drizzle         | 保持与 MOY App 一致即可                            |
+| 数据库 | PostgreSQL                | `moy_geo` 独立数据库或 `moy_api_hub` 内独立 schema |
+| 部署   | Docker                    | 与 MOY App 同机部署或独立容器                      |
 
 如选择 Express，项目结构建议：
 
@@ -346,18 +381,30 @@ geo-backend/
 └── tsconfig.json
 ```
 
-## 9. 后续实现任务拆分
+## 9. 实现状态
 
-| ID | 任务 | 说明 | 依赖 |
-| --- | --- | --- | --- |
-| GEO-BE-001 | 创建接口 | `POST /api/geo/leads` Express 路由 + controller | — |
-| GEO-BE-002 | 建表与 migration | `geo_leads` 表 DDL + TypeORM entity | — |
-| GEO-BE-003 | 基础校验 | 必填字段校验、website 格式校验、contactMethod 长度校验 | GEO-BE-001 |
-| GEO-BE-004 | 反垃圾策略 | honeypot、IP 限流、联系方式频次限制 | GEO-BE-001 |
-| GEO-BE-005 | 通知 | 新线索邮件 + 企业微信 webhook | GEO-BE-001 |
-| GEO-BE-006 | 转入 MOY App 的人工动作 | qualified → 创建 App lead 的桥接逻辑 | GEO-BE-002 + MOY App lead API |
-| GEO-BE-007 | 管理后台 | 线索列表、状态流转、分配顾问（后期） | GEO-BE-002 |
-| GEO-BE-008 | DevOps | Dockerfile、CI/CD、环境变量配置 | GEO-BE-001 |
+| ID         | 任务                                        | 状态      |
+| ---------- | ------------------------------------------- | --------- |
+| GEO-BE-001 | `POST /api/geo/leads` 公开提交接口          | ✅ 已实现 |
+| GEO-BE-002 | `geo_leads` 表 + TypeORM Entity + Migration | ✅ 已实现 |
+| GEO-BE-003 | 基础校验（website / contactMethod 长度）    | ✅ 已实现 |
+| GEO-BE-004 | 反垃圾策略（honeypot / 联系方式频次限制）   | ✅ 已实现 |
+| GEO-BE-005 | 通知（飞书 / 企业微信 Webhook）             | ✅ 已实现 |
+| GEO-BE-006 | 转入 MOY App 的人工动作                     | 🔜 S3+    |
+| GEO-BE-007 | 管理后台（列表 / 详情 / 状态流转）          | ✅ 已实现 |
+| GEO-BE-008 | DevOps（Dockerfile / CI/CD）                | 🔜 S3     |
+
+### 9.1 Smoke Test
+
+```bash
+# 在 backend 目录
+npm run test:smoke:geo-leads
+
+# 从根目录
+npm run test:smoke:geo-leads
+```
+
+Smoke test 自动启动后端进程，验证公开接口路径、CORS、honeypot、管理接口鉴权。
 
 ## 10. 与前端对接
 
@@ -369,6 +416,7 @@ VITE_GEO_LEAD_ENDPOINT=https://api.app.moy.com/api/geo/leads
 ```
 
 > **域名说明**：
+>
 > - `api.moy.com` 是 MOY API 开发者平台，不承载 GEO 线索提交接口
 > - GEO 线索接口第一阶段建议由 `api.app.moy.com` 承载（复用 MOY App 后端），或未来独立为 `geo-api.moy.com`
 > - 不要把 GEO lead endpoint 放到 `api.moy.com`，避免与 MOY API 产品线冲突
@@ -377,6 +425,7 @@ VITE_GEO_LEAD_ENDPOINT=https://api.app.moy.com/api/geo/leads
 
 ## 11. 版本记录
 
-| 版本 | 日期 | 变更 |
-| --- | --- | --- |
-| v0.1 | 2026-05 | 初版，GEO 线索收集后端接口、数据表、风控、通知、与 MOY App 边界设计 |
+| 版本 | 日期    | 变更                                                                              |
+| ---- | ------- | --------------------------------------------------------------------------------- |
+| v0.1 | 2026-05 | 初版，GEO 线索收集后端接口、数据表、风控、通知、与 MOY App 边界设计               |
+| v0.2 | 2026-05 | MVP 实现：geo-leads 模块、migration、webhook 通知、管理接口、状态流转、smoke test |

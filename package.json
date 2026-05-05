@@ -20,6 +20,7 @@
 
     "test": "npm run test:app && npm run test:backend",
     "test:app": "npm --prefix frontend run test",
-    "test:backend": "npm --prefix backend run test"
+    "test:backend": "npm --prefix backend run test",
+    "test:smoke:geo-leads": "npm --prefix backend run test:smoke:geo-leads"
   }
 }

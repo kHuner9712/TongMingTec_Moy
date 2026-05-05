@@ -86,6 +86,7 @@ npm run build:sites      # 构建全部三个站点
 
 npm run build            # 构建全部项目
 npm run test             # 运行全部测试
+npm run test:smoke:geo-leads  # GEO 线索收集 Smoke Test
 ```
 
 ### 子项目独立启动
