@@ -270,6 +270,11 @@ export default function ReportBuilderPage() {
           <span style={{ fontSize: 13, color: "#8a9aaa", fontFamily: "monospace" }}>{reportId ? "编辑" : "新建"}</span>
         </div>
         <a href="/" style={{ fontSize: 13, color: C.blue, textDecoration: "none", fontWeight: 600 }}>← 返回官网</a>
+        {leadId && (
+          <a href={`/admin/workspace?leadId=${leadId}`} style={{ fontSize: 13, color: "#0055cc", textDecoration: "none", fontWeight: 600, background: "#e8f1ff", padding: "4px 12px", borderRadius: 4 }}>
+            返回客户工作台
+          </a>
+        )}
       </nav>
 
       <div style={{ maxWidth: 1300, margin: "0 auto", padding: "32px 24px" }}>

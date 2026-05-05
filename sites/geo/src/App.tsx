@@ -11,6 +11,7 @@ import ContentTopicEditorPage from "./admin/ContentTopicEditorPage";
 import ContentPlanEditorPage from "./admin/ContentPlanEditorPage";
 import ContentDraftsListPage from "./admin/ContentDraftsListPage";
 import ContentDraftEditorPage from "./admin/ContentDraftEditorPage";
+import GeoWorkspacePage from "./admin/workspace/GeoWorkspacePage";
 import { C, sans, h1, h2, body, small, section, sectionNarrow, sectionWhite, navBar, navLink, btnPrimary, heroBg, painItem, serviceCard, stepItem, footer, SectionLabel } from "./styles";
 
 const FAQ_LIST = [
@@ -24,6 +25,9 @@ const FAQ_LIST = [
 ];
 
 export default function App() {
+  if (window.location.pathname.startsWith("/admin/workspace")) {
+    return <GeoWorkspacePage />;
+  }
   if (window.location.pathname.startsWith("/admin/content-drafts/new")) {
     return <ContentDraftEditorPage />;
   }

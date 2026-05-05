@@ -519,6 +519,59 @@ title, contentType, targetKeyword, targetQuestion, targetAudience, outline, plan
 | PATCH | /api/v1/geo-content-drafts/:id/status | 状态流转（含校验） |
 | DELETE | /api/v1/geo-content-drafts/:id | 归档稿件（status=archived） |
 
+## GEO 客户项目工作台
+
+### 页面路径
+
+- `/admin/workspace?leadId=xxx`
+
+### 定位
+
+将某个 GEO lead 相关的所有交付物聚合到一个页面，形成真正的项目视图。纯前端聚合页，不新增后端实体。
+
+### 数据结构
+
+页面加载时并行请求 6 个 API：
+- `GET /api/v1/geo-leads/:id`
+- `GET /api/v1/geo-reports?leadId=&pageSize=100`
+- `GET /api/v1/geo-brand-assets?leadId=&pageSize=100`
+- `GET /api/v1/geo-content-topics?leadId=&pageSize=100`
+- `GET /api/v1/geo-content-plans?leadId=&pageSize=100`
+- `GET /api/v1/geo-content-drafts?leadId=&pageSize=100`
+
+### 页面区块
+
+| 区块 | 说明 |
+|------|------|
+| WorkspaceHeader | 公司/品牌信息 + 当前阶段 + lead 状态 |
+| DeliveryProgress | 6 阶段进度条（完成/进行中/待开始 + 数量） |
+| QuickActions | 10 个快捷跳转按钮（新建/查看各类交付物） |
+| RecentDeliverables | 5 Tab 切换最近 20 条交付物 |
+| ContentProductionSummary | 选题 + 稿件按 status 分组计数 |
+| ProjectRiskHints | 自动风险提示（6 条规则） |
+
+### 容错
+
+- Promise.allSettled — 部分接口失败不崩溃
+- 无 token → 提示返回管理后台
+- 无 leadId → 空状态引导
+
+### 联动入口
+
+- LeadDetailPanel：`进入客户工作台`
+- ReportBuilderPage：`返回客户工作台`（有 leadId 时）
+- BrandAssetBuilderPage：`返回客户工作台`（有 leadId 时）
+- ContentTopicEditorPage：`返回客户工作台`（有 leadId 时）
+- ContentPlanEditorPage：`返回客户工作台`（有 leadId 时）
+- ContentDraftEditorPage：`返回客户工作台`（有 leadId 时）
+
+### 技术细节
+
+- 不需要新增后端接口/实体
+- 不接入 AI 模型
+- 不对外/客户公开
+- 需要 JWT 管理令牌
+
 ## 后续计划
 
 - S3：客户登录后台、诊断报告在线查看

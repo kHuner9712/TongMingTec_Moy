@@ -241,6 +241,7 @@ export default function ContentDraftEditorPage() {
           <a href={`/admin/content-drafts${topicId ? `?topicId=${topicId}` : leadId ? `?leadId=${leadId}` : ""}`} style={{ fontSize: 12, color: "#0055cc" }}>查看稿件列表</a>
           {topicId && <a href={`/admin/content-topics/new?topicId=${topicId}`} style={{ fontSize: 12, color: "#0055cc" }}>编辑关联选题</a>}
           {leadId && <a href={`/admin/leads`} style={{ fontSize: 12, color: "#0055cc" }}>返回线索管理</a>}
+          {leadId && <a href={`/admin/workspace?leadId=${leadId}`} style={{ fontSize: 12, color: "#0055cc", fontWeight: 600 }}>返回客户工作台</a>}
         </div>
       )}
 

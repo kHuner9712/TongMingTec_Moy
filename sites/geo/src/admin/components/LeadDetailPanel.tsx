@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { GeoLead, ALL_STATUSES, STATUS_LABELS } from "../adminTypes";
 import { fetchLeadById, updateLeadStatus, getToken } from "../geoAdminApi";
 import StatusBadge from "./StatusBadge";
+import { C } from "../../styles";
 
 interface Props {
   leadId: string | null;
@@ -150,6 +151,10 @@ export default function LeadDetailPanel({ leadId, onClose, onUpdated }: Props) {
                 <a href={`/admin/content-drafts?leadId=${lead.id}`}
                   style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
                   查看内容稿件
+                </a>
+                <a href={`/admin/workspace?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#e6f0ff", color: C.blue, border: "1px solid #b3d4ff" }}>
+                  进入客户工作台 &rarr;
                 </a>
               </div>
             </div>

@@ -97,6 +97,9 @@ export default function ContentPlanEditorPage() {
           <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <a href={`/admin/content-drafts/new?planId=${planId}&leadId=${leadId || ""}&brandAssetId=${brandAssetId || ""}`} style={{ fontSize: 12, fontWeight: 600, color: "#7c3aed", textDecoration: "none", padding: "4px 10px", background: "#ede9fe", borderRadius: 4 }}>+ 新建稿件</a>
             <a href={`/admin/content-drafts?planId=${planId}`} style={{ fontSize: 12, fontWeight: 600, color: "#5a6a7e", textDecoration: "none", padding: "4px 10px", background: "#f0f2f5", borderRadius: 4 }}>查看关联稿件</a>
+            {leadId && (
+              <a href={`/admin/workspace?leadId=${leadId}`} style={{ fontSize: 12, fontWeight: 600, color: "#0055cc", textDecoration: "none", padding: "4px 10px", background: "#e8f1ff", borderRadius: 4 }}>返回客户工作台</a>
+            )}
           </div>
         )}
 

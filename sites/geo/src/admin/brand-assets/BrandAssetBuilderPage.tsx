@@ -327,6 +327,12 @@ export default function BrandAssetBuilderPage() {
               style={{ fontSize: 12, fontWeight: 600, textDecoration: "none", color: "#5a6a7e", background: "#f7f9fb", padding: "4px 10px", borderRadius: 4, border: "1px solid #d0d7de" }}>
               查看计划
             </a>
+            {leadId && (
+              <a href={`/admin/workspace?leadId=${leadId}`}
+                style={{ fontSize: 12, fontWeight: 600, textDecoration: "none", color: "#0055cc", background: "#e8f1ff", padding: "4px 10px", borderRadius: 4, border: "1px solid #b3d4ff" }}>
+                返回客户工作台
+              </a>
+            )}
           </div>
         )}
 
