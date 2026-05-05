@@ -10,10 +10,10 @@
 
 ### 2.1 当前状态
 
-- `sites/geo` 前端已实现可交付线索收集 MVP（[LeadForm](../sites/geo/src/components/LeadForm.tsx)）
+- `sites/geo` 前端已实现可交付线索收集 MVP（[LeadForm](../../sites/geo/src/components/LeadForm.tsx)）
 - 表单字段：companyName / brandName / website / industry / targetCity / competitors / contactName / contactMethod / notes
 - 第一阶段默认写入 `localStorage`，通过 `VITE_GEO_LEAD_ENDPOINT` 环境变量可切换到远程 POST
-- 前端已提供开发调试面板（[DevSubmissionsPanel](../sites/geo/src/components/DevSubmissionsPanel.tsx)）
+- 前端已提供开发调试面板（[DevSubmissionsPanel](../../sites/geo/src/components/DevSubmissionsPanel.tsx)）
 
 ### 2.2 为什么需要独立后端
 
@@ -361,12 +361,17 @@ geo-backend/
 
 ## 10. 与前端对接
 
-前端 [LeadForm](file:///c:/Users/15864/Desktop/TongMingTech_Moy/sites/geo/src/components/LeadForm.tsx) 已在 `submitLead()` 中预留远程 POST 路径。只需设置环境变量即可对接：
+前端 [LeadForm](../../sites/geo/src/components/LeadForm.tsx) 已在 `submitLead()` 中预留远程 POST 路径。只需设置环境变量即可对接：
 
 ```bash
 # sites/geo/.env
-VITE_GEO_LEAD_ENDPOINT=https://api.moy.com/api/geo/leads
+VITE_GEO_LEAD_ENDPOINT=https://api.app.moy.com/api/geo/leads
 ```
+
+> **域名说明**：
+> - `api.moy.com` 是 MOY API 开发者平台，不承载 GEO 线索提交接口
+> - GEO 线索接口第一阶段建议由 `api.app.moy.com` 承载（复用 MOY App 后端），或未来独立为 `geo-api.moy.com`
+> - 不要把 GEO lead endpoint 放到 `api.moy.com`，避免与 MOY API 产品线冲突
 
 前端表单字段与后端接口字段**一一对应**（camelCase），无需做字段名转换。详见 [§4.4 字段映射](#44-与前端表单的字段映射)。
 

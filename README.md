@@ -113,10 +113,10 @@ cd sites/api && npm install && npm run dev
 
 | 文档                                                                            | 说明                             |
 | ------------------------------------------------------------------------------- | -------------------------------- |
-| [docs/SSOT/00*README*唯一执行入口.md](./docs/SSOT/00_README_唯一执行入口.md)    | 开发唯一执行入口                 |
+| [`docs/SSOT/00_README_唯一执行入口.md`](./docs/SSOT/00_README_唯一执行入口.md)  | 开发唯一执行入口                 |
 | [docs/SSOT/14\_品牌架构与多站点边界.md](./docs/SSOT/14_品牌架构与多站点边界.md) | 品牌架构、产品线拆分与多站点边界 |
-| [docs/GEO/00_GEO服务总览.md](./docs/GEO/00_GEO服务总览.md)                      | GEO 服务总览与交付文档导航       |
-| [docs/API_HUB/00_MOY_API产品总览.md](./docs/API_HUB/00_MOY_API产品总览.md)      | MOY API 产品总览与技术设计       |
+| [`docs/GEO/00_GEO服务总览.md`](./docs/GEO/00_GEO服务总览.md)                    | GEO 服务总览与交付文档导航       |
+| [`docs/API_HUB/00_MOY_API产品总览.md`](./docs/API_HUB/00_MOY_API产品总览.md)    | MOY API 产品总览与技术设计       |
 
 ---
 

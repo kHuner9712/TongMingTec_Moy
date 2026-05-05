@@ -96,6 +96,51 @@ backend/
 | 前端 | `sites/api` 将来对接管理接口 |
 | 业务模块 | **零影响**：auth/cm/lm/om/qt/ct/ord/pay 等模块不改动 |
 
+### 3.5 全局前缀与 OpenAI-compatible 路由处理
+
+**问题**：现有 `backend/src/main.ts` 设置了：
+
+```typescript
+app.setGlobalPrefix("api/v1");
+```
+
+这会导致所有路由自动加上 `/api/v1` 前缀。但 API Hub 的开放接口要求暴露为：
+
+- `GET /v1/models`
+- `POST /v1/chat/completions`
+
+以兼容 OpenAI SDK 的 `base_url` 习惯（如 `https://api.openai.com/v1`）。
+
+**关键矛盾**：
+
+| 接口类型 | 期望路径 | Global Prefix 自动变成 |
+| --- | --- | --- |
+| 管理接口 | `/api/v1/api-hub/projects` | `/api/v1/api-hub/projects` ✅ 符合预期 |
+| 开放接口 | `/v1/chat/completions` | `/api/v1/v1/chat/completions` ❌ 不兼容 OpenAI SDK |
+
+**解决方案**：
+
+| 方案 | 做法 | 优点 | 缺点 |
+| --- | --- | --- | --- |
+| **A（推荐）** | 在 `main.ts` 中配置 `exclude`，排除 `/v1/*` 路由不套用 global prefix | 最简单的 MVP 交付方式，真正兼容 OpenAI SDK | NestJS v10+ 才内置支持，v9 需手动处理 |
+| **B** | 为 API Hub 开放接口单独创建子应用 `NestFactory.createMicroservice()` 或独立 Express App | 彻底隔离，无 prefix 污染 | 引入额外复杂度，MVP 阶段过度工程 |
+| **C（不推荐）** | 短期接受 `/api/v1/v1/chat/completions` | 零改动 | 不兼容 OpenAI SDK 的 `base_url`，用户需要额外配置路径，体验差 |
+
+**MVP 阶段决策**：
+
+优先采用 **方案 A**，确保 `/v1/chat/completions` 和 `/v1/models` 与 OpenAI-compatible 预期一致。管理接口继续走 `/api/v1/api-hub/...`。
+
+**实现要点（方案 A）**：
+
+```typescript
+// main.ts
+app.setGlobalPrefix("api/v1", {
+  exclude: ["v1/(.*)"], // /v1/chat/completions, /v1/models 不加前缀
+});
+```
+
+注意：如果 `ChatCompletionsController` 使用 `@Controller("v1")` 装饰器，配合排除规则后，实际生效路径为 `/v1/chat/completions`，无需把 controller 挂到根 `/`。
+
 ## 4. 模块拆分
 
 ### 4.1 ApiHubModule（主模块）
