@@ -43,9 +43,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const corsOrigins = process.env.CORS_ORIGINS?.split(",")
     .map((origin) => origin.trim())
-    .filter(Boolean) || ["http://localhost:3000", "http://localhost:5173"];
+    .filter(Boolean) || [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5176",
+  ];
 
-  app.setGlobalPrefix("api/v1");
+  app.setGlobalPrefix("api/v1", {
+    exclude: ["api/geo/(.*)"],
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

@@ -39,6 +39,7 @@ import { DealChainModule } from './modules/deal-chain/deal-chain.module';
 import { AutoModule } from './modules/auto/auto.module';
 import { DashModule } from './modules/dash/dash.module';
 import { DlvModule } from './modules/dlv/dlv.module';
+import { GeoLeadsModule } from './modules/geo-leads/geo-leads.module';
 
 import { WebSocketModule } from './common/gateway/websocket.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -118,6 +119,7 @@ import jwtConfig from './config/jwt.config';
     AutoModule,
     DashModule,
     DlvModule,
+    GeoLeadsModule,
     WebSocketModule,
   ],
   providers: [
