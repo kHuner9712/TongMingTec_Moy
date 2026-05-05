@@ -1,0 +1,136 @@
+# ==============================
+# MOY 多站点 Nginx 配置
+# 说明：本文件为配置模板，部署时需根据实际服务器路径调整
+# 使用方式：复制到 /etc/nginx/sites-available/moy，然后 ln -s 到 sites-enabled
+#
+#    sudo cp deploy/nginx/moy.conf.example /etc/nginx/sites-available/moy
+#    sudo ln -s /etc/nginx/sites-available/moy /etc/nginx/sites-enabled/
+#    sudo nginx -t && sudo systemctl reload nginx
+#
+# certbot 会自动修改本文件添加 SSL 配置，本模板先写好 HTTP 部分
+# ==============================
+
+# ========== moy.com ==========
+server {
+    listen 80;
+    server_name moy.com www.moy.com;
+
+    # 生产部署路径
+    root /var/www/moy/official;
+    index index.html;
+
+    # SPA fallback
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 静态资源长期缓存（构建产物带 hash）
+    location /assets/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Gzip
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_min_length 1000;
+}
+
+# ========== geo.moy.com ==========
+server {
+    listen 80;
+    server_name geo.moy.com;
+
+    root /var/www/moy/geo;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /assets/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_min_length 1000;
+}
+
+# ========== api.moy.com ==========
+server {
+    listen 80;
+    server_name api.moy.com;
+
+    root /var/www/moy/api;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /assets/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+}
+
+# ========== app.moy.com（可选）==========
+server {
+    listen 80;
+    server_name app.moy.com;
+
+    root /var/www/moy/app;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /assets/ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+    gzip_min_length 1000;
+}
+
+# ========== api.app.moy.com → NestJS backend ==========
+server {
+    listen 80;
+    server_name api.app.moy.com;
+
+    # 上传大小限制（可选）
+    client_max_body_size 10M;
+
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+
+        # WebSocket 支持
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+
+        # 代理头
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+
+        # 缓存绕过
+        proxy_cache_bypass $http_upgrade;
+
+        # 超时设置（AI 接口可能较慢）
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+    }
+
+    # 安全头
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}

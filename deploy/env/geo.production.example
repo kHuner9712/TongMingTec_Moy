@@ -1,0 +1,9 @@
+# ==============================
+# MOY GEO 站点生产环境变量
+# 说明：Vite 构建时注入 VITE_ 前缀变量。
+#       部署到 Vercel 时在 Project Settings → Environment Variables 中配置。
+#       部署到 VPS 时在站点根目录创建 .env。
+# ==============================
+
+# GEO 线索提交后端接口（必填）
+VITE_GEO_LEAD_ENDPOINT=https://api.app.moy.com/api/geo/leads

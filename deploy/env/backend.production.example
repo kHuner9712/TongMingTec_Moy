@@ -1,0 +1,31 @@
+# ==============================
+# MOY Backend 生产环境变量模板
+# 说明：本文件仅作模板，提交到仓库供参考。
+#       生产真实 .env 不要提交到 Git，在服务器上创建真实 .env。
+#       所有 <> 占位符必须在生产环境替换为真实值。
+# ==============================
+
+NODE_ENV=production
+PORT=3001
+
+# Database（必填）
+DB_HOST=<your-database-host>
+DB_PORT=5432
+DB_USERNAME=<your-db-username>
+DB_PASSWORD=<your-db-password>
+DB_DATABASE=moy_app
+
+# 生产严禁 true
+DB_SYNCHRONIZE=false
+DB_LOGGING=false
+
+# Auth（必填，使用 openssl rand -hex 32 生成）
+JWT_SECRET=<generate-with-openssl-rand-hex-32>
+JWT_EXPIRES_IN=7d
+
+# CORS（逗号分隔，生产只含正式域名）
+CORS_ORIGINS=https://moy.com,https://www.moy.com,https://geo.moy.com,https://api.moy.com,https://app.moy.com
+
+# GEO Leads 通知（选填）
+GEO_LEAD_NOTIFY_WEBHOOK_TYPE=none
+GEO_LEAD_NOTIFY_WEBHOOK_URL=
