@@ -127,6 +127,22 @@ export default function LeadDetailPanel({ leadId, onClose, onUpdated }: Props) {
                   style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
                   查看关联资产包
                 </a>
+                <a href={`/admin/content-topics/new?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#fff6ea", color: "#b85c00", border: "1px solid #fcd9a5" }}>
+                  + 新建内容选题
+                </a>
+                <a href={`/admin/content-topics?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
+                  查看内容选题
+                </a>
+                <a href={`/admin/content-plans/new?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#ede9fe", color: "#7c3aed", border: "1px solid #c4b5fd" }}>
+                  + 新建内容计划
+                </a>
+                <a href={`/admin/content-plans?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
+                  查看内容计划
+                </a>
               </div>
             </div>
 

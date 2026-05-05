@@ -356,6 +356,103 @@ cd sites/geo && npm run dev             # http://localhost:5176
 - + 新建品牌事实资产包
 - 查看关联报告
 - 查看关联资产包
+- + 新建内容选题
+- + 新建内容计划
+- 查看关联内容选题
+- 查看关联内容计划
+
+## 内容选题库
+
+### 页面路径
+
+- `/admin/content-topics` — 选题列表
+- `/admin/content-topics/new` — 选题编辑（?topicId= / ?leadId= / ?brandAssetId= / ?reportId=）
+
+### 定位
+
+基于品牌事实资产包，为客户规划 GEO 内容选题和文章方向。**不调用 AI 模型**，不自动发布内容。
+
+### 表单字段
+
+| 分类 | 字段 |
+|------|------|
+| 基础信息 | title, contentType（10 种）, priority（high/medium/low）, status（7 步生命周期） |
+| 关键词与受众 | targetKeyword, targetQuestion, targetAudience, searchIntent（4 种） |
+| 内容规划 | platformSuggestion, outline, keyPoints, referenceMaterials |
+| 合规与发布 | complianceNotes, plannedPublishDate, actualPublishDate, publishedUrl |
+
+### contentType 枚举
+
+行业问答 / 本地服务 / 竞品对比 / 购买决策 / 常见误区 / 案例拆解 / 价格解释 / 服务流程 / 品牌介绍 / FAQ
+
+### status 生命周期
+
+idea → planned → drafting → reviewing → approved → published → archived
+
+### 操作功能
+
+- **保存到后端** — POST/PATCH /api/v1/geo-content-topics
+- **另存为新选题** — 基于当前内容创建新记录
+- **保存草稿** — localStorage key `moy_geo_content_topic_draft`
+- **恢复草稿** — 从 localStorage 恢复
+
+### 从联动入口
+
+- 线索详情抽屉：`/admin/content-topics/new?leadId={id}` 或 `/admin/content-topics?leadId={id}`
+- 品牌资产包保存后：`/admin/content-topics/new?brandAssetId={id}&leadId={leadId}` 或 `/admin/content-topics?brandAssetId={id}`
+- 诊断报告：`/admin/content-topics/new?reportId={id}`
+
+## 内容计划
+
+### 页面路径
+
+- `/admin/content-plans` — 计划列表
+- `/admin/content-plans/new` — 计划编辑（?planId= / ?leadId= / ?brandAssetId=）
+
+### 定位
+
+为 GEO 交付团队规划月度/周期内容发布计划，关联内容选题，追踪交付状态。
+
+### 表单字段
+
+| 字段 | 说明 |
+|------|------|
+| title | 计划标题 |
+| month | 计划月份（如 2026-05） |
+| goal | 计划目标 |
+| targetPlatforms | 目标平台（官网/公众号/知乎/小红书/百家号/头条号/搜狐号/B站专栏/行业媒体） |
+| topicIds | 关联选题ID列表，每行一个 |
+| summary | 计划总结 |
+| status | draft / active / completed / archived |
+
+### 操作功能
+
+- **保存到后端** — POST/PATCH /api/v1/geo-content-plans
+- **另存为新计划**
+- **保存草稿** — localStorage key `moy_geo_content_plan_draft`
+- **恢复草稿** — 从 localStorage 恢复
+
+### 从联动入口
+
+- 线索详情抽屉：`/admin/content-plans/new?leadId={id}` 或 `/admin/content-plans?leadId={id}`
+- 品牌资产包保存后：`/admin/content-plans/new?brandAssetId={id}&leadId={leadId}` 或 `/admin/content-plans?brandAssetId={id}`
+
+## 内容管理接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/v1/geo-content-topics | 选题列表（?leadId=&brandAssetId=&reportId=&status=&priority=&contentType=&keyword=&page=&pageSize=） |
+| POST | /api/v1/geo-content-topics | 创建选题 |
+| GET | /api/v1/geo-content-topics/:id | 选题详情 |
+| PATCH | /api/v1/geo-content-topics/:id | 更新选题 |
+| PATCH | /api/v1/geo-content-topics/:id/status | 更新状态 |
+| DELETE | /api/v1/geo-content-topics/:id | 归档选题（status=archived） |
+| GET | /api/v1/geo-content-plans | 计划列表（?leadId=&brandAssetId=&status=&month=&keyword=&page=&pageSize=） |
+| POST | /api/v1/geo-content-plans | 创建计划 |
+| GET | /api/v1/geo-content-plans/:id | 计划详情 |
+| PATCH | /api/v1/geo-content-plans/:id | 更新计划 |
+| PATCH | /api/v1/geo-content-plans/:id/status | 更新状态 |
+| DELETE | /api/v1/geo-content-plans/:id | 归档计划（status=archived） |
 
 ## 后续计划
 

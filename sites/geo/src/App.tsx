@@ -5,6 +5,10 @@ import ReportBuilderPage from "./admin/reports/ReportBuilderPage";
 import BrandAssetBuilderPage from "./admin/brand-assets/BrandAssetBuilderPage";
 import ReportsListPage from "./admin/ReportsListPage";
 import BrandAssetsListPage from "./admin/BrandAssetsListPage";
+import ContentTopicsListPage from "./admin/ContentTopicsListPage";
+import ContentPlansListPage from "./admin/ContentPlansListPage";
+import ContentTopicEditorPage from "./admin/ContentTopicEditorPage";
+import ContentPlanEditorPage from "./admin/ContentPlanEditorPage";
 import { C, sans, h1, h2, body, small, section, sectionNarrow, sectionWhite, navBar, navLink, btnPrimary, heroBg, painItem, serviceCard, stepItem, footer, SectionLabel } from "./styles";
 
 const FAQ_LIST = [
@@ -18,6 +22,18 @@ const FAQ_LIST = [
 ];
 
 export default function App() {
+  if (window.location.pathname.startsWith("/admin/content-topics/new")) {
+    return <ContentTopicEditorPage />;
+  }
+  if (window.location.pathname.startsWith("/admin/content-topics")) {
+    return <ContentTopicsListPage />;
+  }
+  if (window.location.pathname.startsWith("/admin/content-plans/new")) {
+    return <ContentPlanEditorPage />;
+  }
+  if (window.location.pathname.startsWith("/admin/content-plans")) {
+    return <ContentPlansListPage />;
+  }
   if (window.location.pathname.startsWith("/admin/brand-assets/new")) {
     return <BrandAssetBuilderPage />;
   }

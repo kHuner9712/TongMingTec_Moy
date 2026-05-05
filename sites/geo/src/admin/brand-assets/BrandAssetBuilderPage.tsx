@@ -308,6 +308,28 @@ export default function BrandAssetBuilderPage() {
           </div>
         )}
 
+        {assetId && (
+          <div style={{ marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#5a6a7e" }}>快捷入口：</span>
+            <a href={`/admin/content-topics/new?brandAssetId=${assetId}&leadId=${leadId || ""}`}
+              style={{ fontSize: 12, fontWeight: 600, textDecoration: "none", color: "#b85c00", background: "#fff6ea", padding: "4px 10px", borderRadius: 4, border: "1px solid #fcd9a5" }}>
+              + 建选题
+            </a>
+            <a href={`/admin/content-topics?brandAssetId=${assetId}`}
+              style={{ fontSize: 12, fontWeight: 600, textDecoration: "none", color: "#5a6a7e", background: "#f7f9fb", padding: "4px 10px", borderRadius: 4, border: "1px solid #d0d7de" }}>
+              查看选题
+            </a>
+            <a href={`/admin/content-plans/new?brandAssetId=${assetId}&leadId=${leadId || ""}`}
+              style={{ fontSize: 12, fontWeight: 600, textDecoration: "none", color: "#7c3aed", background: "#ede9fe", padding: "4px 10px", borderRadius: 4, border: "1px solid #c4b5fd" }}>
+              + 建计划
+            </a>
+            <a href={`/admin/content-plans?brandAssetId=${assetId}`}
+              style={{ fontSize: 12, fontWeight: 600, textDecoration: "none", color: "#5a6a7e", background: "#f7f9fb", padding: "4px 10px", borderRadius: 4, border: "1px solid #d0d7de" }}>
+              查看计划
+            </a>
+          </div>
+        )}
+
         {leadMsg && (
           <div style={{ marginBottom: 16, padding: "10px 14px", background: leadMsg.startsWith("已从") || leadMsg.startsWith("已加载") ? "#e6f4ea" : "#fff6ea", borderRadius: 6, fontSize: 13, color: leadMsg.startsWith("已从") || leadMsg.startsWith("已加载") ? "#0f7b3a" : "#b85c00" }}>
             {leadMsg}
