@@ -454,6 +454,71 @@ idea → planned → drafting → reviewing → approved → published → archi
 | PATCH | /api/v1/geo-content-plans/:id/status | 更新状态 |
 | DELETE | /api/v1/geo-content-plans/:id | 归档计划（status=archived） |
 
+## 内容稿件生成器
+
+### 页面路径
+
+- `/admin/content-drafts` — 稿件列表
+- `/admin/content-drafts/new` — 稿件编辑（?draftId= / ?topicId= / ?leadId= / ?brandAssetId= / ?planId=）
+
+### 定位
+
+基于内容选题生成、编辑、审核、发布 GEO 内容稿件。**不调用 AI 模型**，正文由人工编写。所有内容基于客户真实资料。
+
+### 表单字段
+
+| 分类 | 字段 |
+|------|------|
+| 基础信息 | title, slug, contentType（10 种）, targetKeyword, targetAudience, platform, status（5 步） |
+| 内容结构 | summary, outline, body |
+| SEO 信息 | seoTitle, metaDescription, tags |
+| 审核信息 | reviewNotes |
+| 合规检查 | 7 项 checkbox（基于真实资料/未使用未授权案例/未伪造媒体报道等） |
+| 发布信息 | plannedPublishDate, actualPublishDate, publishedUrl |
+
+### status 生命周期与流转
+
+draft → reviewing → approved → published → archived
+
+- draft → reviewing ✓
+- reviewing → approved ✓
+- approved → published ✓
+- 任意状态 → archived ✓
+- published → draft ✗（不允许回溯）
+- archived → published ✗（不允许解档）
+
+### 操作功能
+
+- **保存/创建** — POST/PATCH /api/v1/geo-content-drafts
+- **另存为新稿件** — 基于当前内容创建新记录
+- **保存草稿** — localStorage key `moy_geo_content_draft_draft`
+- **恢复草稿** — 从 localStorage 恢复
+- **生成 Markdown** — 按模板生成并复制到剪贴板
+- **下载 .md** — 以标题命名下载
+- **清空** — 重置所有字段（需确认）
+
+### 从 topicId 自动带入
+
+访问 `/admin/content-drafts/new?topicId=xxx` 自动从选题带入：
+title, contentType, targetKeyword, targetQuestion, targetAudience, outline, plannedPublishDate
+
+### 从联动入口
+
+- 线索详情抽屉：`/admin/content-drafts/new?leadId={id}` 或 `/admin/content-drafts?leadId={id}`
+- 选题列表/编辑页：`/admin/content-drafts/new?topicId={id}&leadId={leadId}` 或 `/admin/content-drafts?topicId={id}`
+- 计划列表/编辑页：`/admin/content-drafts/new?planId={id}&leadId={leadId}` 或 `/admin/content-drafts?planId={id}`
+
+## 稿件管理接口
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/v1/geo-content-drafts | 稿件列表（?leadId=&brandAssetId=&reportId=&topicId=&planId=&status=&contentType=&keyword=&page=&pageSize=） |
+| POST | /api/v1/geo-content-drafts | 创建稿件 |
+| GET | /api/v1/geo-content-drafts/:id | 稿件详情 |
+| PATCH | /api/v1/geo-content-drafts/:id | 更新稿件 |
+| PATCH | /api/v1/geo-content-drafts/:id/status | 状态流转（含校验） |
+| DELETE | /api/v1/geo-content-drafts/:id | 归档稿件（status=archived） |
+
 ## 后续计划
 
 - S3：客户登录后台、诊断报告在线查看

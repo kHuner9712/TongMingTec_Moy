@@ -143,6 +143,14 @@ export default function LeadDetailPanel({ leadId, onClose, onUpdated }: Props) {
                   style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
                   查看内容计划
                 </a>
+                <a href={`/admin/content-drafts/new?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#ede9fe", color: "#7c3aed", border: "1px solid #c4b5fd" }}>
+                  + 新建内容稿件
+                </a>
+                <a href={`/admin/content-drafts?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#f7f9fb", color: "#5a6a7e", border: "1px solid #d0d7de" }}>
+                  查看内容稿件
+                </a>
               </div>
             </div>
 

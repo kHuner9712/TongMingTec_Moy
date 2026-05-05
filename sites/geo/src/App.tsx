@@ -9,6 +9,8 @@ import ContentTopicsListPage from "./admin/ContentTopicsListPage";
 import ContentPlansListPage from "./admin/ContentPlansListPage";
 import ContentTopicEditorPage from "./admin/ContentTopicEditorPage";
 import ContentPlanEditorPage from "./admin/ContentPlanEditorPage";
+import ContentDraftsListPage from "./admin/ContentDraftsListPage";
+import ContentDraftEditorPage from "./admin/ContentDraftEditorPage";
 import { C, sans, h1, h2, body, small, section, sectionNarrow, sectionWhite, navBar, navLink, btnPrimary, heroBg, painItem, serviceCard, stepItem, footer, SectionLabel } from "./styles";
 
 const FAQ_LIST = [
@@ -22,6 +24,12 @@ const FAQ_LIST = [
 ];
 
 export default function App() {
+  if (window.location.pathname.startsWith("/admin/content-drafts/new")) {
+    return <ContentDraftEditorPage />;
+  }
+  if (window.location.pathname.startsWith("/admin/content-drafts")) {
+    return <ContentDraftsListPage />;
+  }
   if (window.location.pathname.startsWith("/admin/content-topics/new")) {
     return <ContentTopicEditorPage />;
   }

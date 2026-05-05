@@ -103,7 +103,7 @@ export default function ContentTopicsListPage() {
                   <td style={td}><span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600, background: PRIORITY_COLORS[t.priority] + "22", color: PRIORITY_COLORS[t.priority] }}>{PRIORITY_LABELS[t.priority]}</span></td>
                   <td style={td}><span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600, background: STATUS_COLORS[t.status] + "18", color: STATUS_COLORS[t.status] }}>{STATUS_LABELS[t.status] || t.status}</span></td>
                   <td style={td}>{t.plannedPublishDate || "-"}</td>
-                  <td style={td}><a href={`/admin/content-topics/new?topicId=${t.id}`} style={{ color: C.blue, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>编辑</a></td>
+                  <td style={td}><a href={`/admin/content-topics/new?topicId=${t.id}`} style={{ color: C.blue, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>编辑</a> <a href={`/admin/content-drafts/new?topicId=${t.id}&leadId=${leadId}`} style={{ color: "#7c3aed", fontSize: 13, fontWeight: 600, textDecoration: "none", marginLeft: 8 }}>建稿件</a></td>
                 </tr>
               ))}
             </tbody>

@@ -71,7 +71,7 @@ export default function ContentPlansListPage() {
                   <td style={td}>{p.topics?.length || 0}</td>
                   <td style={td}><span style={{ padding: "2px 8px", borderRadius: 10, fontSize: 11, fontWeight: 600, background: STATUS_COLORS[p.status] + "18", color: STATUS_COLORS[p.status] }}>{STATUS_LABELS[p.status] || p.status}</span></td>
                   <td style={td}>{new Date(p.createdAt).toLocaleDateString("zh-CN")}</td>
-                  <td style={td}><a href={`/admin/content-plans/new?planId=${p.id}`} style={{ color: C.blue, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>编辑</a></td>
+                  <td style={td}><a href={`/admin/content-plans/new?planId=${p.id}`} style={{ color: C.blue, fontSize: 13, fontWeight: 600, textDecoration: "none" }}>编辑</a> <a href={`/admin/content-drafts/new?planId=${p.id}&leadId=${leadId || ""}`} style={{ color: "#7c3aed", fontSize: 13, fontWeight: 600, textDecoration: "none", marginLeft: 8 }}>建稿件</a> <a href={`/admin/content-drafts?planId=${p.id}`} style={{ color: "#5a6a7e", fontSize: 12, textDecoration: "none", marginLeft: 4 }}>稿件</a></td>
                 </tr>
               ))}
             </tbody>

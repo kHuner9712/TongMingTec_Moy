@@ -93,6 +93,12 @@ export default function ContentPlanEditorPage() {
           <button onClick={loadDraft} style={actBtn}>恢复草稿</button>
         </div>
         {msg && <div style={{ marginBottom: 12, padding: "8px 12px", borderRadius: 6, fontSize: 13, background: msg.includes("失败") ? "#fff6ea" : "#e6f4ea", color: msg.includes("失败") ? "#b85c00" : "#0f7b3a" }}>{msg}</div>}
+        {planId && (
+          <div style={{ marginBottom: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <a href={`/admin/content-drafts/new?planId=${planId}&leadId=${leadId || ""}&brandAssetId=${brandAssetId || ""}`} style={{ fontSize: 12, fontWeight: 600, color: "#7c3aed", textDecoration: "none", padding: "4px 10px", background: "#ede9fe", borderRadius: 4 }}>+ 新建稿件</a>
+            <a href={`/admin/content-drafts?planId=${planId}`} style={{ fontSize: 12, fontWeight: 600, color: "#5a6a7e", textDecoration: "none", padding: "4px 10px", background: "#f0f2f5", borderRadius: 4 }}>查看关联稿件</a>
+          </div>
+        )}
 
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div><div style={lb}>标题</div><input value={p.title} onChange={set("title")} style={inp} /></div>
