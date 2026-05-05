@@ -12,6 +12,7 @@ import ContentPlanEditorPage from "./admin/ContentPlanEditorPage";
 import ContentDraftsListPage from "./admin/ContentDraftsListPage";
 import ContentDraftEditorPage from "./admin/ContentDraftEditorPage";
 import GeoWorkspacePage from "./admin/workspace/GeoWorkspacePage";
+import GeoDashboardPage from "./admin/dashboard/GeoDashboardPage";
 import { C, sans, h1, h2, body, small, section, sectionNarrow, sectionWhite, navBar, navLink, btnPrimary, heroBg, painItem, serviceCard, stepItem, footer, SectionLabel } from "./styles";
 
 const FAQ_LIST = [
@@ -60,6 +61,12 @@ export default function App() {
   }
   if (window.location.pathname.startsWith("/admin/leads")) {
     return <AdminLeadsPage />;
+  }
+  if (window.location.pathname.startsWith("/admin/dashboard")) {
+    return <GeoDashboardPage />;
+  }
+  if (window.location.pathname === "/admin" || window.location.pathname === "/admin/") {
+    return <GeoDashboardPage />;
   }
 
   return (

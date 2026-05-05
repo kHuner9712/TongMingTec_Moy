@@ -572,6 +572,65 @@ title, contentType, targetKeyword, targetQuestion, targetAudience, outline, plan
 - 不对外/客户公开
 - 需要 JWT 管理令牌
 
+## GEO 运营总览 Dashboard
+
+### 页面路径
+
+- `/admin` — 管理员入口（默认跳转 Dashboard）
+- `/admin/dashboard` — 运营总览仪表盘
+
+### 定位
+
+聚合全部 GEO 线索、交付物与内容生产状态，帮助交付团队快速判断今日应该优先处理什么。**纯前端聚合页**，不新增后端接口或实体。
+
+### 数据来源
+
+并行请求 6 个 API（pageSize=100）：
+
+| API | 用途 |
+|-----|------|
+| GET `/api/v1/geo-leads?page=1&pageSize=100` | 所有线索 |
+| GET `/api/v1/geo-reports?page=1&pageSize=100` | 所有报告 |
+| GET `/api/v1/geo-brand-assets?page=1&pageSize=100` | 所有资产包 |
+| GET `/api/v1/geo-content-topics?page=1&pageSize=100` | 所有选题 |
+| GET `/api/v1/geo-content-plans?page=1&pageSize=100` | 所有计划 |
+| GET `/api/v1/geo-content-drafts?page=1&pageSize=100` | 所有稿件 |
+
+### 页面布局（8 区块）
+
+| # | 组件 | 说明 |
+|---|------|------|
+| 1 | 页面标题 + 导航链接 | "MOY GEO 运营总览" |
+| 2 | DashboardKpis | 8 指标卡片（线索/待处理/有效/成交/报告/资产包/选题/稿件） |
+| 3 | TodoList | 12 条规则生成待办（分类：线索/交付/内容） |
+| 4 | LeadFunnel | 7 级状态条形图 |
+| 5 | ContentStatusSummary | 选题 7 状态 + 稿件 5 状态条形图 |
+| 6 | RecentLeads | 最近 10 条线索 |
+| 7 | RecentDeliverables | 报告/资产包/稿件 top 5 |
+| 8 | ProjectRiskList | 9 条规则生成风险列表 |
+
+### 待办规则
+
+自动 12 条规则覆盖：线索未联系、线索未判定、有效线索待推进、报告缺资产包、资产包缺选题、选题缺稿件、稿件待审核、稿件待发布、选题待撰写
+
+### 风险规则
+
+自动 9 条规则覆盖：未启动诊断、资产建设卡住、内容规划滞后、选题未转化、稿件未交付、跟进停滞 >7 天、成交停滞 >7 天
+
+### 容错
+
+- Promise.allSettled 并行
+- 全部为空 → 引导页
+- 无 token → 提示
+
+### Dashboard 入口
+
+| 从 | 跳转 |
+|----|------|
+| `/admin` | 自动显示 Dashboard |
+| `/admin/dashboard` | 直接进入 Dashboard |
+| Dashboard 顶部导航 | 线索管理 / 客户工作台 |
+
 ## 后续计划
 
 - S3：客户登录后台、诊断报告在线查看
