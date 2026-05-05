@@ -8,6 +8,10 @@ export class Payment extends BaseEntity {
   @Index()
   orderId: string;
 
+  @Column({ type: 'uuid', name: 'bill_id', nullable: true })
+  @Index()
+  billId: string | null;
+
   @Column({ type: 'uuid', name: 'customer_id' })
   @Index()
   customerId: string;

@@ -97,14 +97,50 @@ cd sites/geo && npm run dev        # http://localhost:5176
 
 ```
 src/
-├── App.tsx                        # 页面布局（导航 + 9 个 section）
+├── App.tsx                        # 页面布局 + 路由分发（官网 / admin）
 ├── config.ts                      # GEO_LEAD_ENDPOINT 配置
 ├── types.ts                       # LeadFormData / LeadSubmission 类型
 ├── leadStorage.ts                 # localStorage 读写 + 可选 POST
 ├── styles.tsx                     # 样式常量
-└── components/
-    ├── LeadForm.tsx               # 表单组件（校验 + 提交）
-    └── DevSubmissionsPanel.tsx    # 开发调试面板（仅 dev 可见）
+├── components/
+│   ├── LeadForm.tsx               # 表单组件（校验 + 提交）
+│   └── DevSubmissionsPanel.tsx    # 开发调试面板（仅 dev 可见）
+└── admin/
+    ├── AdminLeadsPage.tsx         # 内部线索运营后台
+    ├── adminTypes.ts              # 管理台类型定义
+    ├── geoAdminApi.ts             # 管理接口调用封装
+    ├── reports/
+    │   ├── ReportBuilderPage.tsx  # 诊断报告生成器主页
+    │   ├── reportTypes.ts         # 报告类型定义
+    │   ├── reportStorage.ts       # localStorage 草稿读写
+    │   ├── reportMarkdown.ts      # Markdown 报告生成
+    │   └── components/
+    │       ├── CustomerInfoForm.tsx   # 客户信息表单
+    │       ├── DiagnosisScopeForm.tsx # 诊断范围表单
+    │       ├── TestResultEditor.tsx   # 测试结果编辑器
+    │       ├── SummaryForm.tsx        # 初步判断表单
+    │       └── MarkdownPreview.tsx    # Markdown 预览与导出
+    ├── brand-assets/
+    │   ├── BrandAssetBuilderPage.tsx  # 品牌资产包生成器主页
+    │   ├── brandAssetTypes.ts         # 资产包类型定义
+    │   ├── brandAssetStorage.ts       # localStorage 草稿读写
+    │   ├── brandAssetMarkdown.ts      # Markdown 资产包生成
+    │   └── components/
+    │       ├── BasicInfoForm.tsx          # 基础信息表单
+    │       ├── IntroForm.tsx              # 标准介绍表单
+    │       ├── ServiceItemsEditor.tsx     # 产品服务编辑器
+    │       ├── AdvantagesEditor.tsx       # 核心优势编辑器
+    │       ├── CasesEditor.tsx            # 成功案例编辑器
+    │       ├── FAQEditor.tsx              # FAQ 编辑器
+    │       ├── CompetitorDiffEditor.tsx   # 竞品差异编辑器
+    │       ├── ComplianceMaterialForm.tsx # 合规材料表单
+    │       └── BrandAssetPreview.tsx      # 资产包预览与导出
+    └── components/
+        ├── AdminTokenPanel.tsx    # 管理员 Token 输入
+        ├── LeadFilters.tsx        # 状态筛选 + 关键词搜索
+        ├── LeadTable.tsx          # 线索列表表格
+        ├── LeadDetailPanel.tsx    # 线索详情抽屉 + 状态更新
+        └── StatusBadge.tsx        # 状态标签
 ```
 
 ## 相关后台接口
@@ -115,6 +151,163 @@ src/
 | `GET /api/v1/geo-leads` | 管理端：线索列表（需 JWT） |
 | `GET /api/v1/geo-leads/:id` | 管理端：线索详情（需 JWT） |
 | `PATCH /api/v1/geo-leads/:id/status` | 管理端：状态流转（需 JWT） |
+
+## GEO Admin 本地使用
+
+```bash
+# 1. 启动后端（需 PostgreSQL）
+cd backend && npm run start:dev         # http://localhost:3001
+
+# 2. 启动 GEO 前端
+cd sites/geo && npm run dev             # http://localhost:5176
+
+# 3. 打开管理后台
+#    http://localhost:5176/admin/leads
+
+# 4. 输入 Token
+#    登录 MOY App（http://localhost:5173），从浏览器 DevTools → Application → LocalStorage
+#    获取 access_token，粘贴到管理后台的 Token 输入框中
+
+# 5. 查看和处理线索
+#    - 筛选状态 / 搜索关键词
+#    - 点击"详情"查看完整信息
+#    - 在右侧抽屉中更新状态
+```
+
+**说明**：
+
+- 当前 Token 输入是临时内部方案，后续会接入统一登录
+- 管理接口不能公开暴露给无权限用户
+- 后端 `GET /api/v1/geo-leads` 等接口需要 JWT 认证
+- Token 保存在 `localStorage` key `moy_geo_admin_token`
+
+## 诊断报告生成器
+
+### 页面路径
+
+`/admin/reports/new` — MOY GEO AI 搜索可见度诊断报告生成器。
+
+### 定位
+
+基于客户资料、目标问题、竞品信息和人工测试结果，生成可交付给客户的 AI 搜索可见度诊断报告。**当前版本为人工录入 + 模板生成，不自动调用 AI 模型**。
+
+### 表单字段
+
+| 分类 | 字段 |
+|------|------|
+| 客户信息 | companyName, brandName, website, industry, targetCity, contactName |
+| 诊断范围 | diagnosisDate, platforms（8 平台多选）, competitors, targetQuestions |
+| 测试结果 | 多条测试记录，每条含 question, platform, brandMentioned, brandDescription, competitorsMentioned, sentiment（正向/中性/负向/未提及）, accuracy（准确/部分准确/不准确/无法判断）, notes |
+| 初步判断 | visibilitySummary, mainProblems, opportunities, recommendedActions |
+
+### 报告结构
+
+生成的 Markdown 报告含以下章节：
+
+1. 诊断背景
+2. 诊断范围（测试平台 / 目标问题 / 主要竞品）
+3. AI 回答测试结果（Markdown 表格）
+4. 关键发现
+5. 风险与问题
+6. 优化机会
+7. 建议执行动作
+8. 下一步计划（固定模板）
+9. 合规说明（固定模板）
+
+### 操作功能
+
+- **生成报告** — 从表单生成 Markdown
+- **复制 Markdown** — 一键复制到剪贴板（支持降级方案）
+- **下载 .md 文件** — 以 `{品牌名称}_AI可见度诊断报告.md` 命名
+- **保存草稿** — localStorage key `moy_geo_report_draft`
+- **恢复草稿** — 从 localStorage 恢复上次未完成的编辑
+- **清空表单** — 清除所有输入（需确认）
+
+### 从 lead 带入客户信息
+
+访问 `/admin/reports/new?leadId=xxx`，页面会尝试调用 `GET /api/v1/geo-leads/:id`（使用 `moy_geo_admin_token`）自动填充客户信息字段：
+
+- companyName → 公司名称
+- brandName → 品牌名称
+- website → 官网
+- industry → 行业
+- targetCity → 目标城市
+- contactName → 联系人
+
+如果 token 不存在或请求失败，不阻塞页面，仅提示"无法自动读取 lead，请手动填写"。
+
+### 本地使用
+
+```bash
+# 1. 启动后端（可选，仅当需要 leadId 带入时）
+cd backend && npm run start:dev         # http://localhost:3001
+
+# 2. 启动 GEO 前端
+cd sites/geo && npm run dev             # http://localhost:5176
+
+# 3. 打开报告生成器
+#    http://localhost:5176/admin/reports/new
+
+# 4. 从已有 lead 带入数据（可选）
+#    http://localhost:5176/admin/reports/new?leadId=1
+```
+
+## 品牌事实资产包生成器
+
+### 页面路径
+
+`/admin/brand-assets/new` — MOY GEO 品牌事实资产包生成器。
+
+### 定位
+
+把客户真实资料整理为 AI 可读、可复用、可审核的品牌事实资产。**当前版本为人工录入 + 模板生成，不自动调用 AI 模型**。所有内容必须基于客户真实信息，不得编造。
+
+### 表单结构（9 个模块）
+
+| 模块 | 内容 |
+|------|------|
+| 基础信息 | companyName, brandName, website, industry, targetCity, foundedYear, headquarters, contactInfo |
+| 公司标准介绍 | 一句话介绍 / 100 字简介 / 500 字详细介绍 |
+| 产品与服务 | 多条 serviceItems，每条含 name, targetUsers, painPoints, coreValue, deliverables, priceRange, serviceProcess |
+| 核心优势 | 多条 advantages，每条含 title, description, proof |
+| 成功案例 | 多条 cases，每条含 customerName, industry, problem, solution, result, canPublicize |
+| FAQ | 多条 FAQ，每条含 question, answer |
+| 竞品差异 | 多条 competitorDiffs，每条含 competitor, difference, ourAdvantage, evidence |
+| 可公开引用材料 | 多行文本，如官网链接、公众号文章、新闻稿、案例链接等 |
+| 禁止使用材料 | 多行文本，如未公开客户名称、未授权案例、敏感数据等 |
+
+### 输出结构（10 章节 Markdown）
+
+1. 基础信息
+2. 标准品牌介绍
+3. 产品与服务
+4. 核心优势
+5. 成功案例
+6. 常见问题 FAQ
+7. 竞品差异
+8. 可公开引用材料
+9. 禁止使用材料
+10. GEO 内容使用规范（固定合规说明）
+
+### 操作功能
+
+- **生成资产包** — 从表单生成 Markdown
+- **复制 Markdown** — 一键复制到剪贴板
+- **下载 .md** — 以 `{品牌名称}_品牌事实资产包.md` 命名
+- **保存草稿** — localStorage key `moy_geo_brand_asset_draft`
+- **恢复草稿** — 从 localStorage 恢复
+- **清空** — 清除所有输入（需确认）
+
+### 从 lead 带入客户信息
+
+访问 `/admin/brand-assets/new?leadId=xxx`，自动填充 companyName, brandName, website, industry, targetCity, contactInfo。
+
+### 本地使用
+
+```bash
+# http://localhost:5176/admin/brand-assets/new
+# http://localhost:5176/admin/brand-assets/new?leadId=1
+```
 
 ## 后续计划
 

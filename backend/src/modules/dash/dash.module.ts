@@ -3,11 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MetricSnapshot } from './entities/metric-snapshot.entity';
 import { DashController } from './dash.controller';
 import { DashService } from './dash.service';
-import { Lead } from '../lm/entities/lead.entity';
-import { Conversation } from '../cnv/entities/conversation.entity';
-import { Contract } from '../ct/entities/contract.entity';
-import { Order } from '../ord/entities/order.entity';
-import { Ticket } from '../tk/entities/ticket.entity';
 import { CmModule } from '../cm/cm.module';
 import { LmModule } from '../lm/lm.module';
 import { OmModule } from '../om/om.module';
@@ -21,14 +16,7 @@ import { CsmModule } from '../csm/csm.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      MetricSnapshot,
-      Lead,
-      Conversation,
-      Contract,
-      Order,
-      Ticket,
-    ]),
+    TypeOrmModule.forFeature([MetricSnapshot]),
     CmModule,
     LmModule,
     OmModule,

@@ -1,0 +1,190 @@
+import { useState, useEffect } from "react";
+import { GeoLead, ALL_STATUSES, STATUS_LABELS } from "../adminTypes";
+import { fetchLeadById, updateLeadStatus, getToken } from "../geoAdminApi";
+import StatusBadge from "./StatusBadge";
+
+interface Props {
+  leadId: string | null;
+  onClose: () => void;
+  onUpdated: () => void;
+}
+
+export default function LeadDetailPanel({ leadId, onClose, onUpdated }: Props) {
+  const [lead, setLead] = useState<GeoLead | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [newStatus, setNewStatus] = useState("");
+  const [updateNotes, setUpdateNotes] = useState("");
+  const [updating, setUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState("");
+  const [updateSuccess, setUpdateSuccess] = useState("");
+
+  useEffect(() => {
+    if (!leadId) { setLead(null); setError(""); return; }
+    setLoading(true);
+    setError("");
+    setNewStatus("");
+    setUpdateNotes("");
+    setUpdateError("");
+    setUpdateSuccess("");
+
+    if (!getToken()) {
+      setError("请先输入管理员访问令牌");
+      setLoading(false);
+      return;
+    }
+
+    fetchLeadById(leadId)
+      .then((data) => { setLead(data); setNewStatus(data.status); })
+      .catch((err) => setError(err.message || "加载失败"))
+      .finally(() => setLoading(false));
+  }, [leadId]);
+
+  if (!leadId) return null;
+
+  const handleUpdate = async () => {
+    if (!newStatus || newStatus === lead?.status) {
+      setUpdateError("请选择新状态");
+      return;
+    }
+    setUpdating(true);
+    setUpdateError("");
+    setUpdateSuccess("");
+
+    try {
+      await updateLeadStatus(leadId, { status: newStatus as any, notes: updateNotes || undefined });
+      setUpdateSuccess("状态更新成功");
+      setLead((prev) => prev ? { ...prev, status: newStatus as any } : prev);
+      setUpdateNotes("");
+      onUpdated();
+    } catch (err: any) {
+      setUpdateError(err.message || "更新失败");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const sectionLabel: React.CSSProperties = {
+    fontSize: 11, fontWeight: 600, color: "#8a9aaa", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4,
+  };
+
+  return (
+    <div style={{
+      position: "fixed", right: 0, top: 0, bottom: 0, width: "min(480px, 90vw)",
+      background: "#fff", boxShadow: "-4px 0 20px rgba(0,0,0,0.08)", zIndex: 100,
+      display: "flex", flexDirection: "column",
+    }}>
+      <div style={{ padding: "16px 20px", borderBottom: "1px solid #e8ecf1", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontWeight: 700, fontSize: 16 }}>线索详情</span>
+        <button onClick={onClose} style={{ border: "none", background: "none", fontSize: 20, cursor: "pointer", color: "#5a6a7e" }}>✕</button>
+      </div>
+
+      <div style={{ flex: 1, overflow: "auto", padding: 20 }}>
+        {loading && <div style={{ textAlign: "center", color: "#5a6a7e", padding: 40 }}>加载中...</div>}
+
+        {error && <div style={{ color: "#c62828", fontSize: 13, marginBottom: 16, padding: 12, background: "#ffebee", borderRadius: 6 }}>{error}</div>}
+
+        {lead && (
+          <>
+            <div style={{ marginBottom: 20 }}>
+              <div style={sectionLabel}>基本信息</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Field label="公司名称" value={lead.companyName} />
+                <Field label="品牌名称" value={lead.brandName} />
+                <div style={{ gridColumn: "1 / -1" }}>
+                  <Field label="官网" value={<a href={lead.website} target="_blank" rel="noopener" style={{ color: "#0055cc" }}>{lead.website}</a>} />
+                </div>
+                <Field label="行业" value={lead.industry} />
+                <Field label="目标城市" value={lead.targetCity || "-"} />
+                {lead.competitors && <div style={{ gridColumn: "1 / -1" }}><Field label="主要竞品" value={lead.competitors} /></div>}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={sectionLabel}>联系信息</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <Field label="联系人" value={lead.contactName} />
+                <Field label="联系方式" value={lead.contactMethod} />
+              </div>
+            </div>
+
+            {lead.notes && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={sectionLabel}>备注</div>
+                <div style={{ fontSize: 13, whiteSpace: "pre-wrap", color: "#5a6a7e", background: "#f7f9fb", padding: 12, borderRadius: 6 }}>{lead.notes}</div>
+              </div>
+            )}
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={sectionLabel}>线索状态</div>
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <StatusBadge status={lead.status} />
+                <span style={{ fontSize: 13, color: "#8a9aaa" }}>来源: {lead.source}</span>
+              </div>
+              {lead.firstContactedAt && <div style={{ fontSize: 12, color: "#8a9aaa", marginTop: 6 }}>首次联系: {new Date(lead.firstContactedAt).toLocaleString("zh-CN")}</div>}
+              {lead.convertedToCustomerId && <div style={{ fontSize: 12, color: "#8a9aaa", marginTop: 2 }}>已转为客户: {lead.convertedToCustomerId}</div>}
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={sectionLabel}>系统信息</div>
+              <Field label="IP 地址" value={lead.ipAddress || "-"} />
+              <Field label="User-Agent" value={lead.userAgent || "-"} />
+              <Field label="创建时间" value={new Date(lead.createdAt).toLocaleString("zh-CN")} />
+              <Field label="更新时间" value={new Date(lead.updatedAt).toLocaleString("zh-CN")} />
+            </div>
+
+            <div style={{ borderTop: "1px solid #e8ecf1", paddingTop: 20 }}>
+              <div style={sectionLabel}>状态更新</div>
+              <div style={{ fontSize: 12, color: "#8a9aaa", marginBottom: 10 }}>
+                状态流转受后端规则限制，非法流转会被拒绝。
+              </div>
+
+              <select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+                style={{ width: "100%", padding: "8px 12px", border: "1px solid #d0d7de", borderRadius: 6, fontSize: 14, marginBottom: 10 }}
+              >
+                {ALL_STATUSES.map((s) => (
+                  <option key={s} value={s} disabled={s === lead.status}>{STATUS_LABELS[s]}{s === lead.status ? "（当前）" : ""}</option>
+                ))}
+              </select>
+
+              <textarea
+                placeholder="更新备注（可选）"
+                value={updateNotes}
+                onChange={(e) => setUpdateNotes(e.target.value)}
+                maxLength={2000}
+                rows={3}
+                style={{ width: "100%", padding: "8px 12px", border: "1px solid #d0d7de", borderRadius: 6, fontSize: 13, resize: "vertical", marginBottom: 10 }}
+              />
+
+              <button
+                onClick={handleUpdate}
+                disabled={updating || newStatus === lead.status}
+                style={{
+                  width: "100%", padding: "10px 0", border: "none", borderRadius: 6,
+                  background: updating ? "#d0d7de" : "#0055cc", color: "#fff",
+                  fontSize: 14, fontWeight: 700, cursor: updating ? "not-allowed" : "pointer",
+                }}
+              >
+                {updating ? "更新中..." : "更新状态"}
+              </button>
+
+              {updateError && <div style={{ color: "#c62828", fontSize: 13, marginTop: 8 }}>{updateError}</div>}
+              {updateSuccess && <div style={{ color: "#0f7b3a", fontSize: 13, marginTop: 8 }}>{updateSuccess}</div>}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: "#8a9aaa", marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 13, color: "#0d1b2a", wordBreak: "break-all" }}>{value}</div>
+    </div>
+  );
+}

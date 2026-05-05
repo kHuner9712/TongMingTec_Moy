@@ -1,5 +1,8 @@
 import LeadForm from "./components/LeadForm";
 import DevSubmissionsPanel from "./components/DevSubmissionsPanel";
+import AdminLeadsPage from "./admin/AdminLeadsPage";
+import ReportBuilderPage from "./admin/reports/ReportBuilderPage";
+import BrandAssetBuilderPage from "./admin/brand-assets/BrandAssetBuilderPage";
 import { C, sans, h1, h2, body, small, section, sectionNarrow, sectionWhite, navBar, navLink, btnPrimary, heroBg, painItem, serviceCard, stepItem, footer, SectionLabel } from "./styles";
 
 const FAQ_LIST = [
@@ -13,6 +16,16 @@ const FAQ_LIST = [
 ];
 
 export default function App() {
+  if (window.location.pathname.startsWith("/admin/brand-assets")) {
+    return <BrandAssetBuilderPage />;
+  }
+  if (window.location.pathname.startsWith("/admin/reports")) {
+    return <ReportBuilderPage />;
+  }
+  if (window.location.pathname.startsWith("/admin/leads")) {
+    return <AdminLeadsPage />;
+  }
+
   return (
     <div style={{ fontFamily: sans, color: C.dark, background: C.bg, minHeight: "100vh" }}>
       {/* ==================== NAV ==================== */}

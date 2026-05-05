@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="MOY 墨言 — 企业 AI 增长与经营自动化平台" />
+  <title>MOY — 企业 AI 增长与经营自动化平台</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #1a1a1a;
+      background: #fafafa;
+      line-height: 1.6;
+    }
+    .hero {
+      background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 50%, #162447 100%);
+      color: #fff;
+      text-align: center;
+      padding: 100px 24px 80px;
+    }
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: #4da6ff; }
+    .hero p {
+      font-size: 20px;
+      color: #b0c4de;
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+    .products {
+      max-width: 1080px;
+      margin: -40px auto 60px;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+      padding: 32px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .card:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+      transform: translateY(-2px);
+    }
+    .card .icon { font-size: 36px; margin-bottom: 16px; }
+    .card h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .card .domain { color: #1677ff; font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .card .desc { color: #555; font-size: 14px; line-height: 1.8; margin-bottom: 20px; }
+    .card .status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-live { background: #e6f7e6; color: #389e0d; }
+    .status-mvp { background: #fff7e6; color: #d48806; }
+    .card a {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 8px 20px;
+      background: #1677ff;
+      color: #fff;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .card a:hover { background: #4096ff; }
+    .footer {
+      text-align: center;
+      padding: 32px 24px 40px;
+      color: #999;
+      font-size: 13px;
+      border-top: 1px solid #eee;
+      margin-top: 40px;
+    }
+    .domain-map {
+      max-width: 1080px;
+      margin: 0 auto 60px;
+      padding: 0 24px;
+      text-align: center;
+    }
+    .domain-map h2 { font-size: 20px; font-weight: 600; margin-bottom: 24px; color: #333; }
+    .domain-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+    }
+    .domain-item {
+      background: #f0f5ff;
+      color: #1677ff;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <section class="hero">
+    <h1>MOY <span>墨言</span></h1>
+    <p>企业 AI 增长与经营自动化平台 — 让 AI 驱动可度量、可追责、可复利的业务增长</p>
+  </section>
+
+  <section class="products">
+    <div class="card">
+      <div class="icon">🏢</div>
+      <h3>MOY App</h3>
+      <div class="domain">app.moy.com</div>
+      <p class="desc">
+        AI 原生客户经营系统。覆盖获客→沟通→商机→报价→合同→订单→付款→订阅→交付→验收→客户成功全链路，
+        内置 AI Agent 运行时与治理能力（审批/接管/回滚）。
+      </p>
+      <span class="status status-live">S1 基本完成，S2 主干已落地</span>
+      <br/>
+      <a href="https://app.moy.com">进入系统 →</a>
+    </div>
+
+    <div class="card">
+      <div class="icon">🔍</div>
+      <h3>MOY GEO</h3>
+      <div class="domain">geo.moy.com</div>
+      <p class="desc">
+        AI 搜索增长与品牌可见度服务。帮助企业在 ChatGPT、豆包、Kimi、通义千问、Perplexity、Google AI Overviews
+        等 AI 搜索环境中被看见、被理解、被推荐。
+      </p>
+      <span class="status status-mvp">MVP 阶段：服务化交付</span>
+      <br/>
+      <a href="https://geo.moy.com">了解 GEO →</a>
+    </div>
+
+    <div class="card">
+      <div class="icon">⚡</div>
+      <h3>MOY API</h3>
+      <div class="domain">api.moy.com</div>
+      <p class="desc">
+        多模型 API 网关与开发者平台。提供统一模型调用（OpenAI 兼容格式）、API Key 管理、用量统计、
+        调用日志、模型列表、额度管理与限流控制。
+      </p>
+      <span class="status status-mvp">MVP 阶段：轻量网关</span>
+      <br/>
+      <a href="https://api.moy.com">开发者入口 →</a>
+    </div>
+  </section>
+
+  <section class="domain-map">
+    <h2>域名架构</h2>
+    <div class="domain-grid">
+      <div class="domain-item">moy.com — 品牌官网</div>
+      <div class="domain-item">app.moy.com — MOY App</div>
+      <div class="domain-item">geo.moy.com — MOY GEO</div>
+      <div class="domain-item">api.moy.com — MOY API</div>
+      <div class="domain-item">docs.moy.com — 文档中心（后期）</div>
+      <div class="domain-item">status.moy.com — 服务状态（后期）</div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    MOY 墨言 &copy; 2026 桐鸣科技 &nbsp;|&nbsp; 企业 AI 增长与经营自动化平台
+  </footer>
+
+</body>
+</html>
