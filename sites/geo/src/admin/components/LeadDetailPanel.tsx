@@ -156,6 +156,10 @@ export default function LeadDetailPanel({ leadId, onClose, onUpdated }: Props) {
                   style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#e6f0ff", color: C.blue, border: "1px solid #b3d4ff" }}>
                   进入客户工作台 &rarr;
                 </a>
+                <a href={`/admin/export?leadId=${lead.id}`}
+                  style={{ display: "inline-block", padding: "6px 14px", borderRadius: 6, fontSize: 13, fontWeight: 600, textDecoration: "none", background: "#fef0e8", color: "#d4470f", border: "1px solid #fcd9a5" }}>
+                  📦 导出 GEO 交付包
+                </a>
               </div>
             </div>
 

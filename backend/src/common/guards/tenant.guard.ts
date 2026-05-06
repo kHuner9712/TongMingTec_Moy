@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { SKIP_TENANT_KEY } from '../decorators/skip-tenant.decorator';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -18,6 +19,15 @@ export class TenantGuard implements CanActivate {
     ]);
 
     if (isPublic) {
+      return true;
+    }
+
+    const skipTenant = this.reflector.getAllAndOverride<boolean>(SKIP_TENANT_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (skipTenant) {
       return true;
     }
 

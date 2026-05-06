@@ -21,7 +21,7 @@ npm run build      # tsc --noEmit && vite build → dist/
 
 ## 当前状态
 
-**可部署运营版本**。表单提交已接入真实后端 `POST /api/geo/leads`。
+**可部署运营版本**。MOY GEO S1 已完成服务化交付闭环，进入阶段性冻结（v1.0）。下一阶段重点转向 MOY API Hub MVP。详见 [S1 阶段冻结报告](../docs/GEO/16_GEO_S1阶段冻结报告.md)。
 
 - 9 个字段（公司名称、品牌名称、官网、行业、目标城市、主要竞品、联系人、手机/微信、备注）
 - 前端校验（必填字段、URL 格式）
@@ -630,6 +630,126 @@ title, contentType, targetKeyword, targetQuestion, targetAudience, outline, plan
 | `/admin` | 自动显示 Dashboard |
 | `/admin/dashboard` | 直接进入 Dashboard |
 | Dashboard 顶部导航 | 线索管理 / 客户工作台 |
+
+## GEO Admin Layout
+
+### 概述
+
+所有 `/admin` 路径下的页面统一使用 `AdminLayout` 组件，提供一致的导航和操作体验。
+
+### 布局结构
+
+```
++-----------------------------------------+
+|  AdminNav (sidebar)  |  TopBar          |
+|  200px fixed         |  title + desc    |
+|                      |  + Token badge   |
+|  - 运营总览           |------------------|
+|  - 线索池             |                  |
+|  - 客户工作台          |  Content Area    |
+|  - 诊断报告           |  (scrollable)    |
+|  - 品牌资产           |                  |
+|  - 内容选题           |                  |
+|  - 内容计划           |                  |
+|  - 内容稿件           |                  |
+|  - 返回官网 →         |                  |
++-----------------------------------------+
+```
+
+### 导航高亮规则
+
+| 导航项 | 高亮路径 |
+|--------|----------|
+| 运营总览 | `/admin`, `/admin/`, `/admin/dashboard` |
+| 线索池 | `/admin/leads` |
+| 客户工作台 | `/admin/workspace`, `/admin/workspace?leadId=xxx` |
+| 诊断报告 | `/admin/reports`, `/admin/reports/new` |
+| 品牌资产 | `/admin/brand-assets`, `/admin/brand-assets/new` |
+| 内容选题 | `/admin/content-topics`, `/admin/content-topics/new` |
+| 内容计划 | `/admin/content-plans`, `/admin/content-plans/new` |
+| 内容稿件 | `/admin/content-drafts`, `/admin/content-drafts/new` |
+
+### Token 临时机制
+
+- 沿用现有 `localStorage` key `moy_geo_admin_token`
+- AdminHeader 中显示 Token 状态：已设置（绿色）/ 未设置（琥珀色）
+- 支持设置/更新/清除 Token，无需刷新页面
+- 管理接口需 JWT 认证，Token 保存在浏览器本地存储
+
+### 组件文件
+
+```
+src/admin/layout/
+├── AdminLayout.tsx       # 布局容器（sidebar + topbar + content）
+├── AdminNav.tsx          # 左侧导航栏
+├── AdminHeader.tsx       # 顶部 Token 状态 + 标题
+└── adminNavItems.ts      # 导航项定义 + 高亮匹配逻辑
+
+src/admin/components/
+├── AdminEmptyState.tsx   # 统一空状态组件
+└── AdminErrorState.tsx   # 统一错误状态组件
+```
+
+### 后续统一登录计划
+
+当前 Token 输入为临时方案。后续计划：
+1. GEO Admin 接入 MOY App 统一登录
+2. 根据角色（GEO 交付经理、GEO 内容编辑、GEO 客户经理）控制可见模块
+3. 与 MOY 审批/接管/回滚中心打通
+
+## GEO 客户交付导出包
+
+### 页面路径
+
+- `/admin/export?leadId=xxx`
+
+### 定位
+
+基于某个 leadId，将客户相关的诊断报告、品牌事实资产包、内容选题、内容计划、内容稿件汇总为一个 Markdown 交付包。**纯前端汇总，不新增后端接口**。
+
+### 导出内容选项
+
+页面提供 8 个 checkbox，默认全部勾选：
+
+- 包含客户基础信息
+- 包含诊断报告
+- 包含品牌事实资产包
+- 包含内容选题
+- 包含内容计划
+- 包含内容稿件
+- 包含合规说明
+- 包含交付摘要
+
+### 操作功能
+
+- 自动加载数据（6 个 API + 逐条详情含 Markdown 正文）
+- 预览生成的 Markdown
+- 复制 Markdown 到剪贴板
+- 下载 `.md` 文件（命名：`{brandName}-GEO交付包-YYYY-MM-DD.md`）
+- 返回客户工作台
+
+### 联动入口
+
+| 来源 | 入口 |
+|------|------|
+| 线索详情抽屉 | 📦 导出 GEO 交付包 |
+| 客户工作台 | 📦 导出客户交付包 |
+
+### 重要约束
+
+- 不生成 PDF、Word、ZIP
+- 不调用 AI 模型
+- 不自动发送给客户
+- 不接客户登录
+- 交付前需人工复核内容和授权范围
+
+### 组件文件
+
+```
+src/admin/export/
+├── ExportPage.tsx        # 导出页面
+└── exportMarkdown.ts     # Markdown 生成逻辑
+```
 
 ## 后续计划
 

@@ -42,6 +42,7 @@ import { DlvModule } from './modules/dlv/dlv.module';
 import { GeoLeadsModule } from './modules/geo-leads/geo-leads.module';
 import { GeoDeliverablesModule } from './modules/geo-deliverables/geo-deliverables.module';
 import { GeoContentModule } from './modules/geo-content/geo-content.module';
+import { ApiHubModule } from './modules/api-hub/api-hub.module';
 
 import { WebSocketModule } from './common/gateway/websocket.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -124,6 +125,7 @@ import jwtConfig from './config/jwt.config';
     GeoLeadsModule,
     GeoDeliverablesModule,
     GeoContentModule,
+    ApiHubModule,
     WebSocketModule,
   ],
   providers: [

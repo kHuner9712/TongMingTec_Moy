@@ -28,6 +28,7 @@ export default function QuickActions({ leadId }: Props) {
         {btn("查看内容计划", `/admin/content-plans?leadId=${leadId}`, C.gray, C.bg)}
         {btn("+ 新建内容稿件", `/admin/content-drafts/new?leadId=${leadId}`, "#7c3aed", "#ede9fe")}
         {btn("查看内容稿件", `/admin/content-drafts?leadId=${leadId}`, C.gray, C.bg)}
+        {btn("📦 导出客户交付包", `/admin/export?leadId=${leadId}`, "#d4470f", "#fef0e8")}
       </div>
     </div>
   );

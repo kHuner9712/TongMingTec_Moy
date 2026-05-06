@@ -13,6 +13,8 @@ import ContentDraftsListPage from "./admin/ContentDraftsListPage";
 import ContentDraftEditorPage from "./admin/ContentDraftEditorPage";
 import GeoWorkspacePage from "./admin/workspace/GeoWorkspacePage";
 import GeoDashboardPage from "./admin/dashboard/GeoDashboardPage";
+import ExportPage from "./admin/export/ExportPage";
+import AdminLayout from "./admin/layout/AdminLayout";
 import { C, sans, h1, h2, body, small, section, sectionNarrow, sectionWhite, navBar, navLink, btnPrimary, heroBg, painItem, serviceCard, stepItem, footer, SectionLabel } from "./styles";
 
 const FAQ_LIST = [
@@ -26,47 +28,50 @@ const FAQ_LIST = [
 ];
 
 export default function App() {
+  if (window.location.pathname.startsWith("/admin/export")) {
+    return <AdminLayout title="客户交付导出包" description="将客户相关交付物汇总为一个 Markdown 交付包"><ExportPage /></AdminLayout>;
+  }
   if (window.location.pathname.startsWith("/admin/workspace")) {
-    return <GeoWorkspacePage />;
+    return <AdminLayout title="客户工作台" description="查看客户项目的完整交付进度"><GeoWorkspacePage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/content-drafts/new")) {
-    return <ContentDraftEditorPage />;
+    return <AdminLayout title="新建内容稿件" description="基于内容选题生成、编辑 GEO 内容稿件"><ContentDraftEditorPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/content-drafts")) {
-    return <ContentDraftsListPage />;
+    return <AdminLayout title="内容稿件" description="管理 GEO 内容稿件的创建、编辑、审核与发布状态"><ContentDraftsListPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/content-topics/new")) {
-    return <ContentTopicEditorPage />;
+    return <AdminLayout title="编辑内容选题" description="为客户规划 GEO 内容选题和文章方向"><ContentTopicEditorPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/content-topics")) {
-    return <ContentTopicsListPage />;
+    return <AdminLayout title="内容选题" description="为客户规划 GEO 内容选题和文章方向"><ContentTopicsListPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/content-plans/new")) {
-    return <ContentPlanEditorPage />;
+    return <AdminLayout title="编辑内容计划" description="规划月度/周期内容发布计划并关联选题"><ContentPlanEditorPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/content-plans")) {
-    return <ContentPlansListPage />;
+    return <AdminLayout title="内容计划" description="规划月度/周期内容发布计划并关联选题"><ContentPlansListPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/brand-assets/new")) {
-    return <BrandAssetBuilderPage />;
+    return <AdminLayout title="新建品牌事实资产包" description="为客户建设品牌事实资产库"><BrandAssetBuilderPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/brand-assets")) {
-    return <BrandAssetsListPage />;
+    return <AdminLayout title="品牌事实资产包" description="管理客户的品牌事实资产库"><BrandAssetsListPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/reports/new")) {
-    return <ReportBuilderPage />;
+    return <AdminLayout title="新建诊断报告" description="为客户生成 GEO 诊断报告"><ReportBuilderPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/reports")) {
-    return <ReportsListPage />;
+    return <AdminLayout title="诊断报告" description="管理客户的 GEO 诊断报告"><ReportsListPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/leads")) {
-    return <AdminLeadsPage />;
+    return <AdminLayout title="线索池" description="管理 GEO 销售线索"><AdminLeadsPage /></AdminLayout>;
   }
   if (window.location.pathname.startsWith("/admin/dashboard")) {
-    return <GeoDashboardPage />;
+    return <AdminLayout title="运营总览" description="汇总 GEO 线索、交付资产、内容生产和项目风险"><GeoDashboardPage /></AdminLayout>;
   }
   if (window.location.pathname === "/admin" || window.location.pathname === "/admin/") {
-    return <GeoDashboardPage />;
+    return <AdminLayout title="运营总览" description="汇总 GEO 线索、交付资产、内容生产和项目风险"><GeoDashboardPage /></AdminLayout>;
   }
 
   return (
