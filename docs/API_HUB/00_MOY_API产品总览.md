@@ -108,6 +108,7 @@
 | [06_后续路线图](./06_后续路线图.md) | S1-S5 阶段演进规划 | 产品 / 开发 |
 | [07_MOY_API_MVP后端开发计划](./07_MOY_API_MVP后端开发计划.md) | MVP 后端开发计划与任务拆解 | 后端开发 |
 | [08_API_Hub_Foundation实现说明](./08_API_Hub_Foundation实现说明.md) | Foundation 后端实现说明 | 开发 / DevOps |
+| [09_OpenAI兼容入口MVP](./09_OpenAI兼容入口MVP.md) | OpenAI-Compatible Entry MVP 实现说明 | 开发 / DevOps |
 
 ## 8. 技术栈（推荐）
 
@@ -125,6 +126,7 @@
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| v0.4 | 2026-05-07 | OpenAI-Compatible Entry MVP 完成：mock /v1/models + /v1/chat/completions，ApiKeyGuard Bearer 鉴权，quota 扣减，usage 记录 |
 | v0.3 | 2026-05-06 | Foundation 安全与文档一致性收口：统一 Key 格式 moy_sk_ + 32 hex，拆分安全响应 DTO，修复 keyHash 泄露，更新全系文档 |
 | v0.2 | 2026-05-06 | MVP 后端基础搭建完成，新增 08 实施报告 |
 | v0.1 | 2026-05 | 初版，MOY API 产品总览与 MVP 设计文档体系建立 |

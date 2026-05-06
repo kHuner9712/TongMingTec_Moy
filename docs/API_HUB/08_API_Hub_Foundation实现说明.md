@@ -269,11 +269,12 @@ Key 测试覆盖：
 9. 无效密钥抛 UnauthorizedException
 10. 已吊销密钥抛 UnauthorizedException
 
-## 11. 下一阶段计划
+## 11. 后续阶段
 
-| 阶段 | 内容 |
-|------|------|
-| S1.5 Chat Proxy | `/v1/chat/completions` 代理转发 + API Key Bearer 认证 + 限流 |
-| S2 Developer Portal | `sites/api` 开发者控制台（apikey 管理、用量看板、文档） |
-| S3 Admin Dashboard | API Hub 运营后台（项目审批、配额管理、调用监控） |
-| S4 Billing | 计费、套餐、按量付费、账单 |
+| 阶段 | 内容 | 文档 |
+|------|------|------|
+| S1.5 OpenAI-Compatible Entry | `/v1/models` + `/v1/chat/completions` mock 入口 + ApiKeyGuard Bearer 鉴权 + quota 扣减 | [09_OpenAI兼容入口MVP](./09_OpenAI兼容入口MVP.md) ✅ 已完成 |
+| S2 Provider Proxy | `/v1/chat/completions` 真实代理转发到 OpenAI / DeepSeek 等 + Stream 支持 | 待开发 |
+| S3 Developer Portal | `sites/api` 开发者控制台（apikey 管理、用量看板、文档） | 待开发 |
+| S4 Admin Dashboard | API Hub 运营后台（项目审批、配额管理、调用监控） | 待开发 |
+| S5 Billing | 计费、套餐、按量付费、账单 | 待开发 |

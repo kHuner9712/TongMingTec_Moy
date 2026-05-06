@@ -1,5 +1,6 @@
 # MOY API MVP 范围
 
+> **OpenAI-Compatible Entry MVP 已完成 (2026-05-07)**：`/v1/models` 和 `/v1/chat/completions` mock 入口已实现，ApiKeyGuard Bearer 鉴权，quota 扣减，usage 记录。
 > **Foundation 已完成 (2026-05-06)**：后端基础（项目管理、Key 管理、模型注册、额度管理、调用记录）已实现。
 > `/v1/chat/completions` 代理转发、`/v1/models` 开放接口、developer portal 前端为下一阶段任务。
 > API Key 最终格式：`moy_sk_` + 32 hex。管理接口需要 MOY JWT。详见 [08_API_Hub_Foundation实现说明](./08_API_Hub_Foundation实现说明.md)。

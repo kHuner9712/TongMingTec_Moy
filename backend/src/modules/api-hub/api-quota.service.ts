@@ -6,6 +6,20 @@ import { ApiProject } from "./entities/api-project.entity";
 import { ApiModel } from "./entities/api-model.entity";
 import { SetMonthlyQuotaDto, UpdateMonthlyQuotaDto, QueryMonthlyQuotaDto, MonthlyQuotaResponseDto } from "./dto/api-monthly-quota.dto";
 
+export class QuotaNotConfiguredError extends Error {
+  constructor() {
+    super("QUOTA_NOT_CONFIGURED");
+    this.name = "QuotaNotConfiguredError";
+  }
+}
+
+export class QuotaExceededError extends Error {
+  constructor() {
+    super("QUOTA_EXCEEDED");
+    this.name = "QuotaExceededError";
+  }
+}
+
 @Injectable()
 export class ApiQuotaService {
   constructor(
@@ -93,6 +107,30 @@ export class ApiQuotaService {
     }
 
     return { allowed, remaining: Math.max(0, quota.quotaLimit - newUsed) };
+  }
+
+  async getCurrentMonthlyQuota(projectId: string, modelId: string): Promise<ApiMonthlyQuota | null> {
+    const period = new Date().toISOString().substring(0, 7);
+    return this.repo.findOne({ where: { projectId, modelId, period } });
+  }
+
+  async assertQuotaAvailable(projectId: string, modelId: string, totalTokens: number): Promise<void> {
+    const quota = await this.getCurrentMonthlyQuota(projectId, modelId);
+    if (!quota) throw new QuotaNotConfiguredError();
+
+    const newUsed = +quota.quotaUsed + totalTokens;
+    if (quota.quotaLimit > 0 && newUsed > +quota.quotaLimit) {
+      throw new QuotaExceededError();
+    }
+  }
+
+  async consumeQuota(projectId: string, modelId: string, totalTokens: number): Promise<void> {
+    const period = new Date().toISOString().substring(0, 7);
+    const quota = await this.repo.findOne({ where: { projectId, modelId, period } });
+    if (!quota) throw new QuotaNotConfiguredError();
+
+    quota.quotaUsed = +quota.quotaUsed + totalTokens;
+    await this.repo.save(quota);
   }
 
   async getRemaining(projectId: string, modelId: string): Promise<{ remaining: number; used: number; limit: number }> {

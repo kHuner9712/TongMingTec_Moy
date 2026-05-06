@@ -1,8 +1,8 @@
 # MOY API MVP 后端开发计划
 
+> **OpenAI-Compatible Entry MVP 已完成 (2026-05-07)**：`/v1/chat/completions` (mock) + `/v1/models` 开放接口、ApiKeyGuard Bearer 鉴权、quota 扣减、usage 记录均已实现。
 > **Foundation 已完成 (2026-05-06)**：项目管理、Key 管理（`moy_sk_` + 32 hex / SHA-256 / 明文仅返回一次 / 安全响应 DTO）、模型注册、额度管理、调用记录均已实现。
-> **下一阶段**：`/v1/chat/completions` 代理转发、`/v1/models` 开放接口、ChatCompletionsProxyService、ApiKeyGuard、RateLimit。
-> 详见 [08_API_Hub_Foundation实现说明](./08_API_Hub_Foundation实现说明.md)。
+> **下一阶段**：真实 Provider Proxy（接入 OpenAI / DeepSeek 等真实模型供应商）。
 
 ## 1. 文档用途
 

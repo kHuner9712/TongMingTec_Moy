@@ -53,4 +53,24 @@ export class ApiProjectModelsService {
     if (!pm) throw new NotFoundException("PROJECT_MODEL_NOT_FOUND");
     await this.repo.remove(pm);
   }
+
+  async findEnabledModelsForProject(projectId: string): Promise<(ApiProjectModel & { model?: ApiModel })[]> {
+    const entries = await this.repo.find({ where: { projectId, enabled: true } });
+    if (entries.length === 0) return [];
+
+    const modelIds = entries.map((e) => e.modelId);
+    const models = await this.modelRepo.findByIds(modelIds);
+    const modelMap = new Map(models.map((m) => [m.id, m]));
+    return entries.map((e) => ({ ...e, model: modelMap.get(e.modelId) }));
+  }
+
+  async findEnabledModelByModelId(projectId: string, modelIdString: string): Promise<(ApiProjectModel & { model?: ApiModel }) | null> {
+    const model = await this.modelRepo.findOne({ where: { modelId: modelIdString } });
+    if (!model) return null;
+
+    const pm = await this.repo.findOne({ where: { projectId, modelId: model.id, enabled: true } });
+    if (!pm) return null;
+
+    return { ...pm, model };
+  }
 }

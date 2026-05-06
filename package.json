@@ -9,7 +9,6 @@
     "dev:official": "npm --prefix sites/official run dev",
     "dev:geo": "npm --prefix sites/geo run dev",
     "dev:api": "npm --prefix sites/api run dev",
-
     "build": "npm run build:app && npm run build:backend && npm run build:sites",
     "build:app": "npm --prefix frontend run build",
     "build:backend": "npm --prefix backend run build",
@@ -17,10 +16,10 @@
     "build:geo": "npm --prefix sites/geo run build",
     "build:api": "npm --prefix sites/api run build",
     "build:sites": "npm run build:official && npm run build:geo && npm run build:api",
-
     "test": "npm run test:app && npm run test:backend",
     "test:app": "npm --prefix frontend run test",
     "test:backend": "npm --prefix backend run test",
-    "test:smoke:geo-leads": "npm --prefix backend run test:smoke:geo-leads"
+    "test:smoke:geo-leads": "npm --prefix backend run test:smoke:geo-leads",
+    "test:smoke:api-hub": "npm --prefix backend run test:smoke:api-hub"
   }
 }

@@ -12,16 +12,19 @@ import { ApiModelsService } from "./api-models.service";
 import { ApiProjectModelsService } from "./api-project-models.service";
 import { ApiQuotaService } from "./api-quota.service";
 import { ApiUsageService } from "./api-usage.service";
+import { OpenaiCompatibleService } from "./openai-compatible.service";
 import { ApiProjectsController } from "./api-projects.controller";
 import { ApiKeysController } from "./api-keys.controller";
 import { ApiModelsController } from "./api-models.controller";
 import { ApiUsageController } from "./api-usage.controller";
 import { ApiHubHealthController } from "./api-hub.controller";
+import { OpenaiCompatibleController } from "./openai-compatible.controller";
+import { ApiKeyGuard } from "./guards/api-key.guard";
 
 @Module({
   imports: [TypeOrmModule.forFeature([ApiProject, ApiProjectKey, ApiModel, ApiProjectModel, ApiMonthlyQuota, ApiUsageRecord])],
-  controllers: [ApiProjectsController, ApiKeysController, ApiModelsController, ApiUsageController, ApiHubHealthController],
-  providers: [ApiProjectsService, ApiKeysService, ApiModelsService, ApiProjectModelsService, ApiQuotaService, ApiUsageService],
+  controllers: [ApiProjectsController, ApiKeysController, ApiModelsController, ApiUsageController, ApiHubHealthController, OpenaiCompatibleController],
+  providers: [ApiProjectsService, ApiKeysService, ApiModelsService, ApiProjectModelsService, ApiQuotaService, ApiUsageService, OpenaiCompatibleService, ApiKeyGuard],
   exports: [ApiKeysService, ApiQuotaService, ApiUsageService],
 })
 export class ApiHubModule {}

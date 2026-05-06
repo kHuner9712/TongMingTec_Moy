@@ -50,7 +50,7 @@ async function bootstrap() {
   ];
 
   app.setGlobalPrefix("api/v1", {
-    exclude: ["api/geo/(.*)"],
+    exclude: ["v1/(.*)", "api/geo/(.*)"],
   });
 
   app.useGlobalPipes(
