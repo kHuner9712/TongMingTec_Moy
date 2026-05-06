@@ -1,4 +1,4 @@
-import http from "node:http";
+import { request } from "./utils/http-request.mjs";
 
 const BASE_URL = process.env.API_HUB_SMOKE_BASE_URL || "http://localhost:3001";
 const API_KEY = process.env.API_HUB_SMOKE_KEY || "";
@@ -14,32 +14,6 @@ function report(label, ok, detail) {
 }
 
 function info(msg) { console.log(`  INFO  ${msg}`); }
-
-function request(method, path, { body, auth } = {}) {
-  return new Promise((resolve, reject) => {
-    const url = new URL(path, BASE_URL);
-    const opts = {
-      method,
-      hostname: url.hostname,
-      port: url.port,
-      path: url.pathname + url.search,
-      headers: { "content-type": "application/json" },
-    };
-    if (auth) opts.headers["authorization"] = `Bearer ${auth}`;
-    const req = http.request(opts, (res) => {
-      const chunks = [];
-      res.on("data", (c) => chunks.push(c));
-      res.on("end", () => {
-        let data;
-        try { data = JSON.parse(Buffer.concat(chunks).toString()); } catch { data = Buffer.concat(chunks).toString(); }
-        resolve({ status: res.statusCode, headers: res.headers, data });
-      });
-    });
-    req.on("error", reject);
-    if (body) req.write(JSON.stringify(body));
-    req.end();
-  });
-}
 
 function isMockResponse(data) {
   const content = data?.choices?.[0]?.message?.content || "";
@@ -69,7 +43,7 @@ async function run() {
 
   // 1. GET /v1/models
   console.log("1. GET /v1/models");
-  const m1 = await request("GET", "/v1/models", { auth: API_KEY });
+  const m1 = await request("GET", BASE_URL, "/v1/models", { auth: API_KEY });
   report("status 200", m1.status === 200, `got ${m1.status}`);
   report("object=list", m1.data?.object === "list");
   if (m1.data?.data) {
@@ -80,9 +54,9 @@ async function run() {
 
   // 2. POST /v1/chat/completions → DeepSeek provider
   console.log("2. POST /v1/chat/completions → DeepSeek provider");
-  const m2 = await request("POST", "/v1/chat/completions", {
-    body: { model: MODEL, messages: [{ role: "user", content: "你是谁？" }] },
+  const m2 = await request("POST", BASE_URL, "/v1/chat/completions", {
     auth: API_KEY,
+    body: { model: MODEL, messages: [{ role: "user", content: "你是谁？" }] },
   });
 
   if (m2.status === 502) {
@@ -124,9 +98,9 @@ async function run() {
 
   // 3. stream=true 返回 400
   console.log("3. stream=true 返回 400");
-  const m3 = await request("POST", "/v1/chat/completions", {
-    body: { model: MODEL, messages: [{ role: "user", content: "Hi" }], stream: true },
+  const m3 = await request("POST", BASE_URL, "/v1/chat/completions", {
     auth: API_KEY,
+    body: { model: MODEL, messages: [{ role: "user", content: "Hi" }], stream: true },
   });
   report("status 400", m3.status === 400, `got ${m3.status}`);
   report("code stream_not_supported", m3.data?.error?.code === "stream_not_supported", `got ${m3.data?.error?.code}`);
@@ -134,9 +108,9 @@ async function run() {
 
   // 4. mock model still accessible for comparison
   console.log("4. mock model (moy-mock-chat) still works");
-  const m4 = await request("POST", "/v1/chat/completions", {
-    body: { model: "moy-mock-chat", messages: [{ role: "user", content: "Hello" }] },
+  const m4 = await request("POST", BASE_URL, "/v1/chat/completions", {
     auth: API_KEY,
+    body: { model: "moy-mock-chat", messages: [{ role: "user", content: "Hello" }] },
   });
   report("status 200 or 403", [200, 403].includes(m4.status), `got ${m4.status}`);
   if (m4.status === 200) {

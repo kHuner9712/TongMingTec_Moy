@@ -99,12 +99,18 @@ POST /v1/chat/completions
 
 ## 8. Seed 脚本 — 一键初始化
 
+脚本使用通用 `http-request.mjs`（自动适配 http/https），同时支持本地和生产环境。
+
 ```bash
 # 设置 JWT token
 $env:API_HUB_SEED_JWT="eyJhbGci..."
 
-# 运行种子脚本
+# 本地（默认 http://localhost:3001）
 npm run seed:api-hub:deepseek
+
+# 生产环境
+# $env:API_HUB_SEED_BASE_URL="https://api.app.moy.com"
+# npm run seed:api-hub:deepseek
 ```
 
 脚本自动创建完整 DeepSeek 调用链路：
@@ -132,11 +138,20 @@ npm run seed:api-hub:deepseek
 
 ## 9. Smoke Test
 
+使用通用 `http-request.mjs`（自动适配 http/https），同时支持本地和生产环境。
+
 ```bash
+# 本地
 $env:API_HUB_SMOKE_BASE_URL="http://localhost:3001"
 $env:API_HUB_SMOKE_KEY="moy_sk_..."
 $env:API_HUB_SMOKE_MODEL="moy-deepseek-chat"
 npm run test:smoke:api-hub-deepseek
+
+# 生产环境
+# $env:API_HUB_SMOKE_BASE_URL="https://api.app.moy.com"
+# $env:API_HUB_SMOKE_KEY="moy_sk_..."
+# $env:API_HUB_SMOKE_MODEL="moy-deepseek-chat"
+# npm run test:smoke:api-hub-deepseek
 ```
 
 ### 环境变量
@@ -198,5 +213,6 @@ API_HUB_PROVIDER_TIMEOUT_MS=60000
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
-| v1.0 | 2026-05-07 | DeepSeek Provider Proxy MVP：entity/migration/providers/service/controller/console/tests/docs |
+| v1.2 | 2026-05-07 | HTTPS 兼容收口：通用 http-request.mjs / seed smoke 双协议支持 |
 | v1.1 | 2026-05-07 | 安全语义收口：软停用 remove / mock 兼容 (`__mock__`/`mock`/`moy`) / seed 脚本 / smoke 增强 / console 提示 |
+| v1.0 | 2026-05-07 | DeepSeek Provider Proxy MVP：entity/migration/providers/service/controller/console/tests/docs |

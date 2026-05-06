@@ -44,12 +44,18 @@ $env:API_HUB_SEED_JWT="eyJhbGci..."
 # 运行 seed 脚本（自动创建 DeepSeek 完整测试链路）
 npm run seed:api-hub:deepseek
 
-# 运行 smoke test 验证
+# 运行 smoke test 验证（本地 http）
 $env:API_HUB_SMOKE_BASE_URL="http://localhost:3001"
 $env:API_HUB_SMOKE_KEY="<seed 输出的 key>"
 $env:API_HUB_SMOKE_MODEL="moy-deepseek-chat"
 npm run test:smoke:api-hub-deepseek
+
+# 生产环境（https）
+# $env:API_HUB_SEED_BASE_URL="https://api.app.moy.com"
+# $env:API_HUB_SMOKE_BASE_URL="https://api.app.moy.com"
 ```
+
+seed 需要 MOY JWT；smoke 需要 `moy_sk_` API Key。两个脚本均支持 http 和 https。
 
 ### 手动调试流程
 
