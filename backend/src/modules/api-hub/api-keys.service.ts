@@ -4,7 +4,7 @@ import { Repository } from "typeorm";
 import * as crypto from "crypto";
 import { ApiProjectKey, ApiProjectKeyStatus } from "./entities/api-project-key.entity";
 import { ApiProject } from "./entities/api-project.entity";
-import { CreateApiKeyDto, UpdateApiKeyDto, QueryApiKeyDto, ApiKeyResponseDto } from "./dto/api-project-key.dto";
+import { CreateApiKeyDto, UpdateApiKeyDto, QueryApiKeyDto, CreateApiKeyResponseDto, ApiKeySafeResponseDto } from "./dto/api-project-key.dto";
 
 const ALLOWED_TRANSITIONS: Record<ApiProjectKeyStatus, ApiProjectKeyStatus[]> = {
   active: ["revoked", "expired"],
@@ -13,7 +13,7 @@ const ALLOWED_TRANSITIONS: Record<ApiProjectKeyStatus, ApiProjectKeyStatus[]> = 
 };
 
 function generateApiKey(): { raw: string; prefix: string; hash: string } {
-  const raw = "moy_" + crypto.randomBytes(24).toString("hex");
+  const raw = "moy_sk_" + crypto.randomBytes(16).toString("hex");
   const prefix = raw.substring(0, 12);
   const hash = crypto.createHash("sha256").update(raw).digest("hex");
   return { raw, prefix, hash };
@@ -28,7 +28,7 @@ export class ApiKeysService {
     private readonly projectRepo: Repository<ApiProject>,
   ) {}
 
-  async create(projectId: string, dto: CreateApiKeyDto): Promise<ApiKeyResponseDto> {
+  async create(projectId: string, dto: CreateApiKeyDto): Promise<CreateApiKeyResponseDto> {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException("PROJECT_NOT_FOUND");
 
@@ -44,11 +44,10 @@ export class ApiKeysService {
     });
 
     const saved = await this.repo.save(key);
-
-    return this.toResponse(saved, raw);
+    return this.toCreateResponse(saved, raw);
   }
 
-  async findAll(projectId: string, query: QueryApiKeyDto): Promise<{ data: ApiKeyResponseDto[]; total: number }> {
+  async findAll(projectId: string, query: QueryApiKeyDto): Promise<{ data: ApiKeySafeResponseDto[]; total: number }> {
     const page = Math.max(1, +(query.page || 1));
     const pageSize = Math.min(100, Math.max(1, +(query.pageSize || 20)));
 
@@ -62,17 +61,18 @@ export class ApiKeysService {
       take: pageSize,
     });
 
-    return { data: data.map((k) => this.toResponse(k)), total };
+    return { data: data.map((k) => this.toSafeResponse(k)), total };
   }
 
-  async findById(id: string, projectId: string): Promise<ApiProjectKey> {
+  async findById(id: string, projectId: string): Promise<ApiKeySafeResponseDto> {
     const key = await this.repo.findOne({ where: { id, projectId } });
     if (!key) throw new NotFoundException("KEY_NOT_FOUND");
-    return key;
+    return this.toSafeResponse(key);
   }
 
-  async update(id: string, projectId: string, dto: UpdateApiKeyDto): Promise<ApiKeyResponseDto> {
-    const key = await this.findById(id, projectId);
+  async update(id: string, projectId: string, dto: UpdateApiKeyDto): Promise<ApiKeySafeResponseDto> {
+    const key = await this.repo.findOne({ where: { id, projectId } });
+    if (!key) throw new NotFoundException("KEY_NOT_FOUND");
 
     if (dto.name !== undefined) key.name = dto.name;
 
@@ -82,13 +82,15 @@ export class ApiKeysService {
     }
 
     const saved = await this.repo.save(key);
-    return this.toResponse(saved);
+    return this.toSafeResponse(saved);
   }
 
-  async revoke(id: string, projectId: string): Promise<void> {
-    const key = await this.findById(id, projectId);
+  async revoke(id: string, projectId: string): Promise<ApiKeySafeResponseDto> {
+    const key = await this.repo.findOne({ where: { id, projectId } });
+    if (!key) throw new NotFoundException("KEY_NOT_FOUND");
     key.status = "revoked";
-    await this.repo.save(key);
+    const saved = await this.repo.save(key);
+    return this.toSafeResponse(saved);
   }
 
   async validateAndFind(rawKey: string): Promise<ApiProjectKey> {
@@ -112,18 +114,24 @@ export class ApiKeysService {
     }
   }
 
-  private toResponse(key: ApiProjectKey, rawKey?: string): ApiKeyResponseDto {
+  private toSafeResponse(key: ApiProjectKey): ApiKeySafeResponseDto {
     return {
       id: key.id,
       projectId: key.projectId,
       name: key.name,
       keyPrefix: key.keyPrefix,
-      rawKey: rawKey || "",
       status: key.status,
       lastUsedAt: key.lastUsedAt?.toISOString() ?? null,
       expiresAt: key.expiresAt?.toISOString() ?? null,
       createdAt: key.createdAt.toISOString(),
       updatedAt: key.updatedAt.toISOString(),
+    };
+  }
+
+  private toCreateResponse(key: ApiProjectKey, rawKey: string): CreateApiKeyResponseDto {
+    return {
+      ...this.toSafeResponse(key),
+      key: rawKey,
     };
   }
 }

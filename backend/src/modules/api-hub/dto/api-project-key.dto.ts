@@ -30,12 +30,24 @@ export class QueryApiKeyDto {
   pageSize?: number;
 }
 
-export class ApiKeyResponseDto {
+export class CreateApiKeyResponseDto {
   id!: string;
   projectId!: string;
   name!: string;
   keyPrefix!: string;
-  rawKey!: string;
+  key!: string;
+  status!: string;
+  lastUsedAt!: string | null;
+  expiresAt!: string | null;
+  createdAt!: string;
+  updatedAt!: string;
+}
+
+export class ApiKeySafeResponseDto {
+  id!: string;
+  projectId!: string;
+  name!: string;
+  keyPrefix!: string;
   status!: string;
   lastUsedAt!: string | null;
   expiresAt!: string | null;

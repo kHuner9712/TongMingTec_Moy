@@ -4,6 +4,8 @@ export class CreateApiHubTables1714500000000 implements MigrationInterface {
   name = "CreateApiHubTables1714500000000";
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+
     await queryRunner.createTable(
       new Table({
         name: "api_projects",

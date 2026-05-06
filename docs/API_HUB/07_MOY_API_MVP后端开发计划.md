@@ -1,10 +1,12 @@
 # MOY API MVP 后端开发计划
 
+> **Foundation 已完成 (2026-05-06)**：项目管理、Key 管理（`moy_sk_` + 32 hex / SHA-256 / 明文仅返回一次 / 安全响应 DTO）、模型注册、额度管理、调用记录均已实现。
+> **下一阶段**：`/v1/chat/completions` 代理转发、`/v1/models` 开放接口、ChatCompletionsProxyService、ApiKeyGuard、RateLimit。
+> 详见 [08_API_Hub_Foundation实现说明](./08_API_Hub_Foundation实现说明.md)。
+
 ## 1. 文档用途
 
 本文档把 MOY API 从产品设计文档推进到可执行的开发任务。供后端开发团队、技术负责人排期和任务分配使用。
-
-**注意：本文档仅作计划，暂不实现代码。**
 
 前置阅读：
 
@@ -477,4 +479,5 @@ HTTP 状态码：供应商 4xx → 400，供应商 5xx → 502。
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| v0.2 | 2026-05-06 | Foundation 完成，标记 ChatGPT proxy / /v1/models / developer portal 为下一阶段 |
 | v0.1 | 2026-05 | 初版，MOY API MVP 后端开发任务拆分与验收标准 |
