@@ -34,9 +34,9 @@ export default function ProviderConfigPanel({ providerConfigs, onRefresh }: Prop
     } catch (e: any) { setError(e?.data?.message || "创建失败"); }
   };
 
-  const remove = async (provider: string) => {
+  const deactivate = async (provider: string) => {
     setError("");
-    try { await adminApi.providerConfigs.remove(provider); onRefresh(); } catch (e: any) { setError(e?.data?.message || "删除失败"); }
+    try { await adminApi.providerConfigs.remove(provider); onRefresh(); } catch (e: any) { setError(e?.data?.message || "停用失败"); }
   };
 
   return (
@@ -63,7 +63,7 @@ export default function ProviderConfigPanel({ providerConfigs, onRefresh }: Prop
                   <span style={{ marginLeft: 8, padding: "1px 6px", borderRadius: 4, fontSize: 10, background: c.status === "active" ? C.greenBg : C.amberBg, color: c.status === "active" ? C.green : C.amber }}>{c.status}</span>
                   <span style={{ marginLeft: 4, fontSize: 10, color: C.gray }}>env: {c.apiKeyEnvName}</span>
                 </div>
-                <button style={{ ...btn, background: C.red + "15", color: C.red, padding: "3px 8px", fontSize: 11 }} onClick={() => remove(c.provider)}>删除</button>
+                <button style={{ ...btn, background: C.amber + "15", color: C.amber, padding: "3px 8px", fontSize: 11 }} onClick={() => deactivate(c.provider)}>停用</button>
               </div>
             ))}
           </div>

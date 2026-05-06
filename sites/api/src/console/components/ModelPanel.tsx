@@ -50,7 +50,10 @@ export default function ModelPanel({ models, selectedModelId, onSelectModel, onR
         <div style={{ flex: "1 1 200px" }}>
           <input style={inp} value={form.name} onChange={e => update("name", e.target.value)} placeholder="名称" />
           <input style={inp} value={form.modelId} onChange={e => update("modelId", e.target.value)} placeholder="modelId" />
-          <input style={inp} value={form.provider} onChange={e => update("provider", e.target.value)} placeholder="provider" />
+          <input style={inp} value={form.provider} onChange={e => update("provider", e.target.value)} placeholder="provider (推荐: __mock__ / deepseek)" />
+          <div style={{ fontSize: 11, color: C.gray, marginBottom: 6 }}>
+            mock: <code>__mock__</code> · <code>mock</code> · <code>moy</code> &nbsp;|&nbsp; 真实: <code>deepseek</code>
+          </div>
           <select style={inp} value={form.status} onChange={e => update("status", e.target.value)}>
             <option value="public">public</option>
             <option value="internal">internal</option>

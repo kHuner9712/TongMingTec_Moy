@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../../common/guards/jwt-auth.guard";
 import { ApiProviderConfigService } from "./api-provider-config.service";
 import { CreateProviderConfigDto, UpdateProviderConfigDto } from "./dto/api-provider-config.dto";
@@ -29,8 +29,7 @@ export class ApiProviderConfigController {
   }
 
   @Delete(":provider")
-  @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param("provider") provider: string) {
-    await this.service.remove(provider);
+    return this.service.remove(provider);
   }
 }

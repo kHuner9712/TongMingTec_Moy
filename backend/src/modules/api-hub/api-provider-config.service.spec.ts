@@ -74,10 +74,20 @@ describe("ApiProviderConfigService", () => {
       await expect(service.update("unknown", { displayName: "X" })).rejects.toThrow(ProviderNotConfiguredError);
     });
 
-    it("remove", async () => {
-      repo.delete.mockResolvedValue({ affected: 1 });
-      await service.remove("deepseek");
-      expect(repo.delete).toHaveBeenCalledWith({ provider: "deepseek" });
+    it("remove — 软停用（status=inactive）", async () => {
+      const config = { id: "uuid-1", provider: "deepseek", displayName: "DS", baseUrl: "https://api.deepseek.com", apiKeyEnvName: "DEEPSEEK_API_KEY", status: "active", timeoutMs: 60000 };
+      repo.findOne.mockResolvedValue(config);
+      repo.save.mockResolvedValue({ ...config, status: "inactive" });
+
+      const r = await service.remove("deepseek");
+      expect(r.status).toBe("inactive");
+      expect(config.status).toBe("inactive");
+      expect(repo.delete).not.toHaveBeenCalled();
+    });
+
+    it("remove — 不存在的 provider 抛 ProviderNotConfiguredError", async () => {
+      repo.findOne.mockResolvedValue(null);
+      await expect(service.remove("unknown")).rejects.toThrow(ProviderNotConfiguredError);
     });
   });
 

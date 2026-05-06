@@ -57,8 +57,11 @@ export class ApiProviderConfigService {
     return this.repo.save(config);
   }
 
-  async remove(provider: string): Promise<void> {
-    await this.repo.delete({ provider });
+  async remove(provider: string): Promise<ApiProviderConfig> {
+    const config = await this.repo.findOne({ where: { provider } });
+    if (!config) throw new ProviderNotConfiguredError(provider);
+    config.status = "inactive";
+    return this.repo.save(config);
   }
 
   async resolveClient(provider: string): Promise<OpenAICompatibleProviderClient> {

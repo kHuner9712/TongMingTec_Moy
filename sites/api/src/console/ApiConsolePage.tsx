@@ -132,6 +132,7 @@ export default function ApiConsolePage() {
         <OpenAiTestPanel
           selectedModelId={selectedModelId}
           modelIdStr={modelIdStr}
+          modelProvider={selModel?.provider}
         />
         <div style={{ background: C.white, borderRadius: 10, border: "1px solid #e4e8ed", padding: "20px 24px", marginBottom: 16 }}>
           <h2 style={{ fontSize: 17, fontWeight: 700, margin: "0 0 12px" }}>curl 示例</h2>

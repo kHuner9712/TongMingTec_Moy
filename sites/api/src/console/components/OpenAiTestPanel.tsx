@@ -15,9 +15,10 @@ const preStyle: React.CSSProperties = {
 interface Props {
   selectedModelId: string;
   modelIdStr: string;
+  modelProvider?: string;
 }
 
-export default function OpenAiTestPanel({ selectedModelId, modelIdStr }: Props) {
+export default function OpenAiTestPanel({ selectedModelId, modelIdStr, modelProvider }: Props) {
   const [message, setMessage] = useState("Hello MOY API");
   const [modelsResult, setModelsResult] = useState<any>(null);
   const [chatResult, setChatResult] = useState<any>(null);
@@ -67,6 +68,15 @@ export default function OpenAiTestPanel({ selectedModelId, modelIdStr }: Props) 
           <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>Model: {modelIdStr || "(未选择)"}</span>
           </div>
+          {modelProvider && (
+            <div style={{ fontSize: 11, color: C.gray, marginBottom: 6 }}>
+              {(() => {
+                if (["__mock__", "mock", "moy"].includes(modelProvider)) return `provider: ${modelProvider} → 返回本地 mock 响应`;
+                if (modelProvider === "deepseek") return `provider: deepseek → 请求真实 DeepSeek，需后端配置 DEEPSEEK_API_KEY`;
+                return `provider: ${modelProvider} → 通过 Provider Proxy 转发`;
+              })()}
+            </div>
+          )}
           <textarea
             style={textarea}
             value={message}

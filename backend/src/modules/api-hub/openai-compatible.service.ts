@@ -16,7 +16,7 @@ import {
   ProviderUpstreamError,
 } from "./providers/provider-errors";
 
-const MOCK_PROVIDER_KEY = "__mock__";
+const MOCK_PROVIDERS = new Set(["__mock__", "mock", "moy"]);
 const MOCK_RESPONSE_CONTENT = "This is a mock response from MOY API Hub. Real provider forwarding is not enabled in this MVP.";
 
 @Injectable()
@@ -86,7 +86,7 @@ export class OpenaiCompatibleService {
 
     const provider = enabledModel.model!.provider || "";
 
-    if (provider === MOCK_PROVIDER_KEY) {
+    if (MOCK_PROVIDERS.has(provider)) {
       return this.respondMock(apiKey, enabledModel.model!, dto, promptTokens, completionTokens, totalTokens);
     }
 

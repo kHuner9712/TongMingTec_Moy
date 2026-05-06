@@ -21,6 +21,7 @@
     "test:backend": "npm --prefix backend run test",
     "test:smoke:geo-leads": "npm --prefix backend run test:smoke:geo-leads",
     "test:smoke:api-hub": "npm --prefix backend run test:smoke:api-hub",
-    "test:smoke:api-hub-deepseek": "npm --prefix backend run test:smoke:api-hub-deepseek"
+    "test:smoke:api-hub-deepseek": "npm --prefix backend run test:smoke:api-hub-deepseek",
+    "seed:api-hub:deepseek": "npm --prefix backend run seed:api-hub:deepseek"
   }
 }

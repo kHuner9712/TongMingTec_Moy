@@ -20,9 +20,9 @@ function makeKey(overrides: Partial<ApiProjectKey> = {}): ApiProjectKey {
   } as ApiProjectKey;
 }
 
-function makeMockModel(): ApiModel {
+function makeMockModel(provider?: string): ApiModel {
   return {
-    id: "uuid-m1", name: "Mock Chat", provider: "__mock__",
+    id: "uuid-m1", name: "Mock Chat", provider: provider || "__mock__",
     modelId: "moy-mock-chat", upstreamModel: null,
     category: "text", pricingUnit: "token",
     unitLabel: null, description: null, status: "public",
@@ -207,6 +207,36 @@ describe("OpenaiCompatibleService", () => {
 
       expect(usageService.record).toHaveBeenCalled();
       expect(usageService.record.mock.calls[0][1].status).toBe("success");
+    });
+
+    it("provider=mock 走 mock 路径", async () => {
+      const mockAliasModel = makeMockModel("mock");
+      projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(mockAliasModel));
+      quotaService.assertQuotaAvailable.mockResolvedValue(undefined);
+      quotaService.consumeQuota.mockResolvedValue(undefined);
+      usageService.record.mockResolvedValue({});
+
+      const r = await service.createMockChatCompletion(makeKey(), {
+        model: "moy-mock-chat",
+        messages: [{ role: "user", content: "Hi" }],
+      });
+
+      expect(r.choices[0].message.content).toContain("mock response");
+    });
+
+    it("provider=moy 走 mock 路径", async () => {
+      const moyAliasModel = makeMockModel("moy");
+      projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(moyAliasModel));
+      quotaService.assertQuotaAvailable.mockResolvedValue(undefined);
+      quotaService.consumeQuota.mockResolvedValue(undefined);
+      usageService.record.mockResolvedValue({});
+
+      const r = await service.createMockChatCompletion(makeKey(), {
+        model: "moy-mock-chat",
+        messages: [{ role: "user", content: "Hi" }],
+      });
+
+      expect(r.choices[0].message.content).toContain("mock response");
     });
   });
 
