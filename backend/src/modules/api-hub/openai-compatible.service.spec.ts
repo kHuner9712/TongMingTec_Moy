@@ -6,7 +6,7 @@ import { ApiUsageService } from "./api-usage.service";
 import { ApiProjectKey } from "./entities/api-project-key.entity";
 import { ApiModel } from "./entities/api-model.entity";
 import { ApiProjectModel } from "./entities/api-project-model.entity";
-import { BadRequestException, ForbiddenException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, HttpException } from "@nestjs/common";
 
 function makeKey(overrides: Partial<ApiProjectKey> = {}): ApiProjectKey {
   return {
@@ -146,18 +146,15 @@ describe("OpenaiCompatibleService", () => {
     it("6. quota 未配置返回 402", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
       quotaService.assertQuotaAvailable.mockRejectedValue(new QuotaNotConfiguredError());
-      await expect(
-        service.createMockChatCompletion(makeKey(), {
-          model: "moy-mock-chat",
-          messages: [{ role: "user", content: "Hi" }],
-        }),
-      ).rejects.toThrow(ForbiddenException);
       try {
         await service.createMockChatCompletion(makeKey(), {
           model: "moy-mock-chat",
           messages: [{ role: "user", content: "Hi" }],
         });
+        fail("expected HttpException");
       } catch (e: any) {
+        expect(e).toBeInstanceOf(HttpException);
+        expect(e.status).toBe(402);
         expect(e.response.error.code).toBe("quota_not_configured");
       }
     });
@@ -165,18 +162,15 @@ describe("OpenaiCompatibleService", () => {
     it("7. quota 不足返回 402", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
       quotaService.assertQuotaAvailable.mockRejectedValue(new QuotaExceededError());
-      await expect(
-        service.createMockChatCompletion(makeKey(), {
-          model: "moy-mock-chat",
-          messages: [{ role: "user", content: "Hi" }],
-        }),
-      ).rejects.toThrow(ForbiddenException);
       try {
         await service.createMockChatCompletion(makeKey(), {
           model: "moy-mock-chat",
           messages: [{ role: "user", content: "Hi" }],
         });
+        fail("expected HttpException");
       } catch (e: any) {
+        expect(e).toBeInstanceOf(HttpException);
+        expect(e.status).toBe(402);
         expect(e.response.error.code).toBe("quota_exceeded");
       }
     });

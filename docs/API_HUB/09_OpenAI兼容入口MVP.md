@@ -137,8 +137,8 @@ export class OpenaiCompatibleController {
 | `stream: true` | 400, `stream_not_supported` |
 | `messages` 为空或缺少 role/content | 400, `invalid_messages` |
 | model 未在项目中启用 | 403, `model_not_enabled` |
-| 当月额度未配置 | 403, `quota_not_configured` |
-| 当月额度已用完 | 403, `quota_exceeded` |
+| 当月额度未配置 | 402, `quota_not_configured` |
+| 当月额度已用完 | 402, `quota_exceeded` |
 
 ### 5.3 Mock 响应
 

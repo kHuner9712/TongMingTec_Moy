@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException } from "@nestjs/common";
+import { Injectable, BadRequestException, ForbiddenException, HttpException, HttpStatus } from "@nestjs/common";
 import * as crypto from "crypto";
 import { ApiProjectKey } from "./entities/api-project-key.entity";
 import { ApiProjectModelsService } from "./api-project-models.service";
@@ -53,22 +53,22 @@ export class OpenaiCompatibleService {
       await this.quotaService.assertQuotaAvailable(projectId, enabledModel.model!.id, totalTokens);
     } catch (error) {
       if (error instanceof QuotaNotConfiguredError) {
-        throw new ForbiddenException({
+        throw new HttpException({
           error: {
             message: "Monthly quota is not configured for this model",
             type: "invalid_request_error",
             code: "quota_not_configured",
           },
-        });
+        }, HttpStatus.PAYMENT_REQUIRED);
       }
       if (error instanceof QuotaExceededError) {
-        throw new ForbiddenException({
+        throw new HttpException({
           error: {
             message: "Monthly quota exceeded for this model",
             type: "invalid_request_error",
             code: "quota_exceeded",
           },
-        });
+        }, HttpStatus.PAYMENT_REQUIRED);
       }
       throw error;
     }

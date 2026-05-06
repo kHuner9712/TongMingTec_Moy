@@ -3,28 +3,8 @@
    风格：开发者向 · 简洁 · 专业 · 技术可信
    ============================================================ */
 
-const C = {
-  brand:   "#0066e0",
-  brandBg: "#edf4ff",
-  dark:    "#0a1628",
-  darker:  "#040d18",
-  gray:    "#5f6d80",
-  grayLt:  "#eaedf2",
-  bg:      "#f8f9fb",
-  white:   "#fff",
-  green:   "#0f7b3a",
-  greenBg: "#e6f4ea",
-  amber:   "#b85c00",
-  amberBg: "#fff6ea",
-  red:     "#c04040",
-  terminal:"#0d1b2a",
-  termFg:  "#c0d8f0",
-  termAc:  "#5bc0de",
-};
-
-const sans =
-  '-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif';
-const mono = '"Fira Code", "Cascadia Code", "JetBrains Mono", "Consolas", "Menlo", monospace';
+import { C, sans, mono } from "./styles";
+import ApiConsolePage from "./console/ApiConsolePage";
 
 function h1(s: React.CSSProperties): React.CSSProperties { return { fontSize: "clamp(28px, 5vw, 46px)", fontWeight: 800, letterSpacing: "-0.6px", lineHeight: 1.15, ...s }; }
 function h2(s?: React.CSSProperties): React.CSSProperties { return { fontSize: "clamp(22px, 3.5vw, 30px)", fontWeight: 700, letterSpacing: "-0.3px", lineHeight: 1.25, ...s }; }
@@ -36,6 +16,10 @@ function Label({ text }: { text: string }) {
 }
 
 function App() {
+  if (window.location.pathname === "/console") {
+    return <ApiConsolePage />;
+  }
+
   const jsonPayload = `'{"model":"moy-default","messages":[{"role":"user","content":"Hello MOY API"}]}'`;
 
   return (
@@ -49,7 +33,7 @@ function App() {
           {["能力", "模型", "方案", "文档"].map(l => (
             <a key={l} href={`#${l}`} style={{ textDecoration: "none", color: C.gray, fontSize: 14, fontWeight: 500 }}>{l}</a>
           ))}
-          <a href="#pricing" style={{ display: "inline-block", padding: "8px 20px", background: C.brand, color: C.white, borderRadius: 6, textDecoration: "none", fontSize: 14, fontWeight: 700 }}>控制台</a>
+          <a href="/console" style={{ display: "inline-block", padding: "8px 20px", background: C.brand, color: C.white, borderRadius: 6, textDecoration: "none", fontSize: 14, fontWeight: 700 }}>控制台</a>
         </div>
       </nav>
 
@@ -68,7 +52,7 @@ function App() {
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {[
               { t: "查看接入文档", href: "#docs", primary: true },
-              { t: "进入控制台", href: "#", primary: false },
+              { t: "进入控制台", href: "/console", primary: false },
               { t: "申请企业方案", href: "#pricing", primary: false },
             ].map(cta => (
               <a key={cta.t} href={cta.href} style={{ display: "inline-block", padding: "13px 28px", borderRadius: 8, textDecoration: "none", fontSize: 15, fontWeight: 700,
