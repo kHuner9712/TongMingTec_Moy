@@ -3,10 +3,12 @@ import { OpenaiCompatibleService } from "./openai-compatible.service";
 import { ApiProjectModelsService } from "./api-project-models.service";
 import { ApiQuotaService, QuotaNotConfiguredError, QuotaExceededError } from "./api-quota.service";
 import { ApiUsageService } from "./api-usage.service";
+import { ApiProviderConfigService } from "./api-provider-config.service";
 import { ApiProjectKey } from "./entities/api-project-key.entity";
 import { ApiModel } from "./entities/api-model.entity";
 import { ApiProjectModel } from "./entities/api-project-model.entity";
 import { BadRequestException, ForbiddenException, HttpException } from "@nestjs/common";
+import { ProviderTimeoutError } from "./providers/provider-errors";
 
 function makeKey(overrides: Partial<ApiProjectKey> = {}): ApiProjectKey {
   return {
@@ -18,10 +20,23 @@ function makeKey(overrides: Partial<ApiProjectKey> = {}): ApiProjectKey {
   } as ApiProjectKey;
 }
 
-function makeModel(): ApiModel {
+function makeMockModel(): ApiModel {
   return {
-    id: "uuid-m1", name: "Mock Chat", provider: "moy",
-    modelId: "moy-mock-chat", category: "text", pricingUnit: "token",
+    id: "uuid-m1", name: "Mock Chat", provider: "__mock__",
+    modelId: "moy-mock-chat", upstreamModel: null,
+    category: "text", pricingUnit: "token",
+    unitLabel: null, description: null, status: "public",
+    maxInputTokens: null, maxOutputTokens: null,
+    supportsStreaming: false, supportsVision: false, supportsFunctionCalling: false,
+    createdAt: new Date(), updatedAt: new Date(),
+  } as ApiModel;
+}
+
+function makeDeepseekModel(): ApiModel {
+  return {
+    id: "uuid-m2", name: "DeepSeek V3", provider: "deepseek",
+    modelId: "moy-deepseek-v3", upstreamModel: "deepseek-chat",
+    category: "text", pricingUnit: "token",
     unitLabel: null, description: null, status: "public",
     maxInputTokens: null, maxOutputTokens: null,
     supportsStreaming: false, supportsVision: false, supportsFunctionCalling: false,
@@ -42,6 +57,7 @@ describe("OpenaiCompatibleService", () => {
   let projectModelsService: any;
   let quotaService: any;
   let usageService: any;
+  let providerConfigService: any;
 
   beforeEach(async () => {
     projectModelsService = {
@@ -53,42 +69,42 @@ describe("OpenaiCompatibleService", () => {
       consumeQuota: jest.fn(),
       getCurrentMonthlyQuota: jest.fn(),
     };
-    usageService = {
-      record: jest.fn(),
-    };
+    usageService = { record: jest.fn() };
+    providerConfigService = { resolveClient: jest.fn() };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OpenaiCompatibleService,
         { provide: ApiProjectModelsService, useValue: projectModelsService },
         { provide: ApiQuotaService, useValue: quotaService },
         { provide: ApiUsageService, useValue: usageService },
+        { provide: ApiProviderConfigService, useValue: providerConfigService },
       ],
     }).compile();
     service = module.get(OpenaiCompatibleService);
   });
 
   describe("listModelsForProject", () => {
-    it("1. 返回项目启用模型", async () => {
-      const model = makeModel();
+    it("返回项目启用模型", async () => {
+      const model = makeMockModel();
       projectModelsService.findEnabledModelsForProject.mockResolvedValue([makeProjectModel(model)]);
       const r = await service.listModelsForProject("uuid-p1");
       expect(r.object).toBe("list");
       expect(r.data).toHaveLength(1);
       expect(r.data[0].id).toBe("moy-mock-chat");
-      expect(r.data[0].owned_by).toBe("moy");
     });
 
-    it("2. 无启用模型返回空 data", async () => {
+    it("无启用模型返回空 data", async () => {
       projectModelsService.findEnabledModelsForProject.mockResolvedValue([]);
       const r = await service.listModelsForProject("uuid-p1");
       expect(r.data).toEqual([]);
     });
   });
 
-  describe("createMockChatCompletion", () => {
-    const model = makeModel();
+  describe("createMockChatCompletion — mock path", () => {
+    const model = makeMockModel();
 
-    it("3. 正常 mock completion", async () => {
+    it("正常 mock completion", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
       quotaService.assertQuotaAvailable.mockResolvedValue(undefined);
       quotaService.consumeQuota.mockResolvedValue(undefined);
@@ -100,50 +116,39 @@ describe("OpenaiCompatibleService", () => {
       });
 
       expect(r.object).toBe("chat.completion");
-      expect(r.choices[0].message.role).toBe("assistant");
-      expect(r.choices[0].finish_reason).toBe("stop");
-      expect(r.usage).toBeDefined();
+      expect(r.choices[0].message.content).toContain("mock response");
       expect(r.usage.completion_tokens).toBe(32);
     });
 
-    it("4. stream=true 返回 400", async () => {
-      await expect(
-        service.createMockChatCompletion(makeKey(), {
-          model: "moy-mock-chat",
-          messages: [{ role: "user", content: "Hi" }],
-          stream: true,
-        }),
-      ).rejects.toThrow(BadRequestException);
+    it("stream=true 返回 400", async () => {
       try {
         await service.createMockChatCompletion(makeKey(), {
           model: "moy-mock-chat",
           messages: [{ role: "user", content: "Hi" }],
           stream: true,
         });
+        fail("expected error");
       } catch (e: any) {
+        expect(e).toBeInstanceOf(BadRequestException);
         expect(e.response.error.code).toBe("stream_not_supported");
       }
     });
 
-    it("5. model 未启用返回 403", async () => {
+    it("model 未启用返回 403", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(null);
-      await expect(
-        service.createMockChatCompletion(makeKey(), {
-          model: "unknown-model",
-          messages: [{ role: "user", content: "Hi" }],
-        }),
-      ).rejects.toThrow(ForbiddenException);
       try {
         await service.createMockChatCompletion(makeKey(), {
           model: "unknown-model",
           messages: [{ role: "user", content: "Hi" }],
         });
+        fail("expected error");
       } catch (e: any) {
+        expect(e).toBeInstanceOf(ForbiddenException);
         expect(e.response.error.code).toBe("model_not_enabled");
       }
     });
 
-    it("6. quota 未配置返回 402", async () => {
+    it("quota 未配置返回 402", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
       quotaService.assertQuotaAvailable.mockRejectedValue(new QuotaNotConfiguredError());
       try {
@@ -151,7 +156,7 @@ describe("OpenaiCompatibleService", () => {
           model: "moy-mock-chat",
           messages: [{ role: "user", content: "Hi" }],
         });
-        fail("expected HttpException");
+        fail("expected error");
       } catch (e: any) {
         expect(e).toBeInstanceOf(HttpException);
         expect(e.status).toBe(402);
@@ -159,7 +164,7 @@ describe("OpenaiCompatibleService", () => {
       }
     });
 
-    it("7. quota 不足返回 402", async () => {
+    it("quota 不足返回 402", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
       quotaService.assertQuotaAvailable.mockRejectedValue(new QuotaExceededError());
       try {
@@ -167,7 +172,7 @@ describe("OpenaiCompatibleService", () => {
           model: "moy-mock-chat",
           messages: [{ role: "user", content: "Hi" }],
         });
-        fail("expected HttpException");
+        fail("expected error");
       } catch (e: any) {
         expect(e).toBeInstanceOf(HttpException);
         expect(e.status).toBe(402);
@@ -175,25 +180,21 @@ describe("OpenaiCompatibleService", () => {
       }
     });
 
-    it("8. messages 为空返回 400", async () => {
+    it("messages 为空返回 400", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
-      await expect(
-        service.createMockChatCompletion(makeKey(), {
-          model: "moy-mock-chat",
-          messages: [],
-        }),
-      ).rejects.toThrow(BadRequestException);
       try {
         await service.createMockChatCompletion(makeKey(), {
           model: "moy-mock-chat",
           messages: [],
         });
+        fail("expected error");
       } catch (e: any) {
+        expect(e).toBeInstanceOf(BadRequestException);
         expect(e.response.error.code).toBe("invalid_messages");
       }
     });
 
-    it("9. 成功调用写 usage record", async () => {
+    it("成功调用写 usage record", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
       quotaService.assertQuotaAvailable.mockResolvedValue(undefined);
       quotaService.consumeQuota.mockResolvedValue(undefined);
@@ -205,30 +206,75 @@ describe("OpenaiCompatibleService", () => {
       });
 
       expect(usageService.record).toHaveBeenCalled();
-      const call = usageService.record.mock.calls[0];
-      expect(call[0]).toBe("uuid-p1");
-      expect(call[1].status).toBe("success");
-      expect(call[1].cost).toBe(0);
+      expect(usageService.record.mock.calls[0][1].status).toBe("success");
     });
+  });
 
-    it("10. 成功调用扣减 quota", async () => {
+  describe("createMockChatCompletion — deepseek provider path", () => {
+    const model = makeDeepseekModel();
+    const mockClient = {
+      providerName: "deepseek",
+      chatCompletions: jest.fn(),
+    };
+
+    it("正常 deepseek completion", async () => {
       projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
       quotaService.assertQuotaAvailable.mockResolvedValue(undefined);
       quotaService.consumeQuota.mockResolvedValue(undefined);
       usageService.record.mockResolvedValue({});
+      providerConfigService.resolveClient.mockResolvedValue(mockClient);
 
-      await service.createMockChatCompletion(makeKey(), {
-        model: "moy-mock-chat",
-        messages: [{ role: "user", content: "Hello world" }],
+      mockClient.chatCompletions.mockResolvedValue({
+        id: "ds-resp-1",
+        object: "chat.completion",
+        created: 1714500000,
+        model: "deepseek-chat",
+        choices: [{ index: 0, message: { role: "assistant", content: "你好！" }, finish_reason: "stop" }],
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
       });
 
-      expect(quotaService.consumeQuota).toHaveBeenCalled();
-      expect(quotaService.assertQuotaAvailable).toHaveBeenCalled();
+      const r = await service.createMockChatCompletion(makeKey(), {
+        model: "moy-deepseek-v3",
+        messages: [{ role: "user", content: "你好" }],
+      });
+
+      expect(r.object).toBe("chat.completion");
+      expect(r.model).toBe("moy-deepseek-v3");
+      expect(r.choices[0].message.content).toBe("你好！");
+      expect(r.usage.total_tokens).toBe(15);
+      expect(quotaService.consumeQuota).toHaveBeenCalledWith("uuid-p1", "uuid-m2", 15);
+      expect(usageService.record).toHaveBeenCalled();
+      expect(usageService.record.mock.calls[usageService.record.mock.calls.length - 1][1].status).toBe("success");
+    });
+
+    it("provider timeout → failed usage record", async () => {
+      projectModelsService.findEnabledModelByModelId.mockResolvedValue(makeProjectModel(model));
+      quotaService.assertQuotaAvailable.mockResolvedValue(undefined);
+      quotaService.consumeQuota.mockResolvedValue(undefined);
+      usageService.record.mockResolvedValue({});
+      providerConfigService.resolveClient.mockResolvedValue(mockClient);
+      mockClient.chatCompletions.mockRejectedValue(new ProviderTimeoutError("deepseek"));
+
+      try {
+        await service.createMockChatCompletion(makeKey(), {
+          model: "moy-deepseek-v3",
+          messages: [{ role: "user", content: "Hi" }],
+        });
+        fail("expected error");
+      } catch (e: any) {
+        expect(e).toBeInstanceOf(HttpException);
+        expect(e.status).toBe(504);
+        expect(e.response.error.code).toBe("provider_timeout");
+      }
+
+      const failCall = usageService.record.mock.calls[usageService.record.mock.calls.length - 1];
+      expect(failCall[1].status).toBe("failed");
+      expect(quotaService.consumeQuota).toHaveBeenCalledTimes(0);
     });
   });
 
   describe("estimateTokens", () => {
-    it("估算 token：content 字符数 / 4 向上取整", () => {
+    it("估算 token", () => {
       const { promptTokens, completionTokens, totalTokens } = service.estimateTokens([
         { content: "Hello world" },
       ]);

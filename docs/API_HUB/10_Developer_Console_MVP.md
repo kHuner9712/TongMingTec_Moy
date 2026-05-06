@@ -165,7 +165,7 @@ sites/api/src/
 
 ## 9. 后续规划
 
-- **Provider Proxy（下一阶段）**：将 `/v1/chat/completions` 从 mock 演进为真实 provider 转发。详见 [11_Provider_Proxy设计](./11_Provider_Proxy设计.md)。
+- **Provider Proxy（已实现）**：DeepSeek 真实转发 + mock 兼容。详见 [12_DeepSeek_Provider_MVP](./12_DeepSeek_Provider_MVP.md)。
 - 正式开发者门户：注册、登录、在线 API Key 管理
 - 用量面板、调用日志查询
 - 计费、企业套餐

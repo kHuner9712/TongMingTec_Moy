@@ -4,9 +4,19 @@ import { ApiProjectKey } from "./entities/api-project-key.entity";
 import { ApiProjectModelsService } from "./api-project-models.service";
 import { ApiQuotaService, QuotaNotConfiguredError, QuotaExceededError } from "./api-quota.service";
 import { ApiUsageService } from "./api-usage.service";
+import { ApiProviderConfigService } from "./api-provider-config.service";
 import { ChatCompletionRequestDto } from "./dto/openai-compatible.dto";
 import { ApiModel } from "./entities/api-model.entity";
+import {
+  ProviderNotConfiguredError,
+  ProviderApiKeyMissingError,
+  ProviderTimeoutError,
+  ProviderRateLimitedError,
+  ProviderInvalidRequestError,
+  ProviderUpstreamError,
+} from "./providers/provider-errors";
 
+const MOCK_PROVIDER_KEY = "__mock__";
 const MOCK_RESPONSE_CONTENT = "This is a mock response from MOY API Hub. Real provider forwarding is not enabled in this MVP.";
 
 @Injectable()
@@ -15,6 +25,7 @@ export class OpenaiCompatibleService {
     private readonly projectModelsService: ApiProjectModelsService,
     private readonly quotaService: ApiQuotaService,
     private readonly usageService: ApiUsageService,
+    private readonly providerConfigService: ApiProviderConfigService,
   ) {}
 
   async listModelsForProject(projectId: string) {
@@ -73,35 +84,115 @@ export class OpenaiCompatibleService {
       throw error;
     }
 
-    await this.quotaService.consumeQuota(projectId, enabledModel.model!.id, totalTokens);
+    const provider = enabledModel.model!.provider || "";
 
+    if (provider === MOCK_PROVIDER_KEY) {
+      return this.respondMock(apiKey, enabledModel.model!, dto, promptTokens, completionTokens, totalTokens);
+    }
+
+    return this.respondViaProvider(apiKey, enabledModel.model!, dto, promptTokens, completionTokens, totalTokens);
+  }
+
+  private async respondMock(
+    apiKey: ApiProjectKey,
+    model: ApiModel,
+    dto: ChatCompletionRequestDto,
+    promptTokens: number,
+    completionTokens: number,
+    totalTokens: number,
+  ) {
+    await this.quotaService.consumeQuota(apiKey.projectId, model.id, totalTokens);
     const requestId = "chatcmpl_mock_" + crypto.randomBytes(16).toString("hex");
-
-    await this.writeUsageAndQuota(apiKey, enabledModel.model!, promptTokens, completionTokens, totalTokens, requestId);
+    await this.writeUsageAndQuota(apiKey, model, requestId, promptTokens, completionTokens, totalTokens, "success");
 
     const created = Math.floor(Date.now() / 1000);
-
     return {
       id: requestId,
       object: "chat.completion",
       created,
       model: dto.model,
-      choices: [
-        {
-          index: 0,
-          message: {
-            role: "assistant",
-            content: MOCK_RESPONSE_CONTENT,
-          },
-          finish_reason: "stop",
-        },
-      ],
-      usage: {
-        prompt_tokens: promptTokens,
-        completion_tokens: completionTokens,
-        total_tokens: totalTokens,
-      },
+      choices: [{ index: 0, message: { role: "assistant", content: MOCK_RESPONSE_CONTENT }, finish_reason: "stop" }],
+      usage: { prompt_tokens: promptTokens, completion_tokens: completionTokens, total_tokens: totalTokens },
     };
+  }
+
+  private async respondViaProvider(
+    apiKey: ApiProjectKey,
+    model: ApiModel,
+    dto: ChatCompletionRequestDto,
+    promptTokens: number,
+    completionTokens: number,
+    totalTokens: number,
+  ) {
+    const requestId = "chatcmpl_" + crypto.randomBytes(16).toString("hex");
+
+    try {
+      const client = await this.providerConfigService.resolveClient(model.provider);
+      const upstreamModel = model.upstreamModel || model.modelId;
+
+      const providerResp = await client.chatCompletions({
+        model: upstreamModel,
+        messages: dto.messages.map((m) => ({ role: m.role, content: m.content })),
+        temperature: dto.temperature,
+        max_tokens: dto.max_tokens !== undefined ? dto.max_tokens : undefined,
+        top_p: undefined,
+      });
+
+      const realUsage = providerResp.usage || { prompt_tokens: promptTokens, completion_tokens: 32, total_tokens: promptTokens + 32 };
+      const realTotalTokens = realUsage.total_tokens;
+
+      await this.quotaService.consumeQuota(apiKey.projectId, model.id, realTotalTokens);
+      await this.writeUsageAndQuota(apiKey, model, requestId, realUsage.prompt_tokens, realUsage.completion_tokens, realTotalTokens, "success");
+
+      const created = Math.floor(Date.now() / 1000);
+      return {
+        id: requestId,
+        object: "chat.completion",
+        created,
+        model: dto.model,
+        choices: providerResp.choices,
+        usage: realUsage,
+      };
+    } catch (error: any) {
+      const code = this.mapProviderErrorCode(error);
+      const status = this.mapProviderErrorStatus(error);
+      const message = this.mapProviderErrorMessage(error);
+
+      await this.writeUsageAndQuota(apiKey, model, requestId, promptTokens, 0, 0, "failed");
+
+      throw new HttpException({
+        error: { message, type: "provider_error", code },
+      }, status);
+    }
+  }
+
+  private mapProviderErrorCode(error: any): string {
+    if (error instanceof ProviderNotConfiguredError) return "provider_not_configured";
+    if (error instanceof ProviderApiKeyMissingError) return "provider_api_key_missing";
+    if (error instanceof ProviderTimeoutError) return "provider_timeout";
+    if (error instanceof ProviderRateLimitedError) return "provider_rate_limited";
+    if (error instanceof ProviderInvalidRequestError) return "provider_invalid_request";
+    if (error instanceof ProviderUpstreamError) return "provider_error";
+    return "provider_error";
+  }
+
+  private mapProviderErrorStatus(error: any): number {
+    if (error instanceof ProviderNotConfiguredError || error instanceof ProviderApiKeyMissingError) return HttpStatus.BAD_GATEWAY;
+    if (error instanceof ProviderTimeoutError) return HttpStatus.GATEWAY_TIMEOUT;
+    if (error instanceof ProviderRateLimitedError) return HttpStatus.BAD_GATEWAY;
+    if (error instanceof ProviderInvalidRequestError) return HttpStatus.BAD_GATEWAY;
+    if (error instanceof ProviderUpstreamError) return HttpStatus.BAD_GATEWAY;
+    return HttpStatus.BAD_GATEWAY;
+  }
+
+  private mapProviderErrorMessage(error: any): string {
+    if (error instanceof ProviderNotConfiguredError) return "Provider is not configured";
+    if (error instanceof ProviderApiKeyMissingError) return "Provider API key is not set";
+    if (error instanceof ProviderTimeoutError) return "Provider request timed out";
+    if (error instanceof ProviderRateLimitedError) return "Provider rate limited";
+    if (error instanceof ProviderInvalidRequestError) return "Provider rejected the request";
+    if (error instanceof ProviderUpstreamError) return "Provider returned an error";
+    return "Provider error";
   }
 
   async validateModelEnabled(projectId: string, modelIdString: string) {
@@ -129,10 +220,11 @@ export class OpenaiCompatibleService {
   async writeUsageAndQuota(
     apiKey: ApiProjectKey,
     model: ApiModel,
+    requestId: string,
     inputTokens: number,
     outputTokens: number,
     totalTokens: number,
-    requestId: string,
+    status: "success" | "failed",
   ) {
     await this.usageService.record(apiKey.projectId, {
       keyId: apiKey.id,
@@ -142,7 +234,7 @@ export class OpenaiCompatibleService {
       outputTokens,
       totalTokens,
       cost: 0,
-      status: "success",
+      status,
     });
   }
 

@@ -17,8 +17,11 @@ export class ApiModel {
   @Column({ type: "varchar", length: 100 })
   modelId!: string;
 
-  @Column({ type: "varchar", length: 20, default: "text" })
+  @Column({ type: "varchar", length: 15, default: "text" })
   category!: ApiModelCategory;
+
+  @Column({ type: "varchar", length: 128, nullable: true })
+  upstreamModel!: string | null;
 
   @Column({ type: "varchar", length: 20, default: "token" })
   pricingUnit!: string;

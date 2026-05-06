@@ -47,4 +47,11 @@ export const adminApi = {
     update: (projectId: string, keyId: string, body: { name?: string; status?: string }) => request(`/projects/${projectId}/keys/${keyId}`, { method: "PATCH", body: JSON.stringify(body) }),
     revoke: (projectId: string, keyId: string) => request(`/projects/${projectId}/keys/${keyId}`, { method: "DELETE" }),
   },
+  providerConfigs: {
+    list: () => request("/provider-configs"),
+    create: (body: any) => request("/provider-configs", { method: "POST", body: JSON.stringify(body) }),
+    get: (provider: string) => request(`/provider-configs/${provider}`),
+    update: (provider: string, body: any) => request(`/provider-configs/${provider}`, { method: "PATCH", body: JSON.stringify(body) }),
+    remove: (provider: string) => request(`/provider-configs/${provider}`, { method: "DELETE" }),
+  },
 };

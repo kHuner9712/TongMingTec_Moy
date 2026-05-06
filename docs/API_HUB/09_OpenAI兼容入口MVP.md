@@ -344,7 +344,7 @@ npm --prefix backend test -- --runInBand
 
 ## 13. 下一阶段
 
-**Provider Proxy**：将 `/v1/chat/completions` 从 mock 演进为真实 provider 转发。详见 [11_Provider_Proxy设计](./11_Provider_Proxy设计.md)。
+**Provider Proxy 已实现**：`moy-mock-chat` 仍走 mock 路径，DeepSeek 走真实 provider 转发。详见 [12_DeepSeek_Provider_MVP](./12_DeepSeek_Provider_MVP.md)。
 
 ## 14. 版本记录
 

@@ -24,5 +24,9 @@ export class ChatCompletionRequestDto {
   temperature?: number;
 
   @IsOptional()
+  @IsNumber()
+  max_tokens?: number;
+
+  @IsOptional()
   stream?: boolean;
 }

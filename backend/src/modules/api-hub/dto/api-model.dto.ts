@@ -53,6 +53,11 @@ export class CreateApiModelDto {
   @IsOptional()
   @IsBoolean()
   supportsFunctionCalling?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  upstreamModel?: string;
 }
 
 export class UpdateApiModelDto {
@@ -111,6 +116,11 @@ export class UpdateApiModelDto {
   @IsOptional()
   @IsBoolean()
   supportsFunctionCalling?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  upstreamModel?: string;
 }
 
 export class QueryApiModelDto {

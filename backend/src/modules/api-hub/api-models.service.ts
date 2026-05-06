@@ -29,6 +29,7 @@ export class ApiModelsService {
       supportsStreaming: dto.supportsStreaming ?? false,
       supportsVision: dto.supportsVision ?? false,
       supportsFunctionCalling: dto.supportsFunctionCalling ?? false,
+      upstreamModel: dto.upstreamModel ?? null,
     });
     return this.repo.save(model);
   }
@@ -82,6 +83,7 @@ export class ApiModelsService {
     if (dto.supportsStreaming !== undefined) model.supportsStreaming = dto.supportsStreaming;
     if (dto.supportsVision !== undefined) model.supportsVision = dto.supportsVision;
     if (dto.supportsFunctionCalling !== undefined) model.supportsFunctionCalling = dto.supportsFunctionCalling;
+    if (dto.upstreamModel !== undefined) model.upstreamModel = dto.upstreamModel;
 
     return this.repo.save(model);
   }

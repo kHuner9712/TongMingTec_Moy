@@ -336,4 +336,5 @@ API_HUB_PROVIDER_TIMEOUT_MS=60000
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| v1.1 | 2026-05-07 | 代码已实现，详见 [12_DeepSeek_Provider_MVP](./12_DeepSeek_Provider_MVP.md) |
 | v1.0 | 2026-05-07 | Provider Proxy 设计文档初版：14 个设计维度 + 11 个开发任务 |

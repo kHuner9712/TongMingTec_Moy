@@ -25,6 +25,19 @@ export interface ApiModelDTO {
   supportsStreaming: boolean;
   supportsVision: boolean;
   supportsFunctionCalling: boolean;
+  upstreamModel: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiProviderConfigDTO {
+  id: string;
+  provider: string;
+  displayName: string;
+  baseUrl: string;
+  apiKeyEnvName: string;
+  status: "active" | "inactive" | "error";
+  timeoutMs: number;
   createdAt: string;
   updatedAt: string;
 }

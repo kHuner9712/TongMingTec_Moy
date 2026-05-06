@@ -111,6 +111,7 @@
 | [09_OpenAI兼容入口MVP](./09_OpenAI兼容入口MVP.md) | OpenAI-Compatible Entry MVP 实现说明 | 开发 / DevOps |
 | [10_Developer_Console_MVP](./10_Developer_Console_MVP.md) | Developer Console MVP 实现说明 | 开发 / DevOps |
 | [11_Provider_Proxy设计](./11_Provider_Proxy设计.md) | Provider Proxy 架构设计（下一阶段） | 开发 / DevOps |
+| [12_DeepSeek_Provider_MVP](./12_DeepSeek_Provider_MVP.md) | DeepSeek Provider Proxy MVP 实现说明 | 开发 / DevOps |
 
 ## 8. 技术栈（推荐）
 
@@ -128,6 +129,7 @@
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| v0.8 | 2026-05-07 | DeepSeek Provider Proxy MVP：真实 provider 转发，mock/moy provider 协议路由 |
 | v0.7 | 2026-05-07 | Provider Proxy 设计文档：14 个设计维度 + 11 个开发任务，推荐 DeepSeek/OpenAI |
 | v0.6 | 2026-05-07 | 文案与示例一致性收口：官网/README/文档统一使用 moy-mock-chat、localhost:3001/v1、api.app.moy.com/v1 |
 | v0.5 | 2026-05-07 | Developer Console MVP：sites/api/console 调试控制台，6 大功能区块，后端 quota 错误码收口 (403→402) |

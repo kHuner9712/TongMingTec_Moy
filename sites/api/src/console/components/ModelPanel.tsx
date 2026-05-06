@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function ModelPanel({ models, selectedModelId, onSelectModel, onRefresh }: Props) {
-  const [form, setForm] = useState({ name: "", modelId: "moy-mock-chat", provider: "moy", status: "public", category: "text", maxInputTokens: "", maxOutputTokens: "", supportsStreaming: false, supportsVision: false, supportsFunctionCalling: false });
+  const [form, setForm] = useState({ name: "", modelId: "moy-mock-chat", provider: "moy", status: "public", category: "text", maxInputTokens: "", maxOutputTokens: "", upstreamModel: "", supportsStreaming: false, supportsVision: false, supportsFunctionCalling: false });
   const [error, setError] = useState("");
 
   const update = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
@@ -36,8 +36,9 @@ export default function ModelPanel({ models, selectedModelId, onSelectModel, onR
         supportsStreaming: form.supportsStreaming,
         supportsVision: form.supportsVision,
         supportsFunctionCalling: form.supportsFunctionCalling,
+        upstreamModel: form.upstreamModel.trim() || null,
       });
-      setForm({ name: "", modelId: "moy-mock-chat", provider: "moy", status: "public", category: "text", maxInputTokens: "", maxOutputTokens: "", supportsStreaming: false, supportsVision: false, supportsFunctionCalling: false });
+      setForm({ name: "", modelId: "moy-mock-chat", provider: "moy", status: "public", category: "text", maxInputTokens: "", maxOutputTokens: "", upstreamModel: "", supportsStreaming: false, supportsVision: false, supportsFunctionCalling: false });
       onRefresh();
     } catch (e: any) { setError(e?.data?.message || "创建失败"); }
   };
@@ -57,6 +58,7 @@ export default function ModelPanel({ models, selectedModelId, onSelectModel, onR
           </select>
           <input style={{ ...inp, width: "48%", marginRight: "4%" }} value={form.maxInputTokens} onChange={e => update("maxInputTokens", e.target.value)} placeholder="maxInputTokens" />
           <input style={{ ...inp, width: "48%" }} value={form.maxOutputTokens} onChange={e => update("maxOutputTokens", e.target.value)} placeholder="maxOutputTokens" />
+          <input style={inp} value={form.upstreamModel} onChange={e => update("upstreamModel", e.target.value)} placeholder="upstreamModel (真实 provider 模型名)" />
           <div style={{ fontSize: 12, marginBottom: 6 }}>
             <label><input type="checkbox" style={chk} checked={form.supportsStreaming} onChange={e => update("supportsStreaming", e.target.checked)} />Streaming</label>
             <label style={{ marginLeft: 8 }}><input type="checkbox" style={chk} checked={form.supportsVision} onChange={e => update("supportsVision", e.target.checked)} />Vision</label>
@@ -74,6 +76,7 @@ export default function ModelPanel({ models, selectedModelId, onSelectModel, onR
                   <span style={{ fontWeight: 600, cursor: "pointer", color: m.id === selectedModelId ? C.brand : C.dark }} onClick={() => onSelectModel(m.id)}>{m.name}</span>
                   <span style={{ marginLeft: 6, color: C.gray }}>{m.modelId}</span>
                   <span style={{ marginLeft: 6, padding: "1px 6px", borderRadius: 4, fontSize: 10, background: C.brandBg, color: C.brand }}>{m.provider}</span>
+                  {m.upstreamModel && <span style={{ marginLeft: 4, fontSize: 10, color: C.gray }}>→ {m.upstreamModel}</span>}
                 </div>
                 <span style={{ fontSize: 10, color: C.gray }}>{m.status}</span>
               </div>

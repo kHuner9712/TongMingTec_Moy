@@ -20,11 +20,14 @@ import { ApiUsageController } from "./api-usage.controller";
 import { ApiHubHealthController } from "./api-hub.controller";
 import { OpenaiCompatibleController } from "./openai-compatible.controller";
 import { ApiKeyGuard } from "./guards/api-key.guard";
+import { ApiProviderConfig } from "./entities/api-provider-config.entity";
+import { ApiProviderConfigService } from "./api-provider-config.service";
+import { ApiProviderConfigController } from "./api-provider-config.controller";
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ApiProject, ApiProjectKey, ApiModel, ApiProjectModel, ApiMonthlyQuota, ApiUsageRecord])],
-  controllers: [ApiProjectsController, ApiKeysController, ApiModelsController, ApiUsageController, ApiHubHealthController, OpenaiCompatibleController],
-  providers: [ApiProjectsService, ApiKeysService, ApiModelsService, ApiProjectModelsService, ApiQuotaService, ApiUsageService, OpenaiCompatibleService, ApiKeyGuard],
-  exports: [ApiKeysService, ApiQuotaService, ApiUsageService],
+  imports: [TypeOrmModule.forFeature([ApiProject, ApiProjectKey, ApiModel, ApiProjectModel, ApiMonthlyQuota, ApiUsageRecord, ApiProviderConfig])],
+  controllers: [ApiProjectsController, ApiKeysController, ApiModelsController, ApiUsageController, ApiHubHealthController, OpenaiCompatibleController, ApiProviderConfigController],
+  providers: [ApiProjectsService, ApiKeysService, ApiModelsService, ApiProjectModelsService, ApiQuotaService, ApiUsageService, OpenaiCompatibleService, ApiProviderConfigService, ApiKeyGuard],
+  exports: [ApiKeysService, ApiQuotaService, ApiUsageService, ApiProviderConfigService],
 })
 export class ApiHubModule {}

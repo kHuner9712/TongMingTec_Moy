@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { adminApi } from "./apiHubAdminApi";
-import { ApiProjectDTO, ApiModelDTO, ApiProjectModelDTO, ApiMonthlyQuotaDTO, ApiKeySafeDTO, RemainingQuotaDTO } from "./apiConsoleTypes";
+import { ApiProjectDTO, ApiModelDTO, ApiProjectModelDTO, ApiMonthlyQuotaDTO, ApiKeySafeDTO, ApiProviderConfigDTO, RemainingQuotaDTO } from "./apiConsoleTypes";
 import { C } from "../styles";
 import ConsoleTokenPanel from "./components/ConsoleTokenPanel";
 import ProjectPanel from "./components/ProjectPanel";
@@ -9,6 +9,7 @@ import ProjectModelPanel from "./components/ProjectModelPanel";
 import QuotaPanel from "./components/QuotaPanel";
 import ApiKeyPanel from "./components/ApiKeyPanel";
 import OpenAiTestPanel from "./components/OpenAiTestPanel";
+import ProviderConfigPanel from "./components/ProviderConfigPanel";
 import CurlSnippet from "./components/CurlSnippet";
 
 const page: React.CSSProperties = {
@@ -30,6 +31,7 @@ export default function ApiConsolePage() {
   const [projectModels, setProjectModels] = useState<ApiProjectModelDTO[]>([]);
   const [quotas, setQuotas] = useState<ApiMonthlyQuotaDTO[]>([]);
   const [keys, setKeys] = useState<ApiKeySafeDTO[]>([]);
+  const [providerConfigs, setProviderConfigs] = useState<ApiProviderConfigDTO[]>([]);
   const [remaining, setRemaining] = useState<RemainingQuotaDTO | null>(null);
 
   const [selectedProjectId, setSelectedProjectId] = useState("");
@@ -64,8 +66,12 @@ export default function ApiConsolePage() {
     try { const r = await adminApi.keys.list(selectedProjectId); setKeys(Array.isArray(r) ? r : r.data || []); } catch { setKeys([]); }
   };
 
+  const loadProviderConfigs = async () => {
+    try { const r = await adminApi.providerConfigs.list(); setProviderConfigs(Array.isArray(r) ? r : r.data || []); } catch { setProviderConfigs([]); }
+  };
+
   const loadAll = useCallback(async () => {
-    await Promise.all([loadProjects(), loadModels(), loadProjectModels(), loadQuotas(), loadKeys()]);
+    await Promise.all([loadProjects(), loadModels(), loadProjectModels(), loadQuotas(), loadKeys(), loadProviderConfigs()]);
   }, [selectedProjectId, selectedModelId]);
 
   useEffect(() => { loadAll(); }, [selectedProjectId, selectedModelId]);
@@ -84,10 +90,14 @@ export default function ApiConsolePage() {
 
       <div style={container}>
         <p style={{ fontSize: 14, color: C.gray, marginBottom: 24, lineHeight: 1.6 }}>
-          用于本地调试 API Hub 项目、模型、额度、API Key 和 OpenAI-compatible mock 调用。
+          用于本地调试 API Hub 项目、模型、额度、API Key、Provider Config 和 OpenAI-compatible 调用。
         </p>
 
         <ConsoleTokenPanel onTokenChange={loadAll} />
+        <ProviderConfigPanel
+          providerConfigs={providerConfigs}
+          onRefresh={loadProviderConfigs}
+        />
         <ProjectPanel
           projects={projects}
           selectedProjectId={selectedProjectId}
