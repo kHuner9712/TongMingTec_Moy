@@ -1,5 +1,6 @@
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Layout as AntLayout, Menu, Badge } from "antd";
+import type { MenuProps } from "antd";
 import {
   TeamOutlined,
   UserOutlined,
@@ -360,7 +361,7 @@ export default function Layout() {
         <Menu
           mode="inline"
           selectedKeys={getSelectedKeys()}
-          items={filteredMenuItems as any}
+          items={filteredMenuItems as MenuProps["items"]}
           onClick={handleMenuClick}
           style={{ borderRight: 0 }}
         />

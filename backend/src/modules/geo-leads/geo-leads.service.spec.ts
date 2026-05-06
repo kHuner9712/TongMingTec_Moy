@@ -3,7 +3,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { REQUEST } from "@nestjs/core";
 import { GeoLeadsService } from "./geo-leads.service";
-import { GeoLead, GeoLeadStatus } from "./entities/geo-lead.entity";
+import { GeoLead } from "./entities/geo-lead.entity";
 import { CreateGeoLeadDto } from "./dto/create-geo-lead.dto";
 
 function makeDto(overrides: Partial<CreateGeoLeadDto> = {}): CreateGeoLeadDto {
@@ -49,7 +49,10 @@ function makeGeoLead(overrides: Partial<GeoLead> = {}): GeoLead {
 describe("GeoLeadsService", () => {
   let service: GeoLeadsService;
   let repo: jest.Mocked<
-    Pick<Repository<GeoLead>, "create" | "save" | "count" | "findOne" | "findAndCount">
+    Pick<
+      Repository<GeoLead>,
+      "create" | "save" | "count" | "findOne" | "findAndCount"
+    >
   >;
 
   const mockReq = {
@@ -75,13 +78,17 @@ describe("GeoLeadsService", () => {
     }).compile();
 
     service = module.get<GeoLeadsService>(GeoLeadsService);
-    repo = mockRepo as any;
+    repo = mockRepo as unknown as typeof repo;
   });
 
   describe("create", () => {
     it("应该正常创建 lead 并返回保存后的实体", async () => {
       const dto = makeDto();
-      const entity = { ...dto, id: "uuid-1", status: "received" } as any;
+      const entity = {
+        ...dto,
+        id: "uuid-1",
+        status: "received",
+      } as unknown as GeoLead;
 
       repo.create.mockReturnValue(entity);
       repo.save.mockResolvedValue(entity);
@@ -126,7 +133,11 @@ describe("GeoLeadsService", () => {
 
     it("24 小时内同一 contactMethod 提交超过 3 次应返回 429", async () => {
       const dto = makeDto();
-      const entity = { ...dto, id: "uuid-1", status: "received" } as any;
+      const entity = {
+        ...dto,
+        id: "uuid-1",
+        status: "received",
+      } as unknown as GeoLead;
 
       repo.create.mockReturnValue(entity);
       repo.save.mockResolvedValue(entity);
@@ -137,7 +148,11 @@ describe("GeoLeadsService", () => {
 
     it("contactMethod 频率在阈值内应正常创建", async () => {
       const dto = makeDto();
-      const entity = { ...dto, id: "uuid-1", status: "received" } as any;
+      const entity = {
+        ...dto,
+        id: "uuid-1",
+        status: "received",
+      } as unknown as GeoLead;
 
       repo.create.mockReturnValue(entity);
       repo.save.mockResolvedValue(entity);
@@ -163,7 +178,11 @@ describe("GeoLeadsService", () => {
       const leads = [makeGeoLead({ status: "contacted" })];
       repo.findAndCount.mockResolvedValue([leads, 1]);
 
-      const result = await service.findAll({ status: "contacted", page: 1, pageSize: 20 });
+      const result = await service.findAll({
+        status: "contacted",
+        page: 1,
+        pageSize: 20,
+      });
 
       expect(result.data[0].status).toBe("contacted");
     });
@@ -239,7 +258,9 @@ describe("GeoLeadsService", () => {
       repo.findOne.mockResolvedValue(lead);
       repo.save.mockResolvedValue({ ...lead, status: "archived" });
 
-      const result = await service.updateStatus("uuid-1", { status: "archived" });
+      const result = await service.updateStatus("uuid-1", {
+        status: "archived",
+      });
       expect(result.status).toBe("archived");
     });
 
@@ -248,14 +269,18 @@ describe("GeoLeadsService", () => {
       repo.findOne.mockResolvedValue(lead);
       repo.save.mockImplementation((l) => Promise.resolve(l as GeoLead));
 
-      const result = await service.updateStatus("uuid-1", { status: "contacted" });
+      const result = await service.updateStatus("uuid-1", {
+        status: "contacted",
+      });
       expect(result.firstContactedAt).toBeTruthy();
     });
   });
 
   describe("validateTransition", () => {
     it("received -> contacted 合法", () => {
-      expect(() => service.validateTransition("received", "contacted")).not.toThrow();
+      expect(() =>
+        service.validateTransition("received", "contacted"),
+      ).not.toThrow();
     });
 
     it("won -> contacted 非法", () => {

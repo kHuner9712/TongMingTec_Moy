@@ -8,7 +8,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, MoreThan, ILike } from "typeorm";
+import { Repository, MoreThan, ILike, FindOptionsWhere } from "typeorm";
 import { Request } from "express";
 import { REQUEST } from "@nestjs/core";
 import { GeoLead, GeoLeadStatus } from "./entities/geo-lead.entity";
@@ -78,10 +78,10 @@ export class GeoLeadsService {
   async findAll(query: QueryGeoLeadsDto) {
     const { status, keyword, page = 1, pageSize = 20 } = query;
 
-    const where: any = {};
+    const where: FindOptionsWhere<GeoLead> = {};
 
     if (status) {
-      where.status = status;
+      where.status = status as GeoLeadStatus;
     }
 
     if (keyword) {
