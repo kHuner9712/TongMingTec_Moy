@@ -12,6 +12,9 @@
 
 不做正式 SaaS 控制台，不接真实 provider，不做 billing/payment。
 
+模型示例统一使用 **moy-mock-chat**，本地 endpoint 为 **localhost:3001/v1**，生产占位 endpoint 为 **api.app.moy.com/v1**。
+api.moy.com 当前是产品站和开发者入口，真实开放 API endpoint 后续可迁移到 api.moy.com/v1。
+
 ## 2. 页面路径
 
 | 路径 | 说明 |
@@ -162,7 +165,7 @@ sites/api/src/
 
 ## 9. 后续规划
 
-- 真实 Provider Proxy：接入 OpenAI / DeepSeek / Claude 等
+- **Provider Proxy（下一阶段）**：将 `/v1/chat/completions` 从 mock 演进为真实 provider 转发。详见 [11_Provider_Proxy设计](./11_Provider_Proxy设计.md)。
 - 正式开发者门户：注册、登录、在线 API Key 管理
 - 用量面板、调用日志查询
 - 计费、企业套餐

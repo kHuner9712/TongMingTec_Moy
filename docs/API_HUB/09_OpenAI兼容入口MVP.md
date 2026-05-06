@@ -17,7 +17,6 @@
 - 不接真实模型供应商，chat/completions 返回 mock response
 - 不做 stream、function calling、tool calling
 - 不做 fallback、缓存、billing/payment
-- 不开发 sites/api 前端控制台
 - 不影响 MOY App、MOY GEO、Foundation 管理接口
 
 ## 2. 全局前缀处理
@@ -345,12 +344,7 @@ npm --prefix backend test -- --runInBand
 
 ## 13. 下一阶段
 
-真实 Provider Proxy：
-- 接入 OpenAI / DeepSeek / Claude 等真实模型供应商
-- 配置上游 API Key、base URL
-- 请求转发 + 响应透传
-- 错误码映射
-- Stream 支持
+**Provider Proxy**：将 `/v1/chat/completions` 从 mock 演进为真实 provider 转发。详见 [11_Provider_Proxy设计](./11_Provider_Proxy设计.md)。
 
 ## 14. 版本记录
 

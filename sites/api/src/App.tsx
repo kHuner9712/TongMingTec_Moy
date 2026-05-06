@@ -20,7 +20,7 @@ function App() {
     return <ApiConsolePage />;
   }
 
-  const jsonPayload = `'{"model":"moy-default","messages":[{"role":"user","content":"Hello MOY API"}]}'`;
+  const jsonPayload = `'{"model":"moy-mock-chat","messages":[{"role":"user","content":"Hello MOY API"}]}'`;
 
   return (
     <div style={{ fontFamily: sans, color: C.dark, background: C.bg, minHeight: "100vh" }}>
@@ -48,6 +48,9 @@ function App() {
           </h1>
           <p style={{ fontSize: "clamp(15px, 2.2vw, 18px)", color: "#94b4d8", maxWidth: 540, margin: "0 auto 40px", lineHeight: 1.7 }}>
             MOY API 提供多模型统一调用、API Key 管理、用量统计、调用日志、限流和成本控制，帮助团队更稳定地构建 AI 应用。
+          </p>
+          <p style={{ fontSize: 13, color: "#7db5e8", maxWidth: 560, margin: "-24px auto 40px", lineHeight: 1.6, background: "rgba(255,255,255,0.06)", padding: "10px 18px", borderRadius: 6 }}>
+            当前 Developer Console 已支持本地调试 Project、Model、Quota、API Key 与 OpenAI-compatible mock 调用。
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
             {[
@@ -125,6 +128,7 @@ function App() {
         <h2 style={h2({ marginBottom: 12 })}>持续接入，按需扩展</h2>
         <p style={{ fontSize: 16, color: C.gray, marginBottom: 32, lineHeight: 1.7 }}>
           具体模型以后台配置和可用区域为准。以下为规划接入的模型系列。
+          当前可通过 Developer Console 手动注册模型，并将模型启用到 Project 后由 /v1/models 返回。
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
@@ -178,12 +182,12 @@ function App() {
         <Label text="快速开始" />
         <h2 style={h2({ marginBottom: 12 })}>一行 curl，即刻接入</h2>
         <p style={{ fontSize: 16, color: C.gray, marginBottom: 32, lineHeight: 1.7 }}>
-          OpenAI 兼容接口，零迁移成本。以下为占位示例，具体 endpoint 以正式文档为准。
+          OpenAI 兼容接口，零迁移成本。本地调试使用 localhost:3001/v1，生产占位 endpoint 为 api.app.moy.com/v1。
         </p>
 
         <div style={{ background: C.terminal, borderRadius: 10, padding: "24px 28px", fontFamily: mono, fontSize: 13, lineHeight: 1.7, color: C.termFg, overflowX: "auto" }}>
           <div style={{ color: "#6688aa", marginBottom: 12 }}>
-            <span style={{ color: "#8899aa" }}>$</span> curl <span style={{ color: C.termAc }}>https://api.moy.com/v1/chat/completions</span> \
+            <span style={{ color: "#8899aa" }}>$</span> curl <span style={{ color: C.termAc }}>http://localhost:3001/v1/chat/completions</span> \
           </div>
           <div style={{ color: "#6688aa", paddingLeft: 24 }}>
             -H <span style={{ color: "#c0a060" }}>"Authorization: Bearer $MOY_API_KEY"</span> \
@@ -195,18 +199,18 @@ function App() {
             -d <span style={{ color: "#c0a060" }}>{jsonPayload}</span>
           </div>
 
-          <div style={{ color: "#6688aa", marginBottom: 4, marginTop: 20 }}><span style={{ color: "#8899aa" }}>{"// "}</span>响应示例（OpenAI 兼容格式）</div>
+          <div style={{ color: "#6688aa", marginBottom: 4, marginTop: 20 }}><span style={{ color: "#8899aa" }}>{"// "}</span>响应示例（mock response — 当前不接真实 provider）</div>
           <div style={{ color: "#7da0c0" }}>{'{'}</div>
-          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"id": "chatcmpl-xxxx",'}</div>
+          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"id": "chatcmpl_mock_xxx",'}</div>
           <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"object": "chat.completion",'}</div>
-          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"model": "moy-default",'}</div>
-          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"choices": [{"index": 0, "message": {"role": "assistant", "content": "Hello! ..."}, "finish_reason": "stop"}],'}</div>
-          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"usage": {"prompt_tokens": 12, "completion_tokens": 24, "total_tokens": 36}'}</div>
+          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"model": "moy-mock-chat",'}</div>
+          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"choices": [{"message": {"role": "assistant", "content": "This is a mock response from MOY API Hub..."}, "finish_reason": "stop"}],'}</div>
+          <div style={{ color: "#7da0c0", paddingLeft: 20 }}>{'"usage": {"prompt_tokens": 10, "completion_tokens": 32, "total_tokens": 42}'}</div>
           <div style={{ color: "#7da0c0" }}>{'}'}</div>
         </div>
 
         <p style={{ fontSize: 13, color: C.gray, marginTop: 14, lineHeight: 1.6 }}>
-          以上为静态占位内容。正式 API 端点、可用模型列表和完整文档将在产品上线时发布。
+          当前 MVP 已支持 mock OpenAI-compatible 调用；真实 provider 转发将在下一阶段接入。
         </p>
       </section>
 

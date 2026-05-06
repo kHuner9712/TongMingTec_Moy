@@ -110,6 +110,7 @@
 | [08_API_Hub_Foundation实现说明](./08_API_Hub_Foundation实现说明.md) | Foundation 后端实现说明 | 开发 / DevOps |
 | [09_OpenAI兼容入口MVP](./09_OpenAI兼容入口MVP.md) | OpenAI-Compatible Entry MVP 实现说明 | 开发 / DevOps |
 | [10_Developer_Console_MVP](./10_Developer_Console_MVP.md) | Developer Console MVP 实现说明 | 开发 / DevOps |
+| [11_Provider_Proxy设计](./11_Provider_Proxy设计.md) | Provider Proxy 架构设计（下一阶段） | 开发 / DevOps |
 
 ## 8. 技术栈（推荐）
 
@@ -127,6 +128,8 @@
 
 | 版本 | 日期 | 变更 |
 | --- | --- | --- |
+| v0.7 | 2026-05-07 | Provider Proxy 设计文档：14 个设计维度 + 11 个开发任务，推荐 DeepSeek/OpenAI |
+| v0.6 | 2026-05-07 | 文案与示例一致性收口：官网/README/文档统一使用 moy-mock-chat、localhost:3001/v1、api.app.moy.com/v1 |
 | v0.5 | 2026-05-07 | Developer Console MVP：sites/api/console 调试控制台，6 大功能区块，后端 quota 错误码收口 (403→402) |
 | v0.4 | 2026-05-07 | OpenAI-Compatible Entry MVP 完成：mock /v1/models + /v1/chat/completions，ApiKeyGuard Bearer 鉴权，quota 扣减，usage 记录 |
 | v0.3 | 2026-05-06 | Foundation 安全与文档一致性收口：统一 Key 格式 moy_sk_ + 32 hex，拆分安全响应 DTO，修复 keyHash 泄露，更新全系文档 |
